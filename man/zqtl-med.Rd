@@ -110,7 +110,7 @@ theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1)
 y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
 y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
 
-y <- y + rnorm(n) * sqrt(var(y) * (1/h2 - 1))
+y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
 ################################################################
 z.xy.tab <- as.matrix(t(apply(X, 2, function(x) coefficients(summary(lm(y ~ x)))[2, 1:2])))
