@@ -23,8 +23,8 @@ std::tuple<Mat, Mat> do_eigen_decomp(const Mat& X, const options_t& opt) {
 }
 
 template <typename Derived>
-std::tuple<Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
-                            const options_t& opt) {
+std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
+                                 const options_t& opt) {
   using RowVec = typename Eigen::internal::plain_row_type<Mat>::type;
   // Center X matrix and divided by sqrt(n-1)
   // covariance = X'X
@@ -41,7 +41,8 @@ std::tuple<Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   const RowVec num_obs = X.unaryExpr(obs_op).colwise().sum();
 
   for (Index j = 0; j < Xsafe.cols(); ++j) {
-    Xsafe.col(j) = Xsafe.col(j) / std::max(1.0, std::sqrt(num_obs(j)) - 1.0);
+    const Scalar nj = std::max(static_cast<Scalar>(2.0), num_obs(j));
+    Xsafe.col(j) = Xsafe.col(j) / std::sqrt(nj - 1.0);
   }
 
   const Scalar n = static_cast<Scalar>(Xsafe.rows());
@@ -73,8 +74,10 @@ std::tuple<Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   dvec_out = svd.singularValues().head(num_comp) / n;
   Mat Vt(num_comp, Xsafe.cols());
   Vt = svd.matrixV().leftCols(num_comp).transpose();
+  Mat U(Xsafe.rows(), num_comp);
+  U = svd.matrixU().leftCols(num_comp);
 
-  return std::tuple<Mat, Mat>(dvec_out, Vt);
+  return std::tuple<Mat, Mat, Mat>(U, dvec_out, Vt);
 }
 
 void set_options_from_list(Rcpp::List& _list, options_t& opt) {
@@ -227,6 +230,11 @@ std::tuple<Mat, Mat> preprocess_effect(
   is_obs_op<Mat> is_obs;
   Mat obs_mat =
       _effect.unaryExpr(is_obs).cwiseProduct(_effect_se.unaryExpr(is_obs));
+
+  if (obs_mat.sum() < (obs_mat.rows() * obs_mat.cols())) {
+    WLOG("Make sure all the effect size and standard errors are observed!");
+    WLOG("Results may become biased due to the different level of missingness.")
+  }
 
   Mat effect, effect_se;
   remove_missing(_effect, effect);

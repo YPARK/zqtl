@@ -24,7 +24,6 @@ fit.zqtl(effect,              # marginal effect : y ~ x
          effect.se,           # marginal se : y ~ x
          X,                   # X matrix
          n = 0,               # sample size
-         ld = NULL,           # LD matrix
          C = NULL,            # covariate matrix
          factored = FALSE,    # Factored multiple traits
          options = list())
@@ -34,7 +33,6 @@ fit.zqtl(effect,              # marginal effect : y ~ x
   \item{effect.se}{Marginal effect size standard error matrix (SNP x trait)}
   \item{n}{sample size of actual data (will ignore if n = 0)}
   \item{X}{Design matrix (reference Ind x SNP)}
-  \item{ld}{LD (covariance) matrix (SNP x SNP)}
   \item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
   \item{factored}{Fit factored QTL model (default: FALSE)}
   \item{options}{A list of inference/optimization options.}
@@ -96,23 +94,20 @@ y <- y + rnorm(n) * sqrt(var(y) * (1/h2 - 1))
 effect.tab <- as.matrix(t(apply(X, 2, function(x) coefficients(summary(lm(y ~ x)))[2, 1:2])))
 
 ################################################################
-## calculate LD matrix
-LD <- cov(scale(X))
-
 vb.opt <- list(tol = 0, vbiter = 3000, pi.ub = -2, pi.lb = -4,
                rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1)
 
 out <- fit.zqtl(effect.tab[,1,drop=FALSE], effect.tab[,2,drop=FALSE],
-X = LD, n = n, options = vb.opt)
-
+X = X, n = n, options = vb.opt)
 
 ## heritability estimation through model
 ##theta.s <- out$param$theta * effect.tab[,2,drop=FALSE]
 theta.s <- out$param$theta
-pve <- (t(theta.s) \%*\% LD \%*\% theta.s) / var(y)
+pve <- var(X \%*\% theta.s) / var(y)
 
 par(mfrow=c(2,1))
+
 plot(out$param$lodds, xlab = 'SNPs', ylab = 'Log-ODDS',
      main = paste('PVE:',format(pve,digits=2)))
 points(c.snps, out$param$lodds[c.snps, 1], col = 2, pch = 19,

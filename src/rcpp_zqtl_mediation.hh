@@ -48,6 +48,13 @@ template <typename... DATA>
 Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
                                std::tuple<DATA...>&& data_tup);
 
+template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
+          typename RANDE, typename... DATA>
+Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
+                                 MEDIATED_E theta_med, RANDE& delta_rande,
+                                 const options_t& opt,
+                                 std::tuple<DATA...>&& data_tup);
+
 Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                              const effect_y_se_mat_t& yy_se,  // z_y_se
                              const effect_m_mat_t& mm,        // z_m
@@ -59,8 +66,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // check dimensions //
   //////////////////////
 
-  if (opt.with_ld_matrix() && conf.val.cols() != conf.val.rows()) {
-    ELOG("geno is not a square LD matrix");
+  if (opt.with_ld_matrix()) {
+    ELOG("Deprecated: longer use full LD matrix.");
     return Rcpp::List::create();
   }
 
@@ -97,31 +104,36 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // Pre-process genotype matrix //
   /////////////////////////////////
 
-  Mat D2, Vt;
-  if (opt.with_ld_matrix()) {
-    std::tie(D2, Vt) = do_eigen_decomp(geno.val, opt);
-    TLOG("Finished eigen-decomposition of LD matrix");
-  } else {
-    std::tie(D2, Vt) = do_svd(geno.val, opt);
-    D2 = D2.cwiseProduct(D2);
-    TLOG("Finished SVD of genotype matrix");
-  }
+  Mat U, D2, Vt;
+  std::tie(U, D2, Vt) = do_svd(geno.val, opt);
+  D2 = D2.cwiseProduct(D2);
+  TLOG("Finished SVD of genotype matrix");
 
   TLOG("GWAS sample size = " << opt.sample_size());
 
+  const Scalar n = static_cast<Scalar>(opt.sample_size());
+  const Scalar n0 = static_cast<Scalar>(opt.m_sample_size());
+
   Mat effect_y_z, weight_y;
-  std::tie(effect_y_z, weight_y) =
-      preprocess_effect(yy.val, yy_se.val, opt.sample_size());
+  std::tie(effect_y_z, weight_y) = preprocess_effect(yy.val, yy_se.val, n);
 
   Mat Y = Vt * effect_y_z;
 
   TLOG("Mediator sample size = " << opt.m_sample_size());
 
   Mat effect_m_z, weight_m;
-  std::tie(effect_m_z, weight_m) =
-      preprocess_effect(mm.val, mm_se.val, opt.m_sample_size());
+  std::tie(effect_m_z, weight_m) = preprocess_effect(mm.val, mm_se.val, n0);
+
+  /////////////////////
+  // Mediation model //
+  /////////////////////
 
   Mat M = Vt * effect_m_z;
+
+  // if (n0 > 0.0 && n > 0.0) {
+  //   const Scalar scale_factor = std::sqrt(n0 / n);
+  //   M = M * scale_factor;
+  // }
 
   zqtl_model_t<Mat> model_y(Y, D2);
 
@@ -136,47 +148,26 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
-  auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  // auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
-  Mat Id = Mat::Ones(Y.rows(), 1) / static_cast<Scalar>(Vt.cols());
-  auto theta_delta_rand_y =
-      make_dense_spike_slab<Scalar>(Id.cols(), Y.cols(), opt);
-  auto delta_rand_y = make_regression_eta(Id, Y, theta_delta_rand_y);
+  // delta_u = D t(U) epsilon
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   ////////////////////////////////////////////////////////////////
   // Estimate observed full model
+
   auto llik1 = impl_fit_eta_delta(model_y, opt, rng,
                                   std::make_tuple(eta_direct, eta_conf_y),
-                                  std::make_tuple(delta_med, delta_rand_y));
+                                  std::make_tuple(delta_med, delta_random));
 
-  // residuals
-  auto resid = Rcpp::List::create();
-  Mat llik_resid;
-
-  // V' z ~ N(V' (w .* r) + ..., D^2)
-  if (opt.out_resid()) {
-    auto theta_resid =
-        make_dense_slab<Scalar>(effect_y_z.rows(), effect_y_z.cols(), opt);
-    auto delta_resid = make_regression_eta(Vt, Y, theta_resid);
-
-    dummy_eta_t dummy;
-
-    eta_direct.resolve();
-    eta_conf_y.resolve();
-    delta_med.resolve();
-    delta_rand_y.resolve();
-
-    llik_resid = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(dummy),
-                                    std::make_tuple(delta_resid),
-                                    std::make_tuple(eta_direct, eta_conf_y),
-                                    std::make_tuple(delta_med, delta_rand_y));
-
-    resid = param_rcpp_list(theta_resid);
-    TLOG("Calibrated residual effect");
-  }
-
+  Rcpp::List rand_effect = param_rcpp_list(epsilon_random);
   Rcpp::List finemap = Rcpp::List::create();
 
   // Fine-mapping QTLs
@@ -218,23 +209,19 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
           make_dense_spike_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
       auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
 
-      Mat Id_m = Mat::Ones(Msub.rows(), 1) / static_cast<Scalar>(Vt.cols());
-      auto theta_delta_rand_m =
-          make_dense_spike_slab<Scalar>(Id_m.cols(), Msub.cols(), opt);
-      auto delta_rand_m = make_regression_eta(Id_m, Msub, theta_delta_rand_m);
       dummy_eta_t dummy;
 
       eta_direct.resolve();
 
       auto llik2 =
           impl_fit_mediation(model_y, model_m, opt, rng,
-                             std::make_tuple(eta_med),       // mediation
-                             std::make_tuple(eta_conf_y),    // eta[y] only
-                             std::make_tuple(eta_conf_m),    // eta[m] only
-                             std::make_tuple(delta_rand_y),  // delta[y]
-                             std::make_tuple(delta_rand_m),  // delta[m]
-                             std::make_tuple(eta_direct),    // clamped eta[y]
-                             std::make_tuple(dummy));        // clamped eta[m]
+                             std::make_tuple(eta_med),     // mediation
+                             std::make_tuple(eta_conf_y),  // eta[y] only
+                             std::make_tuple(eta_conf_m),  // eta[m] only
+                             std::make_tuple(dummy),       // delta[y]
+                             std::make_tuple(dummy),       // delta[m]
+                             std::make_tuple(eta_direct),  // clamped eta[y]
+                             std::make_tuple(dummy));      // clamped eta[m]
 
       std::for_each(med_include.begin(), med_include.end(),
                     [](Index& x) { ++x; });
@@ -262,9 +249,15 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                                std::make_tuple(Y, M, D2, weight_y, Vt));
     } else if (opt.bootstrap_method() == 2) {
       boot = _bootstrap_marginal(log_odds_param(theta_med), opt,
-                                 std::make_tuple(Y, M, D2, weight_y, Vt));
+                                 std::make_tuple(Y, M, D2, weight_y, U, Vt));
     }
   }
+
+  Rcpp::List var_decomp =
+      _variance_calculation(eta_direct, delta_med, theta_med, delta_random, opt,
+                            std::make_tuple(Y, M, U, D2, Vt));
+
+  TLOG("Finished variance decomposition\n\n");
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["M"] = M, Rcpp::_["Vt"] = Vt,
@@ -273,10 +266,9 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
       Rcpp::_["param.direct"] = param_rcpp_list(theta_direct),
       Rcpp::_["param.covariate.eta"] = param_rcpp_list(theta_conf_y),
-      Rcpp::_["param.covariate.delta"] = param_rcpp_list(theta_delta_rand_y),
       Rcpp::_["llik"] = llik1, Rcpp::_["bootstrap"] = boot,
-      Rcpp::_["finemap"] = finemap, Rcpp::_["resid"] = resid,
-      Rcpp::_["llik.resid"] = llik_resid);
+      Rcpp::_["finemap"] = finemap, Rcpp::_["rand.effect"] = rand_effect,
+      Rcpp::_["var.decomp"] = var_decomp);
 }
 
 ////////////////////////
@@ -369,25 +361,28 @@ Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
 template <typename... DATA>
 Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
                                std::tuple<DATA...>&& data_tup) {
-  Mat Y, M, D2, weight_y, Vt;
-  std::tie(Y, M, D2, weight_y, Vt) = data_tup;
+  Mat Y, M, D2, weight_y, U, Vt;
+  std::tie(Y, M, D2, weight_y, U, Vt) = data_tup;
 
-  // Estimate marginal model
-  Mat Id = Mat::Ones(Y.rows(), 1) / static_cast<Scalar>(Vt.cols());
-  zqtl_model_t<Mat> model_y(Y, D2);
-  auto theta_marg = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  ////////////////////////////////////////////////////////////////
+  // Estimate the marginal model
+  zqtl_model_t<Mat> model_marg(Y, D2);
+
+  auto theta_marg = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
-  auto theta_delta_rand_marg =
-      make_dense_spike_slab<Scalar>(Id.cols(), Y.cols(), opt);
-  auto delta_rand_marg = make_regression_eta(Id, Y, theta_delta_rand_marg);
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   // bootstrap parameters
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
-  auto theta_boot_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_boot_direct =
+      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
@@ -410,8 +405,9 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   std::mt19937 rng(opt.rseed());
 #endif
 
-  auto llik = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(eta_marg),
-                                 std::make_tuple(delta_rand_marg));
+  auto llik =
+      impl_fit_eta_delta(model_marg, opt, rng, std::make_tuple(eta_marg),
+                         std::make_tuple(delta_random));
 
   TLOG("Finished estimation of the marginal model\n\n");
 
@@ -425,7 +421,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   for (nboot = 0; nboot < opt.nboot(); ++nboot) {
     const Scalar denom = static_cast<Scalar>(nboot + 2.0);
     eta_marg.resolve();
-    boot_model.sample(eta_marg.sample(rng));
+    boot_model.sample(eta_marg.sample(rng), delta_random.sample(rng));
 
     impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
                        std::make_tuple(delta_boot_med));
@@ -460,6 +456,94 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
       Rcpp::_["nboot"] = nboot + 1, Rcpp::_["pval"] = PVAL, Rcpp::_["fd"] = FD,
       Rcpp::_["lodds.mean"] = LODDS.mean(), Rcpp::_["lodds.var"] = LODDS.var(),
       Rcpp::_["llik.marg"] = llik);
+}
+
+template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
+          typename RANDE, typename... DATA>
+Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
+                                 MEDIATED_E theta_med, RANDE& delta_rande,
+                                 const options_t& opt,
+                                 std::tuple<DATA...>&& data_tup) {
+  Mat Y, M, U, D2, Vt;
+  std::tie(Y, M, U, D2, Vt) = data_tup;
+
+  const Index _n = U.rows();
+  const Index _T = Y.cols();
+  const Scalar n = static_cast<Scalar>(U.rows());
+  const Index nboot = 500;
+  const Index _K = M.cols();
+
+#ifdef EIGEN_USE_MKL_ALL
+  VSLStreamStatePtr rng;
+  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
+  omp_set_num_threads(opt.nthread());
+#else
+  std::mt19937 rng(opt.rseed());
+#endif
+
+  // direct   : X * theta_direct
+  //            sqrt(n) U D Vt * theta_direct
+  //            sqrt(n) U D eta_direct
+  //
+  // mediated : X * inv(R) * mm.val * theta_med
+  //            X * V inv(D2) Vt * mm.val * theta_med
+  //            sqrt(n) U inv(D) * Vt * mm.val * theta_med
+  //            sqrt(n) U inv(D) * delta_med
+  //
+  // random   :
+  //            U inv(D) (D Ut * epsilon)
+  //            U inv(D) delta_rand
+
+  Mat snUD = std::sqrt(n) * U * D2.cwiseSqrt().asDiagonal();
+  Mat snUinvD = std::sqrt(n) * U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+  Mat UinvD = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+
+  eta_direct.resolve();
+  delta_med.resolve();
+  delta_rande.resolve();
+
+  Mat direct_ind(_n, _T);
+  Mat med_ind(_n, _T);
+  Mat rande_ind(_n, _T);
+
+  Mat temp(1, _T);
+  running_stat_t<Mat> direct_stat(1, _T);
+  running_stat_t<Mat> med_stat(1, _T);
+  running_stat_t<Mat> rande_stat(1, _T);
+
+  for (Index b = 0; b < nboot; ++b) {
+    direct_ind = snUD * eta_direct.sample(rng);
+    column_var(direct_ind, temp);
+    direct_stat(temp / n);
+
+    med_ind = snUinvD * delta_med.sample(rng);
+    column_var(med_ind, temp);
+    med_stat(temp / n);
+
+    rande_ind = UinvD * delta_rande.sample(rng);
+    column_var(rande_ind, temp);
+    rande_stat(temp / n);
+  }
+
+#ifdef EIGEN_USE_MKL_ALL
+  vslDeleteStream(&rng);
+#endif
+
+  Mat theta_med_mean = mean_param(theta_med);
+  Mat var_med_each(_K, _T);
+
+  for (Index k = 0; k < _K; ++k) {
+    column_var(snUinvD * (M.col(k) * theta_med_mean.row(k)), temp);
+    var_med_each.row(k) = temp / n;
+  }
+
+  return Rcpp::List::create(Rcpp::_["var.direct.mean"] = direct_stat.mean(),
+                            Rcpp::_["var.direct.var"] = direct_stat.var(),
+                            Rcpp::_["var.med.each"] = var_med_each,
+                            Rcpp::_["var.med.mean"] = med_stat.mean(),
+                            Rcpp::_["var.med.var"] = med_stat.var(),
+                            Rcpp::_["var.rand.mean"] = rande_stat.mean(),
+                            Rcpp::_["var.rand.var"] = rande_stat.var());
 }
 
 #endif

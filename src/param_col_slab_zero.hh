@@ -221,7 +221,7 @@ auto make_sparse_col_slab_zero(const Eigen::SparseMatrixBase<Derived>& A,
       (Dense::Ones(1, n1) * A).unaryExpr([](const auto& x) { return 1.0; });
 
   // just add epsilon * A to reserve spots
-  initialize(A, ret.beta, eps);
+  initialize(A, ret.beta, 0);
   initialize(A, ret.gamma_aux, eps);
   initialize(A, ret.grad_gamma_aux, eps);
 

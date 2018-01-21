@@ -94,10 +94,10 @@ RcppExport SEXP rcpp_take_svd_xtx(SEXP x_sexp, SEXP options_sexp) {
   options_t opt;
   set_options_from_list(options_list, opt);
   Rcpp::traits::input_parameter<const Mat>::type xx(x_sexp);
-  Mat D, Vt;
+  Mat U, D, Vt;
   const Mat& X = xx;
-  std::tie(D, Vt) = do_svd(X, opt);
-  return Rcpp::List::create(Rcpp::_["D"] = D, Rcpp::_["V.t"] = Vt);
+  std::tie(U, D, Vt) = do_svd(X, opt);
+  return Rcpp::List::create(Rcpp::_["D"] = D, Rcpp::_["U"] = U, Rcpp::_["V.t"] = Vt);
 
   END_RCPP
 }

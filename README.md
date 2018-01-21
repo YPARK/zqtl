@@ -32,9 +32,19 @@ options.
 
 Enjoy!
 
-## Usage
+## Release notes
 
-# Contact
+### v.1.0.0
+
+- Initial version migrated from MIT github
+
+### v.1.0.1
+
+- Variance calculation. See `note/variance.md` for details.
+- Spike-slab for the direct effect (works better)
+- Random effect component to account for uncertainty of individuals
+
+# Bug reports
 
 Yongjin Park `ypp@csail.mit.edu`
 

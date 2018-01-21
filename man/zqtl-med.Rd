@@ -14,7 +14,6 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
              X,                   # X matrix
              n = 0,               # sample size of effect
              n.med = 0,           # sample size of effect.m
-             ld = NULL,           # LD matrix
              C = NULL,            # covariate matrix
              options = list())
 }
@@ -26,7 +25,6 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
   \item{n}{sample size of actual data (will ignore if n = 0)}
   \item{n.med}{sample size of mediation data (will ignore if n = 0)}
   \item{X}{Design matrix (reference Ind x SNP)}
-  \item{ld}{LD (covariance) matrix (SNP x SNP)}
   \item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
 
   \item{factored}{Fit factored QTL model (default: FALSE)}
@@ -79,10 +77,10 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
 library(zqtl)
 
 n <- 1000
-p <- 1000
+p <- 2000
 n.genes <- 20
-h2 <- 0.4
-n.causal.direct <- 5
+h2 <- 0.25
+n.causal.direct <- 4
 n.causal.qtl <- 3
 n.causal.gene <- 2
 
@@ -93,19 +91,20 @@ X.raw <- sapply(1:p, function(j) {
     rbinom(n, 2, f)
 })
 
-X <- as.matrix(apply(X.raw, 2, function(x) x - mean(x, na.rm = TRUE)))
+X <- scale(X.raw)
 
 c.qtls <- matrix(sapply(1:n.genes, function(j) matrix(sample(p, n.causal.qtl))), nrow = n.causal.qtl)
 
-theta.snp.gene <- matrix(rnorm(n.causal.qtl * n.genes), n.causal.qtl, n.genes)
+theta.snp.gene <- matrix(rnorm(n.causal.qtl * n.genes), n.causal.qtl, n.genes) / n.causal.qtl
 
 gene.expr <- lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] \%*\% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
+
 gene.expr <- do.call(cbind, gene.expr)
 
 theta.med <- sample(c(-1,1), n.causal.gene, TRUE)
 
 causal.direct <- sample(p, n.causal.direct)
-theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1)
+theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direct
 
 y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
 y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
@@ -113,23 +112,33 @@ y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
 y <- y + rnorm(n) * sqrt(var(y) * (1/h2 - 1))
 
 ################################################################
-z.xy.tab <- as.matrix(t(apply(X, 2, function(x) coefficients(summary(lm(y ~ x)))[2, 1:2])))
-xy.beta <- z.xy.tab[, 1, drop = FALSE]
-xy.beta.se <- z.xy.tab[, 2, drop = FALSE]
-
-xg.beta <- matrix(NA, nrow = p, ncol = n.genes)
-xg.beta.se <- matrix(NA, nrow = p, ncol = n.genes)
-
-for(g in 1:n.genes) {
-    temp <- t(apply(X, 2, function(x) coefficients(summary(lm(gene.expr[, g] ~ x)))[2, 1:2]))
-    xg.beta[, g] <- temp[, 1]
-    xg.beta.se[, g] <- temp[, 2]
+fast.cov <- function(x, y) {
+    n.obs <- crossprod(!is.na(x), !is.na(y))
+    ret <- crossprod(replace(x, is.na(x), 0),
+                     replace(y, is.na(y), 0)) / n.obs
+    return(ret)
 }
 
-vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2, decay = - 0.01, gammax = 1e4,
-               ld.matrix = FALSE, do.stdize = FALSE, pi = -0, tau = -4, do.hyper = FALSE,
+fast.z.cov <- function(x, y) {
+    n.obs <- crossprod(!is.na(x), !is.na(y))
+    ret <- crossprod(replace(x, is.na(x), 0),
+                     replace(y, is.na(y), 0)) / sqrt(n.obs)
+    return(ret)
+}
+
+xy.beta <- fast.cov(X, y)
+z.xy <- fast.z.cov(X, y)
+
+xy.beta.se <- xy.beta / z.xy
+
+xg.beta <- fast.cov(X, gene.expr)
+z.xg <- fast.z.cov(X, gene.expr)
+xg.beta.se <- xg.beta / z.xg
+
+vb.opt <- list(nsample = 3, vbiter = 20000, rate = 1e-2, decay = - 1e-3, gammax = 1e2,
+               do.stdize = TRUE, pi = -2, tau = -8, do.hyper = FALSE, nboot = 0,
                eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
-               print.interv = 1000, weight.y = FALSE)
+               weight.y = TRUE, out.resid = TRUE, print.interv = 1000)
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
@@ -138,7 +147,26 @@ med.out <- fit.med.zqtl(effect = xy.beta,
                         X = X, 
                         options = vb.opt)
 
+par(mfrow = c(2,1))
+barplot(t(med.out$param.mediated$lodds))
+plot(med.out$param.mediated$theta)
 
+z.med <- t(med.out$Vt) \%*\% med.out$M \%*\% med.out$param.mediated$theta
+
+y.dir <- X \%*\% med.out$param.direct$theta
+z.dir <- fast.z.cov(X, y.dir)
+
+plot(z.xy, z.med, xlab = 'Observed', ylab = 'Predicted by mediation')
+     
+plot(z.xy, z.dir, xlab = 'Observed', ylab = 'Predicted by direct')
+
+plot(y, med.out$resid$theta)
+
+plot(y, X \%*\% med.out$param.direct$theta)
+
+plot(med.out$param.direct$lodds)
+
+print(med.out$var.decomp)
 
 }
 \details{}

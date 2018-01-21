@@ -2,7 +2,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.se,           # marginal se : y ~ x
                      X,                   # X matrix
                      n = 0,               # sample size
-                     ld = NULL,           # LD matrix
                      C = NULL,            # covariate matrix
                      factored = FALSE,    # Factored multiple traits
                      options = list()) {
@@ -32,7 +31,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                             nsample = 10,
                             vbiter = 2000,
                             verbose = TRUE,
-                            ld.matrix = FALSE,
                             do.stdize = TRUE,
                             min.se = 1e-4,
                             k = 1)
@@ -41,12 +39,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
         options <- default.options
     }
     options <- c(options, list(sample.size = n))
-
-    if(!is.null(ld)) {
-        options[['ld.matrix']] <- TRUE
-        cat('Overriding X with LD matrix\n')
-        X <- ld
-    }
 
     mediated <- FALSE
     joint.training <- FALSE
@@ -66,7 +58,6 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          X,                   # X matrix
                          n = 0,               # sample size of effect
                          n.med = 0,           # sample size of effect.m
-                         ld = NULL,           # LD matrix
                          C = NULL,            # covariate matrix
                          options = list()) {
 
@@ -95,7 +86,6 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                             nsample = 10,
                             vbiter = 2000,
                             verbose = TRUE,
-                            ld.matrix = FALSE,
                             do.stdize = TRUE,
                             min.se = 1e-4,
                             k = 1)
@@ -104,12 +94,6 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
         options <- default.options
     }
     options <- c(options, list(sample.size = n, med.sample.size = n.med))
-
-    if(!is.null(ld)) {
-        options[['ld.matrix']] <- TRUE
-        cat('Overriding X with LD matrix\n')
-        X <- ld
-    }
 
     stopifnot(dim(effect.m)[1] == dim(effect.m.se)[1])
     stopifnot(dim(effect.m)[2] == dim(effect.m.se)[2])

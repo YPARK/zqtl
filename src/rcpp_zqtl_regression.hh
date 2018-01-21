@@ -3,8 +3,8 @@
 
 Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
                          const Mat& X, const Mat& C, const options_t& opt) {
-  if (opt.with_ld_matrix() && X.cols() != X.rows()) {
-    ELOG("X is not a square LD matrix");
+  if (opt.with_ld_matrix()) {
+    ELOG("Deprecated");
     return Rcpp::List::create();
   }
 
@@ -23,13 +23,10 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     return Rcpp::List::create();
   }
 
-  Mat D2, Vt;
-  if (opt.with_ld_matrix()) {
-    std::tie(D2, Vt) = do_eigen_decomp(X, opt);
-  } else {
-    std::tie(D2, Vt) = do_svd(X, opt);
-    D2 = D2.cwiseProduct(D2);
-  }
+  Mat U, D2, Vt;
+  std::tie(U, D2, Vt) = do_svd(X, opt);
+  D2 = D2.cwiseProduct(D2);
+  TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
   Mat effect_z, weight;
@@ -80,9 +77,11 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 
   // V' z ~ N(V' (w .* r) + ..., D^2)
   if (opt.out_resid()) {
-    auto theta_resid =
-        make_dense_slab<Scalar>(effect_z.rows(), effect_z.cols(), opt);
-    auto delta_resid = make_regression_eta(Vt, Y, theta_resid);
+    // delta_u = D t(U) epsilon
+    auto epsilon_resid = make_dense_col_slab<Scalar>(U.rows(), Y.cols(), opt);
+
+    Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+    auto delta_resid = make_regression_eta(DUt, Y, epsilon_resid);
 
     dummy_eta_t dummy;
     eta.resolve();
@@ -93,7 +92,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_rand));
 
-    resid = param_rcpp_list(theta_resid);
+    resid = param_rcpp_list(epsilon_resid);
     TLOG("Calibrated residual effect");
   }
 
@@ -113,8 +112,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 // Factored QTL modeling
 Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
                              const Mat& X, const Mat& C, const options_t& opt) {
-  if (opt.with_ld_matrix() && X.cols() != X.rows()) {
-    ELOG("X is not a square LD matrix");
+  if (opt.with_ld_matrix()) {
+    ELOG("Deprecated: longer use full LD matrix.");
     return Rcpp::List::create();
   }
 
@@ -128,13 +127,10 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     return Rcpp::List::create();
   }
 
-  Mat D2, Vt;
-  if (opt.with_ld_matrix()) {
-    std::tie(D2, Vt) = do_eigen_decomp(X, opt);
-  } else {
-    std::tie(D2, Vt) = do_svd(X, opt);
-    D2 = D2.cwiseProduct(D2);
-  }
+  Mat U, D2, Vt;
+  std::tie(U, D2, Vt) = do_svd(X, opt);
+  D2 = D2.cwiseProduct(D2);
+  TLOG("Finished SVD of genotype matrix");
 
   TLOG("Finished eigen-decomposition");
 
@@ -186,14 +182,17 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
                                  std::make_tuple(delta_rand));
 
+  // Residuals to capture discrepancy in the reference individuals
   auto resid = Rcpp::List::create();
   Mat llik_resid;
 
   // V' z ~ N(V' r + ..., D^2)
   if (opt.out_resid()) {
-    auto theta_resid =
-        make_dense_slab<Scalar>(effect_z.rows(), effect_z.cols(), opt);
-    auto delta_resid = make_regression_eta(Vt, Y, theta_resid);
+    // delta_u = D t(U) epsilon
+    auto epsilon_resid = make_dense_col_slab<Scalar>(U.rows(), Y.cols(), opt);
+
+    Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+    auto delta_resid = make_regression_eta(DUt, Y, epsilon_resid);
 
     dummy_eta_t dummy;
     eta.resolve();
@@ -204,7 +203,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_rand));
 
-    resid = param_rcpp_list(theta_resid);
+    resid = param_rcpp_list(epsilon_resid);
     TLOG("Calibrated residual effect");
   }
 
