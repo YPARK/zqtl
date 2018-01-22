@@ -154,8 +154,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
   // delta_u = D t(U) epsilon
-  auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
 
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
@@ -372,8 +371,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
-  auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 

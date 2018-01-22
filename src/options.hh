@@ -38,8 +38,8 @@ struct options_t {
     MED_FINEMAP = false;
     MF_SVD_INIT = true;
 
-    WEIGHT_M = true;
-    WEIGHT_Y = true;
+    WEIGHT_M = false;
+    WEIGHT_Y = false;
     PRETRAIN = false;
     DO_HYPER = false;
     OUT_RESID = false;
