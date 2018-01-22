@@ -159,8 +159,10 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.WEIGHT_M = Rcpp::as<bool>(_list["weight.m"]);
   if (_list.containsElementNamed("weight.y"))
     opt.WEIGHT_Y = Rcpp::as<bool>(_list["weight.y"]);
-  if (_list.containsElementNamed("weight"))
+  if (_list.containsElementNamed("weight")) {
     opt.WEIGHT_Y = Rcpp::as<bool>(_list["weight"]);
+    opt.WEIGHT_M = Rcpp::as<bool>(_list["weight"]);
+  }
   if (_list.containsElementNamed("pretrain"))
     opt.PRETRAIN = Rcpp::as<bool>(_list["pretrain"]);
   if (_list.containsElementNamed("do.hyper"))
