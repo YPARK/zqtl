@@ -89,7 +89,7 @@ theta <- matrix(rnorm(length(c.snps)), length(c.snps), 1)
 
 y <- X[, c.snps, drop = FALSE] \%*\% theta
 y <- y + X \%*\% rnorm(p)/p * 10
-y <- y + rnorm(n) * sqrt(var(y) * (1/h2 - 1))
+y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
 effect.tab <- as.matrix(t(apply(X, 2, function(x) coefficients(summary(lm(y ~ x)))[2, 1:2])))
 

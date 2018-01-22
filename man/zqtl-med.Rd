@@ -109,7 +109,7 @@ theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direc
 y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
 y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
 
-y <- y + rnorm(n) * sqrt(var(y) * (1/h2 - 1))
+y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
 ################################################################
 fast.cov <- function(x, y) {
@@ -138,7 +138,7 @@ xg.beta.se <- xg.beta / z.xg
 vb.opt <- list(nsample = 3, vbiter = 20000, rate = 1e-2, decay = - 1e-3, gammax = 1e2,
                do.stdize = TRUE, pi = -2, tau = -8, do.hyper = FALSE, nboot = 0,
                eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
-               weight.y = TRUE, out.resid = TRUE, print.interv = 1000)
+               print.interv = 1000)
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
@@ -159,8 +159,6 @@ z.dir <- fast.z.cov(X, y.dir)
 plot(z.xy, z.med, xlab = 'Observed', ylab = 'Predicted by mediation')
      
 plot(z.xy, z.dir, xlab = 'Observed', ylab = 'Predicted by direct')
-
-plot(y, med.out$resid$theta)
 
 plot(y, X \%*\% med.out$param.direct$theta)
 
