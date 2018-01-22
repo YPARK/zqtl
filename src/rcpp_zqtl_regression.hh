@@ -35,8 +35,6 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       preprocess_effect(_effect, _effect_se, sample_size);
 
   Mat Y = Vt * effect_z;
-  TLOG("Finished eigen-decomposition");
-
   zqtl_model_t<Mat> model(Y, D2);
 
   TLOG("Constructed zqtl model");
@@ -52,11 +50,10 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto eta = make_regression_eta(Vt, Y, theta);
   if (opt.weight_y()) eta.set_weight(weight);
 
-  // delta offset
-  Mat Id = Mat::Ones(Y.rows(), 1) / static_cast<Scalar>(Vt.cols());
-  auto theta_delta_rand =
-      make_dense_spike_slab<Scalar>(Id.cols(), Y.cols(), opt);
-  auto delta_rand = make_regression_eta(Id, Y, theta_delta_rand);
+  // random effect
+  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   TLOG("Constructed effects");
 
@@ -70,42 +67,19 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 #endif
 
   auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
-                                 std::make_tuple(delta_rand));
-
-  auto resid = Rcpp::List::create();
-  Mat llik_resid;
-
-  // V' z ~ N(V' (w .* r) + ..., D^2)
-  if (opt.out_resid()) {
-    // delta_u = D t(U) epsilon
-    auto epsilon_resid = make_dense_col_slab<Scalar>(U.rows(), Y.cols(), opt);
-
-    Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-    auto delta_resid = make_regression_eta(DUt, Y, epsilon_resid);
-
-    dummy_eta_t dummy;
-    eta.resolve();
-    eta_c.resolve();
-    delta_rand.resolve();
-
-    llik_resid = impl_fit_eta_delta(
-        model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(eta, eta_c), std::make_tuple(delta_rand));
-
-    resid = param_rcpp_list(epsilon_resid);
-    TLOG("Calibrated residual effect");
-  }
+                                 std::make_tuple(delta_random));
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
 #endif
 
   return Rcpp::List::create(
-      Rcpp::_["Y"] = Y, Rcpp::_["Vt"] = Vt, Rcpp::_["D2"] = D2,
-      Rcpp::_["S.inv"] = weight, Rcpp::_["param"] = param_rcpp_list(theta),
-      Rcpp::_["delta"] = param_rcpp_list(theta_delta_rand),
-      Rcpp::_["conf"] = param_rcpp_list(theta_c), Rcpp::_["resid"] = resid,
-      Rcpp::_["llik"] = llik, Rcpp::_["llik.resid"] = llik_resid);
+      Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
+      Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
+      Rcpp::_["param"] = param_rcpp_list(theta),
+      Rcpp::_["conf"] = param_rcpp_list(theta_c),
+      Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random),
+      Rcpp::_["llik"] = llik);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -131,8 +105,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   std::tie(U, D2, Vt) = do_svd(X, opt);
   D2 = D2.cwiseProduct(D2);
   TLOG("Finished SVD of genotype matrix");
-
-  TLOG("Finished eigen-decomposition");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
   Mat effect_z, weight;
@@ -164,11 +136,10 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     eta.jitter(opt.jitter(), rng);
   }
 
-  // delta offset
-  Mat Id = Mat::Ones(Y.rows(), 1) / static_cast<Scalar>(Vt.cols());
-  auto theta_delta_rand =
-      make_dense_spike_slab<Scalar>(Id.cols(), Y.cols(), opt);
-  auto delta_rand = make_regression_eta(Id, Y, theta_delta_rand);
+  // random effect
+  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -180,45 +151,20 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 #endif
 
   auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
-                                 std::make_tuple(delta_rand));
-
-  // Residuals to capture discrepancy in the reference individuals
-  auto resid = Rcpp::List::create();
-  Mat llik_resid;
-
-  // V' z ~ N(V' r + ..., D^2)
-  if (opt.out_resid()) {
-    // delta_u = D t(U) epsilon
-    auto epsilon_resid = make_dense_col_slab<Scalar>(U.rows(), Y.cols(), opt);
-
-    Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-    auto delta_resid = make_regression_eta(DUt, Y, epsilon_resid);
-
-    dummy_eta_t dummy;
-    eta.resolve();
-    eta_c.resolve();
-    delta_rand.resolve();
-
-    llik_resid = impl_fit_eta_delta(
-        model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(eta, eta_c), std::make_tuple(delta_rand));
-
-    resid = param_rcpp_list(epsilon_resid);
-    TLOG("Calibrated residual effect");
-  }
+                                 std::make_tuple(delta_random));
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
 #endif
 
   return Rcpp::List::create(
-      Rcpp::_["Y"] = Y, Rcpp::_["Vt"] = Vt, Rcpp::_["D2"] = D2,
-      Rcpp::_["S.inv"] = weight,
+      Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
+      Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param.left"] = param_rcpp_list(theta_left),
       Rcpp::_["param.right"] = param_rcpp_list(theta_right),
-      Rcpp::_["delta"] = param_rcpp_list(theta_delta_rand),
-      Rcpp::_["conf"] = param_rcpp_list(theta_c), Rcpp::_["resid"] = resid,
-      Rcpp::_["llik"] = llik, Rcpp::_["llik.resid"] = llik_resid);
+      Rcpp::_["conf"] = param_rcpp_list(theta_c),
+      Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random),
+      Rcpp::_["llik"] = llik);
 }
 
 #endif

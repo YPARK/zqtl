@@ -259,7 +259,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   TLOG("Finished variance decomposition\n\n");
 
   return Rcpp::List::create(
-      Rcpp::_["Y"] = Y, Rcpp::_["M"] = M, Rcpp::_["Vt"] = Vt,
+      Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["M"] = M, Rcpp::_["Vt"] = Vt,
       Rcpp::_["S.inv.y"] = weight_y, Rcpp::_["S.inv.m"] = weight_m,
       Rcpp::_["D2"] = D2,
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
