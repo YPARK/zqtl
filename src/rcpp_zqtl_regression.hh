@@ -42,7 +42,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   // confounder
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
   Mat VtC = Vt * C;
-  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
   // mean effect size --> can be sparse matrix
@@ -120,7 +120,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 
   // confounder
   Mat VtC = Vt * C;
-  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
   // factored parameters

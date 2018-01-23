@@ -144,12 +144,12 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   // confounder
   Mat VtC = Vt * conf.val;
-  auto theta_conf_y = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
   // auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-  auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
@@ -205,7 +205,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       if (opt.weight_y()) eta_med.set_weight_pt(weight_y);
 
       auto theta_conf_m =
-          make_dense_spike_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
+          make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
       auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
 
       dummy_eta_t dummy;
@@ -367,7 +367,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   // Estimate the marginal model
   zqtl_model_t<Mat> model_marg(Y, D2);
 
-  auto theta_marg = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_marg = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
@@ -380,7 +380,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
   auto theta_boot_direct =
-      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+      make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
