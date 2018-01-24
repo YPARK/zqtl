@@ -146,17 +146,18 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   //                   M = D^2 t(V) inv(S) S1 (V1/D1) t(V1/D1) * Z_alpha
 
   Mat Vt_m_d = D_m.cwiseInverse().asDiagonal() * Vt_m;
-  Mat VtZ = Vt_m_d * effect_m_z;
-  Mat invS_S1 = weight_y.asDiagonal() * effect_sqrt_m;  // p x K
-  Mat M(Vt.rows(), effect_m_z.cols());
 
-  // un-normalized version:
-  // M = D2.asDiagonal() * Vt * Vt_m_d.transpose() * Vt_m_d * effect_m_z;
-  Mat stuff(Vt.rows(), 1);
-  for (Index k = 0; k < effect_m_z.cols(); ++k) {
-    stuff = Vt_m_d.transpose() * VtZ.col(k);
-    M.col(k) = D2.asDiagonal() * Vt * stuff.cwiseProduct(invS_S1.col(k));
-  }
+  // un-normalized version is more stable
+  Mat M = D2.asDiagonal() * Vt * Vt_m_d.transpose() * Vt_m_d * effect_m_z;
+
+  // Mat M(Vt.rows(), effect_m_z.cols());
+  // Mat VtZ = Vt_m_d * effect_m_z;
+  // Mat invS_S1 = weight_y.asDiagonal() * effect_sqrt_m;  // p x K
+  // Mat stuff(Vt.rows(), 1);
+  // for (Index k = 0; k < effect_m_z.cols(); ++k) {
+  //   stuff = Vt_m_d.transpose() * VtZ.col(k);
+  //   M.col(k) = D2.asDiagonal() * Vt * stuff.cwiseProduct(invS_S1.col(k));
+  // }
 
   ////////////////////////////////////////////////////////////////
   // construct delta_med to capture overall (potential) mediation effect
