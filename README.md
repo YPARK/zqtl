@@ -34,15 +34,15 @@ Enjoy!
 
 ## Release notes
 
-### v.1.0.0
-
-- Initial version migrated from MIT github
-
 ### v.1.0.1
 
 - Variance calculation. See `note/variance.md` for details.
-- Spike-slab for the direct effect (works better)
 - Random effect component to account for uncertainty of individuals
+- Removing LD-structure bias between mediation QTL and GWAS cohorts
+
+### v.1.0.0
+
+- Initial version migrated from MIT github
 
 # Bug reports
 

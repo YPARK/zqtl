@@ -26,8 +26,13 @@ struct conf_mat_t {
   const Mat& val;
 };
 
-struct geno_mat_t {
-  explicit geno_mat_t(const Mat& _val) : val(_val) {}
+struct geno_y_mat_t {
+  explicit geno_y_mat_t(const Mat& _val) : val(_val) {}
+  const Mat& val;
+};
+
+struct geno_m_mat_t {
+  explicit geno_m_mat_t(const Mat& _val) : val(_val) {}
   const Mat& val;
 };
 
@@ -59,7 +64,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                              const effect_y_se_mat_t& yy_se,  // z_y_se
                              const effect_m_mat_t& mm,        // z_m
                              const effect_m_se_mat_t& mm_se,  // z_m_se
-                             const geno_mat_t& geno,          // genotype or ld
+                             const geno_y_mat_t& geno_y,      // genotype_y
+                             const geno_m_mat_t& geno_m,      // genotype_m
                              const conf_mat_t& conf,          // snp confounder
                              const options_t& opt) {
   //////////////////////
@@ -100,42 +106,57 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   std::mt19937 rng(opt.rseed());
 #endif
 
+  const Scalar n = static_cast<Scalar>(opt.sample_size());
+  const Scalar n1 = static_cast<Scalar>(opt.m_sample_size());
+
+  TLOG("GWAS sample size = " << opt.sample_size());
+  TLOG("Mediator sample size = " << opt.m_sample_size());
+
+  Mat effect_y_z, effect_sqrt_y, weight_y;
+  std::tie(effect_y_z, effect_sqrt_y, weight_y) =
+      preprocess_effect(yy.val, yy_se.val, n);
+
+  Mat effect_m_z, effect_sqrt_m, weight_m;
+  std::tie(effect_m_z, effect_sqrt_m, weight_m) =
+      preprocess_effect(mm.val, mm_se.val, n1);
+
   /////////////////////////////////
   // Pre-process genotype matrix //
   /////////////////////////////////
 
-  Mat U, D2, Vt;
-  std::tie(U, D2, Vt) = do_svd(geno.val, opt);
-  D2 = D2.cwiseProduct(D2);
+  Mat U, D, Vt;
+  std::tie(U, D, Vt) = do_svd(geno_y.val, opt);
+  Mat D2 = D.cwiseProduct(D);
+
+  Mat U_m, D_m, Vt_m;
+  std::tie(U_m, D_m, Vt_m) = do_svd(geno_m.val, opt);
+
   TLOG("Finished SVD of genotype matrix");
 
-  TLOG("GWAS sample size = " << opt.sample_size());
-
-  const Scalar n = static_cast<Scalar>(opt.sample_size());
-  const Scalar n0 = static_cast<Scalar>(opt.m_sample_size());
-
-  Mat effect_y_z, weight_y;
-  std::tie(effect_y_z, weight_y) = preprocess_effect(yy.val, yy_se.val, n);
-
   Mat Y = Vt * effect_y_z;
-
-  TLOG("Mediator sample size = " << opt.m_sample_size());
-
-  Mat effect_m_z, weight_m;
-  std::tie(effect_m_z, weight_m) = preprocess_effect(mm.val, mm_se.val, n0);
-
-  /////////////////////
-  // Mediation model //
-  /////////////////////
-
-  Mat M = Vt * effect_m_z;
-
-  // if (n0 > 0.0 && n > 0.0) {
-  //   const Scalar scale_factor = std::sqrt(n0 / n);
-  //   M = M * scale_factor;
-  // }
-
   zqtl_model_t<Mat> model_y(Y, D2);
+
+  // alpha.uni           = S1 R1 inv(S1) alpha
+  //
+  // alpha               = S1 inv(R1) inv(S1) alpha.uni
+  //                     = S1 V1 inv(D1^2) t(V1) inv(S1) alpha.uni
+  //
+  // t(V) R inv(S) alpha = t(V) V D^2 t(V) inv(S) alpha
+  //                     = D^2 t(V) (S1/S) V1 inv(D1^2) t(V1) inv(S1) alpha.uni
+  //                   M = D^2 t(V) inv(S) S1 (V1/D1) t(V1/D1) * Z_alpha
+
+  Mat Vt_m_d = D_m.cwiseInverse().asDiagonal() * Vt_m;
+  Mat VtZ = Vt_m_d * effect_m_z;
+  Mat invS_S1 = weight_y.asDiagonal() * effect_sqrt_m;  // p x K
+  Mat M(Vt.rows(), effect_m_z.cols());
+
+  // un-normalized version:
+  // M = D2.asDiagonal() * Vt * Vt_m_d.transpose() * Vt_m_d * effect_m_z;
+  Mat stuff(Vt.rows(), 1);
+  for (Index k = 0; k < effect_m_z.cols(); ++k) {
+    stuff = Vt_m_d.transpose() * VtZ.col(k);
+    M.col(k) = D2.asDiagonal() * Vt * stuff.cwiseProduct(invS_S1.col(k));
+  }
 
   ////////////////////////////////////////////////////////////////
   // construct delta_med to capture overall (potential) mediation effect
@@ -148,13 +169,13 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
-  // auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
   // delta_u = D t(U) epsilon
-  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
 
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
@@ -167,6 +188,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                                   std::make_tuple(delta_med, delta_random));
 
   Rcpp::List rand_effect = param_rcpp_list(epsilon_random);
+
   Rcpp::List finemap = Rcpp::List::create();
 
   // Fine-mapping QTLs
@@ -204,8 +226,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       if (opt.weight_m()) eta_med.set_weight_pk(weight_m_sub);
       if (opt.weight_y()) eta_med.set_weight_pt(weight_y);
 
-      auto theta_conf_m =
-          make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
+      auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
       auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
 
       dummy_eta_t dummy;
@@ -379,8 +400,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
-  auto theta_boot_direct =
-      make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_boot_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 

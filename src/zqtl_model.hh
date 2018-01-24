@@ -105,7 +105,7 @@ struct zqtl_model_t {
 
   struct add_vmin_op_t {
     inline const Scalar operator()(const Scalar& v) const { return v + vmin; }
-    static constexpr Scalar vmin = 1e-4;
+    static constexpr Scalar vmin = 1e-8;
   } add_vmin_op;
 
   std::mt19937 rng;

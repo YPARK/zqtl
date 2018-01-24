@@ -11,7 +11,8 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
              effect.se,           # marginal se : y ~ x
              effect.m,            # marginal : m ~ x
              effect.m.se,         # marginal se : m ~ x
-             X,                   # X matrix
+             X.gwas,              # X matrix for GWAS
+             X.med,               # X matrix for mediation
              n = 0,               # sample size of effect
              n.med = 0,           # sample size of effect.m
              C = NULL,            # covariate matrix
@@ -24,12 +25,11 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
   \item{effect.m.se}{SE of the marginal genetic effects (SNP x mediator)}
   \item{n}{sample size of actual data (will ignore if n = 0)}
   \item{n.med}{sample size of mediation data (will ignore if n = 0)}
-  \item{X}{Design matrix (reference Ind x SNP)}
+  \item{X.gwas}{Design matrix (reference ind.gwas x SNP)}
+  \item{X.med}{Design matrix (reference ind.med x SNP)}
   \item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
 
-  \item{factored}{Fit factored QTL model (default: FALSE)}
   \item{options}{A list of inference/optimization options.}
-
   \item{do.hyper}{Hyper parameter tunign (default: FALSE)}
   \item{tau}{Fixed value of tau}
   \item{pi}{Fixed value of pi}
@@ -45,7 +45,6 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
   \item{nsample}{Number of stochastic samples (default: 10)}
   \item{vbiter}{Number of variational Bayes iterations (default: 2000)}
   \item{verbose}{Verbosity (default: TRUE)}
-  \item{k}{Rank of the factored model (default: 1)}
 
   \item{nboot}{Number of bootstrap iterations (default: 100)}
 
@@ -79,7 +78,7 @@ library(zqtl)
 n <- 1000
 p <- 2000
 n.genes <- 20
-h2 <- 0.25
+h2 <- 0.4
 n.causal.direct <- 4
 n.causal.qtl <- 3
 n.causal.gene <- 2
@@ -131,11 +130,13 @@ z.xy <- fast.z.cov(X, y)
 
 xy.beta.se <- xy.beta / z.xy
 
-xg.beta <- fast.cov(X, gene.expr)
-z.xg <- fast.z.cov(X, gene.expr)
+.idx <- sample(n, 200)
+X.med <- X[.idx, ] ## smaller sample in mediation QTL
+xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
+z.xg <- fast.z.cov(X.med, gene.expr[.idx, ])
 xg.beta.se <- xg.beta / z.xg
 
-vb.opt <- list(nsample = 3, vbiter = 20000, rate = 1e-2, decay = - 1e-3, gammax = 1e2,
+vb.opt <- list(nsample = 10, vbiter = 10000, rate = 1e-2, decay = - 1e-3, gammax = 1e4,
                do.stdize = TRUE, pi = -2, tau = -8, do.hyper = FALSE, nboot = 0,
                eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
                print.interv = 1000)
@@ -144,25 +145,13 @@ med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
                         effect.m = xg.beta,
                         effect.m.se = xg.beta.se,
-                        X = X, 
+                        X.gwas = X, 
+                        X.med = X.med, 
                         options = vb.opt)
 
 par(mfrow = c(2,1))
 barplot(t(med.out$param.mediated$lodds))
 plot(med.out$param.mediated$theta)
-
-z.med <- t(med.out$Vt) \%*\% med.out$M \%*\% med.out$param.mediated$theta
-
-y.dir <- X \%*\% med.out$param.direct$theta
-z.dir <- fast.z.cov(X, y.dir)
-
-plot(z.xy, z.med, xlab = 'Observed', ylab = 'Predicted by mediation')
-     
-plot(z.xy, z.dir, xlab = 'Observed', ylab = 'Predicted by direct')
-
-plot(y, X \%*\% med.out$param.direct$theta)
-
-plot(med.out$param.direct$lodds)
 
 print(med.out$var.decomp)
 

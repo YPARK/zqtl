@@ -18,8 +18,9 @@ RcppExport SEXP rcpp_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
 
 RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                               SEXP qtl_sexp, SEXP qtl_se_sexp,        // QTL
-                              SEXP x_sexp,  // genotype
-                              SEXP c_sexp,  // covariates
+                              SEXP x_gwas_sexp,  // genotype for gwas
+                              SEXP x_med_sexp,   // genotype for mediation
+                              SEXP c_sexp,       // covariates
                               SEXP options_sexp) {
   BEGIN_RCPP
 
@@ -28,7 +29,8 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
   Rcpp::traits::input_parameter<const Mat>::type qtl(qtl_sexp);
   Rcpp::traits::input_parameter<const Mat>::type qtl_se(qtl_se_sexp);
 
-  Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Xgwas(x_gwas_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Xmed(x_med_sexp);
   Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
   Rcpp::List options_list(options_sexp);
 
@@ -38,7 +40,8 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                                       effect_y_se_mat_t(effect_se),  //
                                       effect_m_mat_t(qtl),           //
                                       effect_m_se_mat_t(qtl_se),     //
-                                      geno_mat_t(X),                 //
+                                      geno_y_mat_t(Xgwas),           //
+                                      geno_m_mat_t(Xmed),            //
                                       conf_mat_t(C),                 //
                                       opt));
   END_RCPP
@@ -97,7 +100,8 @@ RcppExport SEXP rcpp_take_svd_xtx(SEXP x_sexp, SEXP options_sexp) {
   Mat U, D, Vt;
   const Mat& X = xx;
   std::tie(U, D, Vt) = do_svd(X, opt);
-  return Rcpp::List::create(Rcpp::_["D"] = D, Rcpp::_["U"] = U, Rcpp::_["V.t"] = Vt);
+  return Rcpp::List::create(Rcpp::_["D"] = D, Rcpp::_["U"] = U,
+                            Rcpp::_["V.t"] = Vt);
 
   END_RCPP
 }

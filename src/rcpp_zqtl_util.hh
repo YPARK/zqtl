@@ -223,7 +223,7 @@ Mat calc_effect_sqrt(const Eigen::MatrixBase<Derived>& effect,
 }
 
 template <typename Derived>
-std::tuple<Mat, Mat> preprocess_effect(
+std::tuple<Mat, Mat, Mat> preprocess_effect(
     const Eigen::MatrixBase<Derived>& _effect,
     const Eigen::MatrixBase<Derived>& _effect_se, const Scalar sample_size) {
   // 1. characterize NaN or infinite elements
@@ -264,7 +264,7 @@ std::tuple<Mat, Mat> preprocess_effect(
   Mat effect_z =
       effect.binaryExpr(effect_sqrt, safe_division).cwiseProduct(obs_mat);
 
-  return std::make_tuple(effect_z, weight);
+  return std::make_tuple(effect_z, effect_sqrt, weight);
 }
 
 ////////////////////////////////////////////////////////////////

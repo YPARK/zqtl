@@ -29,9 +29,9 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
-  Mat effect_z, weight;
+  Mat effect_z, effect_sqrt, weight;
 
-  std::tie(effect_z, weight) =
+  std::tie(effect_z, effect_sqrt, weight) =
       preprocess_effect(_effect, _effect_se, sample_size);
 
   Mat Y = Vt * effect_z;
@@ -107,9 +107,9 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
-  Mat effect_z, weight;
+  Mat effect_z, effect_sqrt, weight;
 
-  std::tie(effect_z, weight) =
+  std::tie(effect_z, effect_sqrt, weight) =
       preprocess_effect(_effect, _effect_se, sample_size);
 
   Mat Y = Vt * effect_z;

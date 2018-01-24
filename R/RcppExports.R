@@ -40,9 +40,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     }
     options <- c(options, list(sample.size = n))
 
-    mediated <- FALSE
-    joint.training <- FALSE
-
     ## call R/C++ functions ##
     if(factored) {
         return(.Call('rcpp_fac_zqtl', effect, effect.se, X, C, options, PACKAGE = 'zqtl'))
@@ -55,7 +52,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          effect.se,           # marginal se : y ~ x
                          effect.m,            # marginal : m ~ x
                          effect.m.se,         # marginal se : m ~ x
-                         X,                   # X matrix
+                         X.gwas,              # X matrix for GWAS
+                         X.med = NULL,        # X matrix for mediation
                          n = 0,               # sample size of effect
                          n.med = 0,           # sample size of effect.m
                          C = NULL,            # covariate matrix
@@ -70,6 +68,11 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     if(is.null(C)) {
         p <- dim(effect)[1]
         C <- matrix(1/p, p, 1)
+    }
+
+    ## X.gwas == X.med
+    if(is.null(X.med)) {
+        X.gwas <- X.med
     }
 
     stopifnot(is.matrix(C))
@@ -104,7 +107,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                  effect.se,
                  effect.m,
                  effect.m.se,
-                 X,
+                 X.gwas,
+                 X.med,
                  C,
                  options)
 }
