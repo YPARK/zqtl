@@ -169,13 +169,13 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
-  auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
   // delta_u = D t(U) epsilon
   auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+      make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
 
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
