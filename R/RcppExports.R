@@ -62,7 +62,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
     stopifnot(all(dim(effect) == dim(effect.se)))
-    stopifnot(is.matrix(X))
+    stopifnot(is.matrix(X.gwas))
 
     ## SNP confounding factors
     if(is.null(C)) {
