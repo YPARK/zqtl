@@ -45,6 +45,7 @@ struct options_t {
     OUT_RESID = false;
 
     BOOTSTRAP_METHOD = 1;
+    DIRECT_MODEL = 1;
   }
 
   const int vbiter() const { return VBITER; };
@@ -85,6 +86,7 @@ struct options_t {
   const bool out_resid() const { return OUT_RESID; }
 
   const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
+  const int direct_model() const { return DIRECT_MODEL; }
 
   int VBITER;
   int MINITER;
@@ -128,6 +130,7 @@ struct options_t {
   bool OUT_RESID;
 
   int BOOTSTRAP_METHOD;
+  int DIRECT_MODEL;
 };
 
 #endif

@@ -60,6 +60,12 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
                                  const options_t& opt,
                                  std::tuple<DATA...>&& data_tup);
 
+template <typename MODEL_Y, typename DIRECT, typename CONF, typename MEDIATED_E,
+          typename... DATA>
+Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
+                     MEDIATED_E theta_med_org, const options_t& opt,
+                     std::tuple<DATA...>&& data_tup);
+
 Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                              const effect_y_se_mat_t& yy_se,  // z_y_se
                              const effect_m_mat_t& mm,        // z_m
@@ -96,15 +102,6 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     ELOG("Check dimensions of C");
     return Rcpp::List::create();
   }
-
-// random seed initialization
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
 
   const Scalar n = static_cast<Scalar>(opt.sample_size());
   const Scalar n1 = static_cast<Scalar>(opt.m_sample_size());
@@ -169,93 +166,46 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
-  // construct eta_conf_y to capture direct (pleiotropic) effect
-  auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-  auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
-  if (opt.weight_y()) eta_direct.set_weight(weight_y);
-
   // delta_u = D t(U) epsilon
-  auto epsilon_random =
-      make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
 
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
+  // construct eta_conf_y to capture direct (pleiotropic) effect
+  auto theta_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
+  if (opt.weight_y()) eta_direct.set_weight(weight_y);
+
   ////////////////////////////////////////////////////////////////
   // Estimate observed full model
+  
+#ifdef EIGEN_USE_MKL_ALL
+  // random seed initialization
+  VSLStreamStatePtr rng;
+  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
+  omp_set_num_threads(opt.nthread());
+#else
+  std::mt19937 rng(opt.rseed());
+#endif
 
   auto llik1 = impl_fit_eta_delta(model_y, opt, rng,
                                   std::make_tuple(eta_direct, eta_conf_y),
                                   std::make_tuple(delta_med, delta_random));
 
-  Rcpp::List rand_effect = param_rcpp_list(epsilon_random);
-
-  Rcpp::List finemap = Rcpp::List::create();
-
-  // Fine-mapping QTLs
-  if (opt.med_finemap()) {
-    // Construct M including potential mediators
-    Mat row_max_lodds = log_odds_param(theta_med).rowwise().maxCoeff();
-    std::vector<Index> med_include(0);
-
-    for (Index j = 0; j < row_max_lodds.size(); ++j) {
-      if (row_max_lodds(j) > opt.med_lodds_cutoff()) med_include.push_back(j);
-    }
-
-    const Index n_med_include = med_include.size();
-
-    if (n_med_include > 0) {
-      TLOG("Fine-mapping QTLs on " << n_med_include << " mediators");
-
-      Mat Msub(Vt.rows(), n_med_include);
-      Mat weight_m_sub(Vt.cols(), n_med_include);
-      Index c = 0;
-      for (Index j : med_include) {
-        Msub.col(c) = M.col(j);
-        weight_m_sub.col(c) = weight_m.col(j);
-        c++;
-      }
-
-      zqtl_model_t<Mat> model_m(Msub, D2);
-
-      auto theta_left =
-          make_dense_spike_slab<Scalar>(Vt.cols(), Msub.cols(), opt);
-      auto theta_right =
-          make_dense_spike_slab<Scalar>(Y.cols(), Msub.cols(), opt);
-      auto eta_med =
-          make_mediation_eta(Vt, Msub, Vt, Y, theta_left, theta_right);
-      if (opt.weight_m()) eta_med.set_weight_pk(weight_m_sub);
-      if (opt.weight_y()) eta_med.set_weight_pt(weight_y);
-
-      auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
-      auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
-
-      dummy_eta_t dummy;
-
-      eta_direct.resolve();
-
-      auto llik2 =
-          impl_fit_mediation(model_y, model_m, opt, rng,
-                             std::make_tuple(eta_med),     // mediation
-                             std::make_tuple(eta_conf_y),  // eta[y] only
-                             std::make_tuple(eta_conf_m),  // eta[m] only
-                             std::make_tuple(dummy),       // delta[y]
-                             std::make_tuple(dummy),       // delta[m]
-                             std::make_tuple(eta_direct),  // clamped eta[y]
-                             std::make_tuple(dummy));      // clamped eta[m]
-
-      std::for_each(med_include.begin(), med_include.end(),
-                    [](Index& x) { ++x; });
-
-      finemap = Rcpp::List::create(
-          Rcpp::_["llik"] = llik2, Rcpp::_["mediators"] = med_include,
-          Rcpp::_["param.qtl"] = param_rcpp_list(theta_left),
-          Rcpp::_["param.mediated"] = param_rcpp_list(theta_right));
-    }
-  }
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
 #endif
+
+  Rcpp::List rand_effect = param_rcpp_list(epsilon_random);
+
+  // Fine-mapping QTLs
+  Rcpp::List finemap = Rcpp::List::create();
+  if (opt.med_finemap()) {
+    finemap =
+        _fine_map(model_y, eta_direct, eta_conf_y, theta_med, opt,
+                  std::make_tuple(Y, M, U, D2, Vt, VtC, weight_y, weight_m));
+  }
 
   TLOG("Finished joint model estimation\n\n");
 
@@ -290,6 +240,100 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["llik"] = llik1, Rcpp::_["bootstrap"] = boot,
       Rcpp::_["finemap"] = finemap, Rcpp::_["rand.effect"] = rand_effect,
       Rcpp::_["var.decomp"] = var_decomp);
+}
+
+////////////////////////
+// finemapping method //
+////////////////////////
+
+template <typename MODEL_Y, typename DIRECT, typename CONF, typename MEDIATED_E,
+          typename... DATA>
+Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
+                     MEDIATED_E theta_med_org,
+                     const options_t& opt, std::tuple<DATA...>&& data_tup) {
+  Mat Y, M, U, D2, Vt, VtC, weight_y, weight_m;
+  std::tie(Y, M, U, D2, Vt, VtC, weight_y, weight_m) = data_tup;
+
+  // Construct M including potential mediators
+  Mat row_max_lodds = log_odds_param(theta_med_org).rowwise().maxCoeff();
+  std::vector<Index> med_include(0);
+
+  for (Index j = 0; j < row_max_lodds.size(); ++j) {
+    if (row_max_lodds(j) > opt.med_lodds_cutoff()) med_include.push_back(j);
+  }
+
+  const Index n_med_include = med_include.size();
+  Rcpp::List finemap = Rcpp::List::create();
+
+  if (n_med_include > 0) {
+    TLOG("Fine-mapping QTLs on " << n_med_include << " mediators");
+
+    Mat Msub(Vt.rows(), n_med_include);
+    Mat weight_m_sub(Vt.cols(), n_med_include);
+    Index c = 0;
+    for (Index j : med_include) {
+      Msub.col(c) = M.col(j);
+      weight_m_sub.col(c) = weight_m.col(j);
+      c++;
+    }
+
+    // delta_u = D t(U) epsilon
+    auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+
+    Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+    auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
+
+    zqtl_model_t<Mat> model_m(Msub, D2);
+
+    auto theta_left =
+        make_dense_spike_slab<Scalar>(Vt.cols(), Msub.cols(), opt);
+    auto theta_right =
+        make_dense_spike_slab<Scalar>(Y.cols(), Msub.cols(), opt);
+    auto eta_med = make_mediation_eta(Vt, Msub, Vt, Y, theta_left, theta_right);
+    if (opt.weight_m()) eta_med.set_weight_pk(weight_m_sub);
+    if (opt.weight_y()) eta_med.set_weight_pt(weight_y);
+
+    auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
+    auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
+
+    dummy_eta_t dummy;
+
+    eta_direct.resolve();
+
+#ifdef EIGEN_USE_MKL_ALL
+    // random seed initialization
+    VSLStreamStatePtr rng;
+    vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
+    omp_set_num_threads(opt.nthread());
+#else
+    std::mt19937 rng(opt.rseed());
+#endif
+
+    auto llik2 =
+        impl_fit_mediation(model_y, model_m, opt, rng,
+                           std::make_tuple(eta_med),       // mediation
+                           std::make_tuple(eta_conf_y),    // eta[y] only
+                           std::make_tuple(eta_conf_m),    // eta[m] only
+                           std::make_tuple(delta_random),  // delta[y]
+                           std::make_tuple(dummy),         // delta[m]
+                           std::make_tuple(eta_direct),    // clamped eta[y]
+                           std::make_tuple(dummy));        // clamped eta[m]
+
+#ifdef EIGEN_USE_MKL_ALL
+    vslDeleteStream(&rng);
+#endif
+
+    std::for_each(med_include.begin(), med_include.end(),
+                  [](Index& x) { ++x; });
+
+    finemap = Rcpp::List::create(
+        Rcpp::_["llik"] = llik2, Rcpp::_["mediators"] = med_include,
+        Rcpp::_["param.qtl"] = param_rcpp_list(theta_left),
+        Rcpp::_["param.mediated"] = param_rcpp_list(theta_right),
+        Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random));
+  }
+
+  return finemap;
 }
 
 ////////////////////////

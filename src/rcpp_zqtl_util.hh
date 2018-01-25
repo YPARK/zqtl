@@ -121,6 +121,8 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["bootstrap.method"]);
   if (_list.containsElementNamed("boot.method"))
     opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["boot.method"]);
+  if (_list.containsElementNamed("direct.model"))
+    opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
   if (_list.containsElementNamed("nthread"))
