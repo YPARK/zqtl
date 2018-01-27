@@ -387,6 +387,9 @@ Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
     eta_direct.resolve();
     boot_model.sample(eta_direct.sample(rng));
 
+    initialize_param(theta_boot_direct);
+    initialize_param(theta_boot_med);
+
     impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
                        std::make_tuple(delta_boot_med));
 
@@ -481,6 +484,9 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
     const Scalar denom = static_cast<Scalar>(nboot + 2.0);
     eta_marg.resolve();
     boot_model.sample(eta_marg.sample(rng));
+
+    initialize_param(theta_boot_direct);
+    initialize_param(theta_boot_med);
 
     impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
                        std::make_tuple(delta_boot_med));
