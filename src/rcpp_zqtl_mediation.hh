@@ -445,8 +445,12 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
-  auto theta_boot_direct = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_boot_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
+
+  auto epsilon_boot_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto delta_boot_random = make_regression_eta(DUt, Y, epsilon_boot_random);
+
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
   Mat FD = Mat::Ones(M.cols(), Y.cols());
@@ -484,10 +488,11 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   for (nboot = 0; nboot < opt.nboot(); ++nboot) {
     const Scalar denom = static_cast<Scalar>(nboot + 2.0);
     eta_marg.resolve();
+    delta_random.resolve();
     boot_model.sample(eta_marg.sample(rng), delta_random.sample(rng));
 
     impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
-                       std::make_tuple(delta_boot_med));
+                       std::make_tuple(delta_boot_med, delta_boot_random));
 
     Mat log_odds = log_odds_param(theta_boot_med);
     FD += obs_lodds.binaryExpr(log_odds, add_false_discovery);
