@@ -167,7 +167,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // delta_u = D t(U) epsilon
-  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random = make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
 
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
@@ -437,19 +437,12 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
-  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
-
   // bootstrap parameters
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
   auto theta_boot_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
-
-  auto epsilon_boot_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
-  auto delta_boot_random = make_regression_eta(DUt, Y, epsilon_boot_random);
 
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
@@ -473,8 +466,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
 #endif
 
   auto llik =
-      impl_fit_eta_delta(model_marg, opt, rng, std::make_tuple(eta_marg),
-                         std::make_tuple(delta_random));
+    impl_fit_eta(model_marg, opt, rng, std::make_tuple(eta_marg));
 
   TLOG("Finished estimation of the marginal model\n\n");
 
@@ -488,11 +480,10 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   for (nboot = 0; nboot < opt.nboot(); ++nboot) {
     const Scalar denom = static_cast<Scalar>(nboot + 2.0);
     eta_marg.resolve();
-    delta_random.resolve();
-    boot_model.sample(eta_marg.sample(rng), delta_random.sample(rng));
+    boot_model.sample(eta_marg.sample(rng));
 
     impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
-                       std::make_tuple(delta_boot_med, delta_boot_random));
+                       std::make_tuple(delta_boot_med));
 
     Mat log_odds = log_odds_param(theta_boot_med);
     FD += obs_lodds.binaryExpr(log_odds, add_false_discovery);
