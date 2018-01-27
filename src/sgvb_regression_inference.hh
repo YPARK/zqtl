@@ -294,10 +294,6 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
     }
   }
 
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
   TLOG("Finished SGVB inference");
   return conv.summarize();
 }
