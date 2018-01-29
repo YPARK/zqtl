@@ -163,7 +163,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   // confounder
   Mat VtC = Vt * conf.val;
-  auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_conf_y = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // delta_u = D t(U) epsilon
@@ -436,7 +436,8 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   // Estimate the marginal model
   zqtl_model_t<Mat> model_marg(Y, D2);
 
-  auto theta_marg = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  // this must be without spike-slab; otherwise it will become zero
+  auto theta_marg = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
