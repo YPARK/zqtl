@@ -173,7 +173,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
-  auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_direct = make_dense_col_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
   if (opt.weight_y()) eta_direct.set_weight(weight_y);
 
@@ -278,7 +278,7 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
     }
 
     // delta_u = D t(U) epsilon
-    auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+    auto epsilon_random = make_dense_col_slab<Scalar>(U.rows(), Y.cols(), opt);
 
     Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
     auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
@@ -437,7 +437,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   zqtl_model_t<Mat> model_marg(Y, D2);
 
   // this must be without spike-slab; otherwise it will become zero
-  auto theta_marg = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_marg = make_dense_col_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
   if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
