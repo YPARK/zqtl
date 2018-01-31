@@ -37,6 +37,8 @@ struct options_t {
     MED_LODDS_CUTOFF = 0.0;
     MED_FINEMAP = false;
     MF_SVD_INIT = true;
+    MF_RIGHT_NN = false;
+    MU_MIN = 1e-2;
 
     WEIGHT_M = false;
     WEIGHT_Y = false;
@@ -71,6 +73,8 @@ struct options_t {
   const bool with_ld_matrix() const { return WITH_LD_MATRIX; }
   const bool with_random_effect() const { return WITH_RANDOM_EFFECT; }
   const bool mf_svd_init() const { return MF_SVD_INIT; }
+  const bool mf_right_nn() const { return MF_RIGHT_NN; }
+  const float mu_min() const { return MU_MIN; }
 
   const float eigen_tol() const { return EIGEN_TOL; };
   const bool std_ld() const { return STD_LD; }
@@ -115,6 +119,8 @@ struct options_t {
   bool WITH_LD_MATRIX;
   bool WITH_RANDOM_EFFECT;
   bool MF_SVD_INIT;
+  bool MF_RIGHT_NN;
+  float MU_MIN;
 
   float EIGEN_TOL;
   bool STD_LD;

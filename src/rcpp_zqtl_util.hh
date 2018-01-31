@@ -143,6 +143,12 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.STD_LD = Rcpp::as<bool>(_list["do.stdize"]);
   if (_list.containsElementNamed("svd.init"))
     opt.MF_SVD_INIT = Rcpp::as<bool>(_list["svd.init"]);
+  if (_list.containsElementNamed("mu.min"))
+    opt.MU_MIN = Rcpp::as<Scalar>(_list["mu.min"]);
+  if (_list.containsElementNamed("right.nn"))
+    opt.MF_RIGHT_NN = Rcpp::as<bool>(_list["right.nn"]);
+  if (_list.containsElementNamed("right.nonneg"))
+    opt.MF_RIGHT_NN = Rcpp::as<bool>(_list["right.nonneg"]);
   if (_list.containsElementNamed("jitter"))
     opt.JITTER = Rcpp::as<Scalar>(_list["jitter"]);
   if (_list.containsElementNamed("rseed"))
@@ -350,6 +356,13 @@ Rcpp::List param_rcpp_list(const T& param) {
 
 template <typename T>
 Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_spike_slab) {
+  return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
+                            Rcpp::_["theta.var"] = var_param(param),
+                            Rcpp::_["lodds"] = log_odds_param(param));
+}
+
+template <typename T>
+Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_spike_gamma) {
   return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
                             Rcpp::_["theta.var"] = var_param(param),
                             Rcpp::_["lodds"] = log_odds_param(param));

@@ -54,7 +54,8 @@ fit.zqtl(effect,              # marginal effect : y ~ x
   \item{vbiter}{Number of variational Bayes iterations (default: 2000)}
   \item{verbose}{Verbosity (default: TRUE)}
   \item{k}{Rank of the factored model (default: 1)}
-  % \item{smooth.effect}{With smooth genetic effect (default: FALSE)}
+  \item{right.nn}{non-negativity in factored effect (default: FALSE)}
+  \item{mu.min}{mininum non-negativity weight (default: 0.01)}
 
   \item{print.interv}{Printing interval (default: 10)}
   \item{nthread}{Number of threads during calculation (default: 1)}
@@ -73,6 +74,7 @@ library(zqtl)
 
 n <- 1000
 p <- 1000
+m <- 50
 
 set.seed(1)
 X.raw <- sapply(1:p, function(j) {
@@ -80,46 +82,84 @@ X.raw <- sapply(1:p, function(j) {
     rbinom(n, 2, f)
 })
 
+.rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
+
 X <- as.matrix(apply(X.raw, 2, function(x) x - mean(x, na.rm = TRUE)))
+Y <- matrix(0, n, m)
 h2 <- 0.4
 
 c.snps <- sample(p, 3)
 
-theta <- matrix(rnorm(length(c.snps)), length(c.snps), 1)
+## shared genetic variants
+theta.left <- sign(.rnorm(3, 1))
+theta.right <- abs(.rnorm(1, 3))
+theta.shared <- theta.left \%*\% theta.right
 
-y <- X[, c.snps, drop = FALSE] \%*\% theta
-y <- y + X \%*\% rnorm(p)/p * 10
-y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
+Y[, 1:3] <- Y[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
 
-effect.tab <- as.matrix(t(apply(X, 2, function(x) coefficients(summary(lm(y ~ x)))[2, 1:2])))
+v0 <- var(as.numeric(Y[, 1:3]))
+v1 <- apply(Y, 2, var)
+Y[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
+Y <- Y + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
+Y <- scale(Y)
 
-################################################################
-vb.opt <- list(tol = 0, vbiter = 3000, pi.ub = -2, pi.lb = -4,
-               rate = 0.01, gammax = 1e3,
-               eigen.tol = 1e-1)
+fast.cov <- function(x, y) {
+    n.obs <- crossprod(!is.na(x), !is.na(y))
+    ret <- crossprod(replace(x, is.na(x), 0),
+                     replace(y, is.na(y), 0)) / n.obs
+    return(ret)
+}
 
-out <- fit.zqtl(effect.tab[,1,drop=FALSE], effect.tab[,2,drop=FALSE],
-X = X, n = n, options = vb.opt)
+fast.z.cov <- function(x, y) {
+    n.obs <- crossprod(!is.na(x), !is.na(y))
+    ret <- crossprod(replace(x, is.na(x), 0),
+                     replace(y, is.na(y), 0)) / sqrt(n.obs)
+    return(ret)
+}
 
-## heritability estimation through model
-##theta.s <- out$param$theta * effect.tab[,2,drop=FALSE]
-theta.s <- out$param$theta
-pve <- var(X \%*\% theta.s) / var(y)
+xy.beta <- fast.cov(X, Y)
+z.xy <- fast.z.cov(X, Y)
+xy.beta.se <- xy.beta / z.xy
 
-par(mfrow=c(2,1))
+vb.opt <- list(tol = 0, vbiter = 3000, jitter = 1e-2,
+               pi = -1, rate = 0.01, gammax = 1e3,
+               eigen.tol = 1e-1, k = 12)
 
-plot(out$param$lodds, xlab = 'SNPs', ylab = 'Log-ODDS',
-     main = paste('PVE:',format(pve,digits=2)))
-points(c.snps, out$param$lodds[c.snps, 1], col = 2, pch = 19,
-       cex=.5)
+out <- fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
 
-plot(theta.s, xlab = 'SNPs', ylab = 'Effect', ylim = range(c(theta.s,theta)),
-     main = 'test cov')
-points(c.snps, theta, col=2, pch = 19, cex = .5)
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    pip <- 1/(1+exp(-out$param.left$lodds[, k]))
+    plot(pip, main = k, ylim = c(0, 1))
+    points(c.snps, pip[c.snps], col = 2, pch = 19)
+}
+
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    plot(out$param.right$theta[, k], main = k)
+}
+
+vb.opt <- list(tol = 0, vbiter = 3000, jitter = 1e-2,
+               pi = -1, rate = 0.01, gammax = 1e3,
+               eigen.tol = 1e-1, k = 12, right.nn = TRUE)
+
+out <- fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
+
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    pip <- 1/(1+exp(-out$param.left$lodds[, k]))
+    plot(pip, main = k, ylim = c(0, 1))
+    points(c.snps, pip[c.snps], col = 2, pch = 19)
+}
+
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    plot(out$param.right$theta[, k], main = k)
+}
 
 }
 \details{
-  
+
   In basic zQTL model, parameter matrix, theta, can be decomposed into two
   parts: sparse strong effect and background polygenic effect matrices:
 

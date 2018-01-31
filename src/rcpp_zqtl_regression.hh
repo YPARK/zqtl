@@ -42,7 +42,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   // confounder
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
   Mat VtC = Vt * C;
-  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
   // mean effect size --> can be sparse matrix
@@ -51,7 +51,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   if (opt.weight_y()) eta.set_weight(weight);
 
   // random effect
-  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
@@ -120,26 +121,24 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 
   // confounder
   Mat VtC = Vt * C;
-  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
+
+  // random effect
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
+
+  // smooth rank-1 effects to capture systematic bias
+  const Index rank_1 = 1;
+  auto bias_left = make_dense_col_slab<Scalar>(Vt.cols(), rank_1, opt);
+  auto bias_right = make_dense_col_spike_slab<Scalar>(Y.cols(), rank_1, opt);
+  auto eta_smooth =
+      make_factored_regression_eta(Vt, Y, bias_left, bias_right);
 
   // factored parameters
   auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
-  auto theta_right = make_dense_spike_slab<Scalar>(Y.cols(), K, opt);
-  auto eta = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
-  if (opt.weight_y()) eta.set_weight(weight);
-
-  if (opt.mf_svd_init()) {
-    eta.init_by_svd(Y, opt.jitter());
-  } else {
-    std::mt19937 rng(opt.rseed());
-    eta.jitter(opt.jitter(), rng);
-  }
-
-  // random effect
-  auto epsilon_random = make_dense_slab<Scalar>(U.rows(), Y.cols(), opt);
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -150,8 +149,47 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   std::mt19937 rng(opt.rseed());
 #endif
 
-  auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
-                                 std::make_tuple(delta_random));
+  Rcpp::List out_right_param = Rcpp::List::create();
+  Mat llik;
+
+  if (opt.mf_right_nn()) {
+    // use non-negative gamma
+    auto theta_right = make_dense_spike_gamma<Scalar>(Y.cols(), K, opt);
+
+    auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
+    if (opt.weight_y()) eta_f.set_weight(weight);
+
+    if (opt.mf_svd_init()) {
+      eta_f.init_by_svd(Y, opt.jitter());
+    } else {
+      std::mt19937 _rng(opt.rseed());
+      eta_f.jitter(opt.jitter(), _rng);
+    }
+
+    llik = impl_fit_eta_delta(model, opt, rng,
+                              std::make_tuple(eta_f, eta_c, eta_smooth),
+                              std::make_tuple(delta_random));
+
+    out_right_param = param_rcpp_list(theta_right);
+  } else {
+    auto theta_right = make_dense_spike_slab<Scalar>(Y.cols(), K, opt);
+
+    auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
+    if (opt.weight_y()) eta_f.set_weight(weight);
+
+    if (opt.mf_svd_init()) {
+      eta_f.init_by_svd(Y, opt.jitter());
+    } else {
+      std::mt19937 _rng(opt.rseed());
+      eta_f.jitter(opt.jitter(), _rng);
+    }
+
+    llik = impl_fit_eta_delta(model, opt, rng,
+                              std::make_tuple(eta_f, eta_c, eta_smooth),
+                              std::make_tuple(delta_random));
+
+    out_right_param = param_rcpp_list(theta_right);
+  }
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
@@ -161,7 +199,9 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param.left"] = param_rcpp_list(theta_left),
-      Rcpp::_["param.right"] = param_rcpp_list(theta_right),
+      Rcpp::_["param.right"] = out_right_param,
+      Rcpp::_["bias.left"] = param_rcpp_list(bias_left),
+      Rcpp::_["bias.right"] = param_rcpp_list(bias_right),
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random),
       Rcpp::_["llik"] = llik);

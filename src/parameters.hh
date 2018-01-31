@@ -30,6 +30,10 @@ struct tag_param_slab {};
 // * delta(theta)
 struct tag_param_spike_slab {};
 
+// q(theta[j,g]) ~ alpha[j,g] * gamma(mu[j,g], 1) + (1-alpha[j,g])
+// * delta(theta)
+struct tag_param_spike_gamma {};
+
 // q(theta[j,g]) ~ N(beta[j,g], 1/gamma[g])
 struct tag_param_col_slab {};
 
@@ -59,6 +63,7 @@ struct tag_param_dense {};
 #include "param_mixture.hh"
 #include "param_row_spike_slab.hh"
 #include "param_slab.hh"
+#include "param_spike_gamma.hh"
 #include "param_spike_slab.hh"
 
 template <typename Derived>

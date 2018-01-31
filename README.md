@@ -34,6 +34,10 @@ Enjoy!
 
 ## Release notes
 
+### v.1.1.0
+
+- Spiked Gamma for the factored zQTL methods
+
 ### v.1.0.1
 
 - Variance calculation. See `note/variance.md` for details.
