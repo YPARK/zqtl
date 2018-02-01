@@ -24,7 +24,8 @@ fit.zqtl(effect,              # marginal effect : y ~ x
          effect.se,           # marginal se : y ~ x
          X,                   # X matrix
          n = 0,               # sample size
-         C = NULL,            # covariate matrix
+         C = NULL,            # covariate matrix of multivariate effect
+         C.delta = NULL,      # covariate matrix of univariate effect
          factored = FALSE,    # Factored multiple traits
          options = list())
 }
@@ -34,6 +35,7 @@ fit.zqtl(effect,              # marginal effect : y ~ x
   \item{n}{sample size of actual data (will ignore if n = 0)}
   \item{X}{Design matrix (reference Ind x SNP)}
   \item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
+  \item{C.delta}{SNP confounding factors (SNP x confounder; default: NULL)}
   \item{factored}{Fit factored QTL model (default: FALSE)}
   \item{options}{A list of inference/optimization options.}
 

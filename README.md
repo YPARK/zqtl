@@ -37,6 +37,7 @@ Enjoy!
 ### v.1.1.0
 
 - Spiked Gamma for the factored zQTL methods
+- Additional covariate component for confounder correction
 
 ### v.1.0.1
 

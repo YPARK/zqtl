@@ -2,7 +2,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.se,           # marginal se : y ~ x
                      X,                   # X matrix
                      n = 0,               # sample size
-                     C = NULL,            # covariate matrix
+                     C = NULL,            # covariate matrix (before LD)
+                     C.delta = NULL,      # covariate matrix (already multified by LD)
                      factored = FALSE,    # Factored multiple traits
                      options = list()) {
 
@@ -15,6 +16,11 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     if(is.null(C)) {
         p <- dim(effect)[1]
         C <- matrix(1/p, p, 1)
+    }
+
+    if(is.null(C.delta)) {
+        p <- dim(effect)[1]
+        C.delta <- matrix(1, p, 1)
     }
 
     stopifnot(is.matrix(C))
@@ -42,9 +48,9 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 
     ## call R/C++ functions ##
     if(factored) {
-        return(.Call('rcpp_fac_zqtl', effect, effect.se, X, C, options, PACKAGE = 'zqtl'))
+        return(.Call('rcpp_fac_zqtl', effect, effect.se, X, C, C.delta, options, PACKAGE = 'zqtl'))
     } else {
-        return(.Call('rcpp_zqtl', effect, effect.se, X, C, options, PACKAGE = 'zqtl'))
+        return(.Call('rcpp_zqtl', effect, effect.se, X, C, C.delta, options, PACKAGE = 'zqtl'))
     }
 }
 

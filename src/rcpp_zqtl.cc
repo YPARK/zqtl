@@ -1,18 +1,19 @@
 #include "rcpp_zqtl.hh"
 
 RcppExport SEXP rcpp_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
-                          SEXP c_sexp, SEXP options_sexp) {
+                          SEXP c_sexp, SEXP c_delta_sexp, SEXP options_sexp) {
   BEGIN_RCPP
 
   Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
   Rcpp::traits::input_parameter<const Mat>::type effect_se(effect_se_sexp);
   Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Cdelta(c_delta_sexp);
   Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
   Rcpp::List options_list(options_sexp);
 
   options_t opt;
   set_options_from_list(options_list, opt);
-  return Rcpp::wrap(impl_fit_zqtl(effect, effect_se, X, C, opt));
+  return Rcpp::wrap(impl_fit_zqtl(effect, effect_se, X, C, Cdelta, opt));
   END_RCPP
 }
 
@@ -48,18 +49,20 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
 }
 
 RcppExport SEXP rcpp_fac_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,
-                              SEXP x_sexp, SEXP c_sexp, SEXP options_sexp) {
+                              SEXP x_sexp, SEXP c_sexp, SEXP c_delta_sexp,
+                              SEXP options_sexp) {
   BEGIN_RCPP
 
   Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
   Rcpp::traits::input_parameter<const Mat>::type effect_se(effect_se_sexp);
   Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Cdelta(c_delta_sexp);
   Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
   Rcpp::List options_list(options_sexp);
 
   options_t opt;
   set_options_from_list(options_list, opt);
-  return Rcpp::wrap(impl_fit_fac_zqtl(effect, effect_se, X, C, opt));
+  return Rcpp::wrap(impl_fit_fac_zqtl(effect, effect_se, X, C, Cdelta, opt));
   END_RCPP
 }
 
