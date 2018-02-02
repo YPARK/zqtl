@@ -67,7 +67,6 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto epsilon_random =
       make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  standardize(DUt);
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   TLOG("Constructed effects");
@@ -183,11 +182,10 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
   // random effect
-  // auto epsilon_random =
-  //     make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
-  // Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  // standardize(DUt);
-  // auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   ////////////////////////////////////////////////////////////////
   // factored parameters
@@ -221,7 +219,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c));
+                              std::make_tuple(delta_c, delta_random));
 
     out_right_param = param_rcpp_list(theta_right);
   } else {
@@ -239,7 +237,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c));
+                              std::make_tuple(delta_c, delta_random));
 
     out_right_param = param_rcpp_list(theta_right);
   }
@@ -255,6 +253,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["param.right"] = out_right_param,
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
+      Rcpp::_["random"] = param_rcpp_list(epsilon_random),
       Rcpp::_["llik"] = llik);
 }
 
