@@ -106,7 +106,7 @@ xy.beta <- fast.cov(X, Y)
 z.xy <- fast.z.cov(X, Y)
 xy.beta.se <- xy.beta / z.xy
 
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e3,
                out.resid = TRUE, 
                eigen.tol = 1e-2, k = 10)
@@ -120,7 +120,7 @@ image(Matrix(head(out$resid$Z.hat, 20)))
 
 ################################################################
 ## run factord QTL on the residuals
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-2, k = 12)
 

@@ -47,7 +47,7 @@ Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
     TLOG("Perform RUV-r [1]: first take residuals");
     zqtl_model_t<Mat> model(Y, D2);
 
-    auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+    auto theta = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta = make_regression_eta(Vt, Y, theta);
     if (opt.weight_y()) eta.set_weight(weight);
 
@@ -87,7 +87,7 @@ Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
         make_factored_regression_eta(DUt, R, epsilon_indiv, epsilon_trait);
 
     Mat Rd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * R;
-    delta_random.init_by_svd(R, opt.jitter());
+    delta_random.init_by_svd(Rd, opt.jitter());
 
     zqtl_model_t<Mat> model(R, D2);
     Mat llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),

@@ -106,25 +106,25 @@ xy.beta <- fast.cov(X, Y)
 z.xy <- fast.z.cov(X, Y)
 xy.beta.se <- xy.beta / z.xy
 
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e4,
                out.resid = TRUE, 
                eigen.tol = 1e-2, k = 10)
 
 library(Matrix)
 out <- fit.zqtl.ruv(xy.beta, xy.beta.se, X, options = vb.opt)
+Z.conf <- out$Z.confounder
 
-image(Matrix(head(out$W, 30)), main = 'W')
+image(Matrix(head(Z.conf, 20)), main = Z.conf)
 image(Matrix(head(out$step2$param.indiv$theta, 20)), main = 'left')
 image(Matrix(out$step2$param.trait$theta), main = 'right')
 
 ################################################################
 ## run factord QTL with covariates
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e4,
                eigen.tol = 1e-2, k = 12, right.nn = TRUE)
 
-Z.conf <- out$Z.confounder
 out <- fit.zqtl(xy.beta, xy.beta.se, X, C.delta = Z.conf, factored = TRUE, options = vb.opt)
 
 par(mfrow = c(1,1))

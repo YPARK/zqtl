@@ -124,7 +124,7 @@ xy.beta <- fast.cov(X, Y)
 z.xy <- fast.z.cov(X, Y)
 xy.beta.se <- xy.beta / z.xy
 
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-1,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-1,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1, k = 12)
 
@@ -142,7 +142,7 @@ for(k in 1:12) {
     plot(out$param.right$theta[, k], main = k)
 }
 
-vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-1,
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-1,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1, k = 12, right.nn = TRUE)
 
