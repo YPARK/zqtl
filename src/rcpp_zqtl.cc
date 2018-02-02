@@ -17,6 +17,36 @@ RcppExport SEXP rcpp_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
   END_RCPP
 }
 
+RcppExport SEXP rcpp_factorize(SEXP effect_sexp, SEXP effect_se_sexp,
+                               SEXP x_sexp, SEXP options_sexp) {
+  BEGIN_RCPP
+
+  Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type effect_se(effect_se_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
+  Rcpp::List options_list(options_sexp);
+
+  options_t opt;
+  set_options_from_list(options_list, opt);
+  return Rcpp::wrap(impl_fit_factorization(effect, effect_se, X, opt));
+  END_RCPP
+}
+
+RcppExport SEXP rcpp_ruv_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,
+                              SEXP x_sexp, SEXP options_sexp) {
+  BEGIN_RCPP
+
+  Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type effect_se(effect_se_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
+  Rcpp::List options_list(options_sexp);
+
+  options_t opt;
+  set_options_from_list(options_list, opt);
+  return Rcpp::wrap(impl_fit_ruv(effect, effect_se, X, opt));
+  END_RCPP
+}
+
 RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                               SEXP qtl_sexp, SEXP qtl_se_sexp,        // QTL
                               SEXP x_gwas_sexp,  // genotype for gwas

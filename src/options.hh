@@ -9,6 +9,7 @@ struct options_t {
     VBITER = 2000;
     MINITER = 100;
     K = 1;
+    RE_K = 1;
     VBTOL = 1e-6;
     NSAMPLE = 10;
     NBOOT = 100;
@@ -44,6 +45,7 @@ struct options_t {
     WEIGHT_Y = false;
     PRETRAIN = false;
     DO_HYPER = false;
+    DO_RUV = true;
     OUT_RESID = false;
 
     BOOTSTRAP_METHOD = 1;
@@ -56,6 +58,9 @@ struct options_t {
   const int nboot() const { return NBOOT; };
   const int nthread() const { return NTHREAD; };
   const int k() const { return K; };
+  const int re_k() const { return RE_K; };
+  const bool do_ruv() const { return DO_RUV; };
+
   const float vbtol() const { return VBTOL; };
   const float jitter() const { return JITTER; };
   const int rseed() const { return RSEED; };
@@ -75,7 +80,6 @@ struct options_t {
   const bool mf_svd_init() const { return MF_SVD_INIT; }
   const bool mf_right_nn() const { return MF_RIGHT_NN; }
   const float mu_min() const { return MU_MIN; }
-
   const float eigen_tol() const { return EIGEN_TOL; };
   const bool std_ld() const { return STD_LD; }
   const float sample_size() const { return SAMPLE_SIZE; };
@@ -87,6 +91,9 @@ struct options_t {
   const bool weight_y() const { return WEIGHT_Y; }
   const bool pretrain() const { return PRETRAIN; }
   const bool do_hyper() const { return DO_HYPER; }
+  void off_hyper() { DO_HYPER = false; }
+  void on_hyper() { DO_HYPER = true; }
+
   const bool out_resid() const { return OUT_RESID; }
 
   const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
@@ -99,6 +106,8 @@ struct options_t {
   int NBOOT_CUTOFF;
   int NTHREAD;
   int K;
+  int RE_K;
+  bool DO_RUV;
   float VBTOL;
   float JITTER;
   int RSEED;

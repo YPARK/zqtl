@@ -6,7 +6,7 @@
   LD = V D^2 V' for subsequent analysis.
 }
 \usage{
-take.ld.pairs(X, options=list())
+take.ld.svd(X, options=list())
 }
 \arguments{
   \item{X}{n x p matrix}

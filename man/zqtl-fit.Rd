@@ -104,11 +104,6 @@ v1 <- apply(Y, 2, var)
 Y[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
 Y <- Y + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
 
-## introduce confounding factors
-uu <- .rnorm(n, 1)
-vv <- .rnorm(m, 1)
-Y <- Y + uu \%*\% t(vv) * 0.25
-
 Y <- scale(Y)
 
 fast.cov <- function(x, y) {
@@ -129,7 +124,7 @@ xy.beta <- fast.cov(X, Y)
 z.xy <- fast.z.cov(X, Y)
 xy.beta.se <- xy.beta / z.xy
 
-vb.opt <- list(tol = 0, vbiter = 3000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-1,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1, k = 12)
 
@@ -147,7 +142,7 @@ for(k in 1:12) {
     plot(out$param.right$theta[, k], main = k)
 }
 
-vb.opt <- list(tol = 0, vbiter = 3000, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 5000, jitter = 1e-1,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1, k = 12, right.nn = TRUE)
 

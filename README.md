@@ -34,6 +34,10 @@ Enjoy!
 
 ## Release notes
 
+### v.1.2.0
+
+- Matrix factorization for confounder correction
+
 ### v.1.1.0
 
 - Spiked Gamma for the factored zQTL methods
