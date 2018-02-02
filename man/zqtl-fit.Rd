@@ -103,6 +103,12 @@ v0 <- var(as.numeric(Y[, 1:3]))
 v1 <- apply(Y, 2, var)
 Y[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
 Y <- Y + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
+
+## introduce confounding factors
+uu <- .rnorm(n, 1)
+vv <- .rnorm(m, 1)
+Y <- Y + uu \%*\% t(vv) * 0.25
+
 Y <- scale(Y)
 
 fast.cov <- function(x, y) {

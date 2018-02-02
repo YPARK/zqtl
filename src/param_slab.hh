@@ -17,6 +17,7 @@ struct param_slab_t {
         beta(nrow, ncol),
         gamma(nrow, ncol),
         gamma_aux(nrow, ncol),
+        theta(nrow, ncol),
         theta_var(nrow, ncol),
         grad_beta(nrow, ncol),
         grad_gamma_aux(nrow, ncol),
@@ -43,6 +44,7 @@ struct param_slab_t {
   T beta;
   T gamma;
   T gamma_aux;
+  T theta;
   T theta_var;
 
   T grad_beta;
@@ -234,6 +236,7 @@ template <typename Parameter>
 void impl_resolve_param(Parameter& P, const tag_param_slab) {
   P.gamma = P.gamma_aux.unaryExpr(P.resolve_prec_op);
   P.theta_var = P.gamma.cwiseInverse();
+  P.theta = P.beta;
 }
 
 template <typename Parameter>

@@ -54,7 +54,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   // This is useful to correct for phenotype correlations
   // delta_conf = Vt * Cdelta * theta_conf
   Mat VtCd = Vt * Cdelta;
-  auto theta_c_delta = make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
+  auto theta_c_delta =
+      make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
   // mean effect size --> can be sparse matrix
@@ -135,6 +136,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   Mat Y = Vt * effect_z;
   zqtl_model_t<Mat> model(Y, D2);
 
+  ////////////////////////////////////////////////////////////////
   // constrcut parameters
   const Index K = std::min(static_cast<Index>(opt.k()), Y.cols());
 
@@ -143,25 +145,26 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
+  ////////////////////////////////////////////////////////////////
   // This is useful to correct for phenotype correlations
   // delta_conf = Vt * Cdelta * theta_conf
   Mat VtCd = Vt * Cdelta;
-  auto theta_c_delta = make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
+  auto theta_c_delta =
+      make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
-  // random effect
-  auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  ////////////////////////////////////////////////////////////////
+  // random effect to remove non-genetic bias
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
+  auto epsilon_indiv = make_dense_slab<Scalar>(DUt.cols(), K, opt);
+  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), K, opt);
 
-  // smooth rank-1 effects to capture systematic bias
-  const Index rank_1 = 1;
-  auto bias_left = make_dense_col_slab<Scalar>(Vt.cols(), rank_1, opt);
-  auto bias_right = make_dense_col_spike_slab<Scalar>(Y.cols(), rank_1, opt);
-  auto eta_smooth =
-      make_factored_regression_eta(Vt, Y, bias_left, bias_right);
+  auto delta_random =
+      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
 
+  delta_random.init_by_svd(Y, opt.jitter());
+
+  ////////////////////////////////////////////////////////////////
   // factored parameters
   auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
 
@@ -185,14 +188,14 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(Y, opt.jitter());
+      Mat Yd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * Y;
+      eta_f.init_by_svd(Yd, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
-    llik = impl_fit_eta_delta(model, opt, rng,
-                              std::make_tuple(eta_f, eta_c, eta_smooth),
+    llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
                               std::make_tuple(delta_c, delta_random));
 
     out_right_param = param_rcpp_list(theta_right);
@@ -203,14 +206,14 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(Y, opt.jitter());
+      Mat Yd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * Y;
+      eta_f.init_by_svd(Yd, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
-    llik = impl_fit_eta_delta(model, opt, rng,
-                              std::make_tuple(eta_f, eta_c, eta_smooth),
+    llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
                               std::make_tuple(delta_c, delta_random));
 
     out_right_param = param_rcpp_list(theta_right);
@@ -225,11 +228,10 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param.left"] = param_rcpp_list(theta_left),
       Rcpp::_["param.right"] = out_right_param,
-      Rcpp::_["bias.left"] = param_rcpp_list(bias_left),
-      Rcpp::_["bias.right"] = param_rcpp_list(bias_right),
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random),
+      Rcpp::_["rand.indiv"] = param_rcpp_list(epsilon_indiv),
+      Rcpp::_["rand.trait"] = param_rcpp_list(epsilon_trait),
       Rcpp::_["llik"] = llik);
 }
 

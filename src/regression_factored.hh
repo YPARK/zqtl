@@ -119,20 +119,18 @@ struct factored_regression_t {
   // mean = X * E[L] * E[R]'
   // var = X^2 * (Var[L] * Var[R]' + E[L]^2 * Var[R]' + Var[L] * E[R']^2)
   inline void resolve() {
-    update_mean(Eta, X *
-                         (mean_param(ThetaL) * mean_param(ThetaR).transpose())
+    update_mean(Eta, X * (mean_param(ThetaL) * mean_param(ThetaR).transpose())
                              .cwiseProduct(weight));
 
     update_var(Eta,
-               Xsq *
-                   (var_param(ThetaL) * var_param(ThetaR).transpose() +
-                    (mean_param(ThetaL).cwiseProduct(mean_param(ThetaL))) *
-                        var_param(ThetaR).transpose() +
-                    var_param(ThetaL) *
-                        (mean_param(ThetaR).cwiseProduct(mean_param(ThetaR)))
-                            .transpose())
-                       .cwiseProduct(weight)
-                       .cwiseProduct(weight));
+               Xsq * (var_param(ThetaL) * var_param(ThetaR).transpose() +
+                      (mean_param(ThetaL).cwiseProduct(mean_param(ThetaL))) *
+                          var_param(ThetaR).transpose() +
+                      var_param(ThetaL) *
+                          (mean_param(ThetaR).cwiseProduct(mean_param(ThetaR)))
+                              .transpose())
+                         .cwiseProduct(weight)
+                         .cwiseProduct(weight));
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -185,8 +183,8 @@ struct factored_regression_t {
     eval_param_sgd(ThetaL, G1L, G2L, NobsL);
 
     // (3) update of G1R
-    G1R = (Eta.get_grad_type1().transpose() *
-           X).cwiseProduct(weight.transpose()) *
+    G1R = (Eta.get_grad_type1().transpose() * X)
+                  .cwiseProduct(weight.transpose()) *
               mean_param(ThetaL) +
           ((Eta.get_grad_type2().transpose() * Xsq)
                .cwiseProduct(weight.transpose())
@@ -227,7 +225,9 @@ struct factored_regression_t {
   inline void init_by_svd(const ReprMatrix &yy, const Scalar sd) {
     ReprMatrix Y;
     remove_missing(yy, Y);
-    ReprMatrix XtY = X.transpose() * Y / static_cast<Scalar>(n);
+    Y = Y / static_cast<Scalar>(n);
+    ReprMatrix XtY = X.transpose() * Y;
+    standardize(XtY);
 
     Eigen::JacobiSVD<ReprMatrix> svd(XtY,
                                      Eigen::ComputeThinU | Eigen::ComputeThinV);
