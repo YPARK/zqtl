@@ -150,7 +150,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
 
     ## X.gwas == X.med
     if(is.null(X.med)) {
-        X.gwas <- X.med
+        X.med <- X.gwas
     }
 
     stopifnot(is.matrix(C))
