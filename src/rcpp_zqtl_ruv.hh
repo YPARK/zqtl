@@ -45,20 +45,22 @@ Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
   Rcpp::List step1 = Rcpp::List::create();
   {
     TLOG("Perform RUV-r [1]: first take residuals");
-    zqtl_model_t<Mat> model(Y, D2);
+    zqtl_model_t<Mat> model_step1(Y, D2);
 
     auto theta = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta = make_regression_eta(Vt, Y, theta);
     if (opt.weight_y()) eta.set_weight(weight);
 
     // Y ~ D2 * (Vt * theta) = D2 * eta
-    Mat llik = impl_fit_eta(model, opt, rng, std::make_tuple(eta));
+    Mat llik = impl_fit_eta(model_step1, opt, rng, std::make_tuple(eta));
 
     TLOG("Estimate the residuals");
     eta.resolve();
     Mat Yhat = eta.repr_mean();
     R = Y - D2.asDiagonal() * Yhat;
 
+    TLOG("Y : " << Y.minCoeff() << " ~ " << Y.maxCoeff());
+    TLOG("Yhat : " << Yhat.minCoeff() << " ~ " << Yhat.maxCoeff());
     TLOG("Residual : " << R.minCoeff() << " ~ " << R.maxCoeff());
 
     step1 = Rcpp::List::create(Rcpp::_["R"] = R,
@@ -86,18 +88,17 @@ Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
     auto delta_random =
         make_factored_regression_eta(DUt, R, epsilon_indiv, epsilon_trait);
 
-    Mat Rd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * R;
-    delta_random.init_by_svd(Rd, opt.jitter());
+    delta_random.init_by_svd(R, opt.jitter());
 
-    zqtl_model_t<Mat> model(R, D2);
-    Mat llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
+    zqtl_model_t<Mat> model_step2(R, D2);
+    Mat llik = impl_fit_eta_delta(model_step2, opt, rng, std::make_tuple(dummy),
                                   std::make_tuple(delta_random));
 
-    const Scalar n = DUt.cols();
     W = DUt * mean_param(epsilon_indiv);
     Zconf = Vt.transpose() * mean_param(epsilon_indiv);
 
     TLOG("W : " << W.minCoeff() << " ~ " << W.maxCoeff());
+    TLOG("Zconf : " << Zconf.minCoeff() << " ~ " << Zconf.maxCoeff());
 
     step2 = Rcpp::List::create(
         Rcpp::_["param.indiv"] = param_rcpp_list(epsilon_indiv),
@@ -114,28 +115,19 @@ Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
     auto theta_conf = make_dense_spike_slab<Scalar>(W.cols(), Y.cols(), opt);
     auto delta_conf = make_regression_eta(W, Y, theta_conf);
 
-    zqtl_model_t<Mat> model(Y, D2);
-    Mat llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
+    zqtl_model_t<Mat> model_step3(Y, D2);
+    Mat llik = impl_fit_eta_delta(model_step3, opt, rng, std::make_tuple(dummy),
                                   std::make_tuple(delta_conf));
 
     TLOG("Estimate the clean effect sizes");
 
-    auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-    auto delta_resid = make_residual_eta(Y, theta_resid);
-
     delta_conf.resolve();
-    Mat llik_resid = impl_fit_eta_delta(
-        model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(dummy), std::make_tuple(delta_conf));
-
-    delta_resid.resolve();
-    Zhat = Vt.transpose() * delta_resid.repr_mean();
+    Zhat = Vt.transpose() * (Y - delta_conf.repr_mean());
     effect_hat = Zhat.cwiseProduct(effect_sqrt);
 
-    step3 = Rcpp::List::create(
-        Rcpp::_["llik"] = llik, Rcpp::_["llik.resid"] = llik_resid,
-        Rcpp::_["multivariate"] = param_rcpp_list(theta_resid),
-        Rcpp::_["theta.conf"] = param_rcpp_list(theta_conf));
+    step3 =
+        Rcpp::List::create(Rcpp::_["llik"] = llik,
+                           Rcpp::_["theta.conf"] = param_rcpp_list(theta_conf));
   }
 
 #ifdef EIGEN_USE_MKL_ALL

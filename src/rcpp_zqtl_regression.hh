@@ -181,12 +181,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
-  // random effect
-  auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
-
   ////////////////////////////////////////////////////////////////
   // factored parameters
   auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
@@ -211,15 +205,14 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      Mat Yd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * Y;
-      eta_f.init_by_svd(Yd, opt.jitter());
+      eta_f.init_by_svd(Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c, delta_random));
+                              std::make_tuple(delta_c));
 
     out_right_param = param_rcpp_list(theta_right);
   } else {
@@ -229,15 +222,14 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      Mat Yd = D2.cwiseSqrt().cwiseInverse().asDiagonal() * Y;
-      eta_f.init_by_svd(Yd, opt.jitter());
+      eta_f.init_by_svd(Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c, delta_random));
+                              std::make_tuple(delta_c));
 
     out_right_param = param_rcpp_list(theta_right);
   }
@@ -253,7 +245,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["param.right"] = out_right_param,
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["random"] = param_rcpp_list(epsilon_random),
       Rcpp::_["llik"] = llik);
 }
 

@@ -59,27 +59,14 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
   Mat llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
                                 std::make_tuple(delta_random));
 
-  Rcpp::List resid = Rcpp::List::create();
+  Mat effect_hat = _effect;
+  Mat Zhat = _effect.cwiseQuotient(_effect_se);
 
   if (opt.out_resid()) {
     TLOG("Estimate the residuals");
-
-    auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-    auto delta_resid = make_residual_eta(Y, theta_resid);
-
     delta_random.resolve();
-    Mat llik_resid = impl_fit_eta_delta(
-        model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(dummy), std::make_tuple(delta_random));
-
-    delta_resid.resolve();
-    Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
-    Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
-
-    resid =
-        Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
-                           Rcpp::_["param"] = param_rcpp_list(theta_resid),
-                           Rcpp::_["Z.hat"] = Zhat, Rcpp::_["effect.hat"] = effect_hat);
+    Zhat = Vt.transpose() * (Y - delta_random.repr_mean());
+    effect_hat = Zhat.cwiseProduct(effect_sqrt);
   }
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -93,7 +80,8 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param.indiv"] = param_rcpp_list(epsilon_indiv),
       Rcpp::_["param.trait"] = param_rcpp_list(epsilon_trait),
-      Rcpp::_["llik"] = llik, Rcpp::_["resid"] = resid);
+      Rcpp::_["effect.corrected"] = effect_hat,
+      Rcpp::_["Z.hat.corrected"] = Zhat, Rcpp::_["llik"] = llik);
 }
 
 #endif

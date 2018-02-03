@@ -63,15 +63,15 @@ X.raw <- sapply(1:p, function(j) {
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- as.matrix(apply(X.raw, 2, function(x) x - mean(x, na.rm = TRUE)))
+X <- as.matrix(scale(X.raw))
 Y <- matrix(0, n, m)
 h2 <- 0.4
 
 c.snps <- sample(p, 3)
 
 ## shared genetic variants
-theta.left <- .rnorm(3, 1)
-theta.right <- .rnorm(1, 3)
+theta.left <- .rnorm(3, 2)
+theta.right <- .rnorm(2, 3)
 theta.shared <- theta.left \%*\% theta.right
 
 Y[, 1:3] <- Y[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
@@ -107,7 +107,7 @@ z.xy <- fast.z.cov(X, Y)
 xy.beta.se <- xy.beta / z.xy
 
 vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
-               pi = -1, rate = 0.01, gammax = 1e4,
+               pi = 0, rate = 0.01, gammax = 1e4,
                out.resid = TRUE, 
                eigen.tol = 1e-2, k = 10)
 
@@ -115,20 +115,40 @@ library(Matrix)
 out <- fit.zqtl.ruv(xy.beta, xy.beta.se, X, options = vb.opt)
 Z.conf <- out$Z.confounder
 
-image(Matrix(head(Z.conf, 20)), main = Z.conf)
+image(Matrix(head(Z.conf, 20)), main = 'Z.conf')
 image(Matrix(head(out$step2$param.indiv$theta, 20)), main = 'left')
 image(Matrix(out$step2$param.trait$theta), main = 'right')
 
 ################################################################
+## run factord QTL on residuals
+vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
+               pi = -1, rate = 0.01, gammax = 1e4,
+               eigen.tol = 1e-2, k = 12)
+
+out <- fit.zqtl(out$effect.corrected, xy.beta.se, X, factored = TRUE, options = vb.opt)
+
+print(out$conf.delta)
+
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    pip <- 1/(1+exp(-out$param.left$lodds[, k]))
+    plot(pip, main = k, ylim = c(0, 1))
+    points(c.snps, pip[c.snps], col = 2, pch = 19)
+}
+
+par(mfrow = c(3,4))
+for(k in 1:12) {
+    plot(out$param.right$theta[, k], main = k)
+}
+
 ## run factord QTL with covariates
 vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e4,
-               eigen.tol = 1e-2, k = 12, right.nn = TRUE)
+               eigen.tol = 1e-2, k = 12)
 
 out <- fit.zqtl(xy.beta, xy.beta.se, X, C.delta = Z.conf, factored = TRUE, options = vb.opt)
 
-par(mfrow = c(1,1))
-image(Matrix(conf.delta$theta))
+print(out$conf.delta)
 
 par(mfrow = c(3,4))
 for(k in 1:12) {

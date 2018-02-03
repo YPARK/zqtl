@@ -20,7 +20,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 
     if(is.null(C.delta)) {
         p <- dim(effect)[1]
-        C.delta <- matrix(1, p, 1)
+        C.delta <- matrix(1/p, p, 1)
     }
 
     stopifnot(is.matrix(C))

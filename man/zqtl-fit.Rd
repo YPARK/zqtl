@@ -86,15 +86,15 @@ X.raw <- sapply(1:p, function(j) {
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- as.matrix(apply(X.raw, 2, function(x) x - mean(x, na.rm = TRUE)))
+X <- as.matrix(scale(X.raw))
 Y <- matrix(0, n, m)
 h2 <- 0.4
 
 c.snps <- sample(p, 3)
 
 ## shared genetic variants
-theta.left <- sign(.rnorm(3, 1))
-theta.right <- abs(.rnorm(1, 3))
+theta.left <- sign(.rnorm(3, 2))
+theta.right <- abs(.rnorm(2, 3))
 theta.shared <- theta.left \%*\% theta.right
 
 Y[, 1:3] <- Y[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared

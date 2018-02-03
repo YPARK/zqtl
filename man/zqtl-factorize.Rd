@@ -63,7 +63,7 @@ X.raw <- sapply(1:p, function(j) {
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- as.matrix(apply(X.raw, 2, function(x) x - mean(x, na.rm = TRUE)))
+X <- as.matrix(scale(X.raw))
 Y <- matrix(0, n, m)
 h2 <- 0.4
 
@@ -115,8 +115,8 @@ library(Matrix)
 out <- fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
 image(Matrix(head(out$param.indiv$theta, 20)))
 image(Matrix(out$param.trait$theta))
-image(Matrix(head(out$resid$effect.hat, 20)))
-image(Matrix(head(out$resid$Z.hat, 20)))
+image(Matrix(head(out$effect.corrected, 20)))
+image(Matrix(head(out$Z.hat.corrected, 20)))
 
 ################################################################
 ## run factord QTL on the residuals
@@ -124,7 +124,7 @@ vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-2, k = 12)
 
-out <- fit.zqtl(out$resid$Z.hat, matrix(1, p, m), X, factored = TRUE, options = vb.opt)
+out <- fit.zqtl(out$effect.corrected, xy.beta.se, X, factored = TRUE, options = vb.opt)
 
 par(mfrow = c(3,4))
 for(k in 1:12) {
