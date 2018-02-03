@@ -1,6 +1,13 @@
 # Summary-based QTL mapping
 
-## Installation
+## Installation (a simple version)
+
+Just do this in `R`
+```
+> install.packages('zqtl_x.x.x.tar.gz')
+```
+
+## Installation (optional)
 
 Prerequisite: `Rcpp`, `RcppEigen`, `RcppProgress` packages
 
@@ -15,7 +22,7 @@ CFLAGS = -O3 -std=c++14
 
 Build package locally.
 ```
-R CMD build .
+$ R CMD build .
 ```
 
 You will have `zqtl_x.x.x.tar.gz` gzipped file in current directory
@@ -23,7 +30,7 @@ You will have `zqtl_x.x.x.tar.gz` gzipped file in current directory
 R:
 
 ```
-install.packages('zqtl_x.x.x.tar.gz')
+> install.packages('zqtl_x.x.x.tar.gz')
 ```
 
 To speed up matrix-vector multiplication, one can compile codes with
@@ -37,6 +44,7 @@ Enjoy!
 ### v.1.2.0
 
 - Matrix factorization for confounder correction
+- Confirmed usefulness of non-negative parameters
 
 ### v.1.1.0
 

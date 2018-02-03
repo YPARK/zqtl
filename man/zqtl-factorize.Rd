@@ -35,6 +35,8 @@ fit.zqtl.factorize(effect,              # marginal effect : y ~ x
   \item{vbiter}{Number of variational Bayes iterations (default: 2000)}
   \item{verbose}{Verbosity (default: TRUE)}
   \item{k}{Rank of the factored model (default: 1)}
+  \item{right.nn}{non-negativity in factored effect (default: TRUE)}
+  \item{mu.min}{mininum non-negativity weight (default: 0.01)}
 
   \item{out.resid}{output residuals (default: TRUE)}
   \item{print.interv}{Printing interval (default: 10)}
@@ -50,43 +52,44 @@ fit.zqtl.factorize(effect,              # marginal effect : y ~ x
 \examples{
 
 library(zqtl)
+library(Matrix)
 
-n <- 1000
-p <- 1000
+n <- 500
+p <- 2000
 m <- 50
 
 set.seed(1)
-X.raw <- sapply(1:p, function(j) {
-    f <- runif(1, min = 0.1, max = 0.9)
-    rbinom(n, 2, f)
-})
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- as.matrix(scale(X.raw))
+X <- .rnorm(n, p)
+X0 <- X[, -(1:(p/2)), drop = FALSE]
+X1 <- X[, (1:(p/2)), drop = FALSE]
+
+Y1 <- matrix(0, n, m)
 Y <- matrix(0, n, m)
 h2 <- 0.4
 
-c.snps <- sample(p, 3)
+c.snps <- sample(p / 2, 3)
 
 ## shared genetic variants
 theta.left <- .rnorm(3, 1)
 theta.right <- .rnorm(1, 3)
 theta.shared <- theta.left \%*\% theta.right
 
-Y[, 1:3] <- Y[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
+Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
 
-v0 <- var(as.numeric(Y[, 1:3]))
-v1 <- apply(Y, 2, var)
-Y[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
-Y <- Y + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
-
-Y <- scale(Y)
+v0 <- var(as.numeric(Y1[, 1:3]))
+Y1[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
+v1 <- apply(Y1, 2, var)
+Y1 <- Y1 + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
 
 ## introduce confounding factors
-uu <- .rnorm(n, 1)
-vv <- .rnorm(m, 1)
-Y <- Y + uu \%*\% t(vv) * 0.5
+uu <- .rnorm(n, 5)
+vv <- .rnorm(m, 5)
+Y0 <- uu \%*\% t(vv)
+Y <- Y1 + Y0
+Y <- scale(Y)
 
 fast.cov <- function(x, y) {
     n.obs <- crossprod(!is.na(x), !is.na(y))
@@ -104,39 +107,39 @@ fast.z.cov <- function(x, y) {
 
 xy.beta <- fast.cov(X, Y)
 z.xy <- fast.z.cov(X, Y)
-xy.beta.se <- xy.beta / z.xy
+xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
 
-vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
+vb.opt <- list(tol = 0, vbiter = 2000, jitter = 1e-2,
                pi = -1, rate = 0.01, gammax = 1e3,
-               out.resid = TRUE, 
-               eigen.tol = 1e-2, k = 10)
+               eigen.tol = 1e-1, k = m, right.nn = FALSE)
 
-library(Matrix)
 out <- fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
+
 image(Matrix(head(out$param.indiv$theta, 20)))
 image(Matrix(out$param.trait$theta))
-image(Matrix(head(out$effect.corrected, 20)))
-image(Matrix(head(out$Z.hat.corrected, 20)))
 
-################################################################
-## run factord QTL on the residuals
-vb.opt <- list(tol = 0, vbiter = 1500, jitter = 1e-2,
-               pi = -1, rate = 0.01, gammax = 1e3,
-               eigen.tol = 1e-2, k = 12)
+y.hat <- out$param.indiv$theta \%*\% t(out$param.trait$theta)
 
-out <- fit.zqtl(out$effect.corrected, xy.beta.se, X, factored = TRUE, options = vb.opt)
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y)), pch = 19, cex = .3)
 
-par(mfrow = c(3,4))
-for(k in 1:12) {
-    pip <- 1/(1+exp(-out$param.left$lodds[, k]))
-    plot(pip, main = k, ylim = c(0, 1))
-    points(c.snps, pip[c.snps], col = 2, pch = 19)
-}
+## pure null
 
-par(mfrow = c(3,4))
-for(k in 1:12) {
-    plot(out$param.right$theta[, k], main = k)
-}
+xy.beta <- fast.cov(X0, scale(Y0))
+z.xy <- fast.z.cov(X0, scale(Y0))
+xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
+
+out <- fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
+
+image(Matrix(head(out$param.indiv$theta, 20)))
+image(Matrix(out$param.trait$theta))
+
+y.hat <- out$param.indiv$theta \%*\% t(out$param.trait$theta)
+
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
+plot(as.numeric(scale(y.hat)), as.numeric(scale(Y)), pch = 19, cex = .3)
 
 }
 

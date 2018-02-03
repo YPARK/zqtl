@@ -1,6 +1,99 @@
 #ifndef RCPP_ZQTL_RUV_HH_
 #define RCPP_ZQTL_RUV_HH_
 
+// _effect        = effect size
+// _effect_se     = effect standard error
+// X              = reference panel genotype matrix
+//
+// ctrl_effect    = effect size of the control LD block
+// ctrl_effect_se = standard error of the control LD block
+// X0             = reference panel for the control LD block
+//
+//
+// 1. Fit confounder factrization
+//
+//        Z0 ~ 1/sqrt(n) X0' * C * right'
+//        Y0 ~ D U0' * C * right'
+//
+// 2. Run factored multi-trait zqtl
+//
+//        Z ~ R * thetaL * theraR' + D U' * C * theta_covar
+//        Y ~ D^2 * V' * thetaL * thetaR' +
+//                  DU' * C * theta_covar
+//
+Rcpp::List impl_fit_ruv_twostep(const Mat& _effect,          //
+                                const Mat& _effect_se,       //
+                                const Mat& X,                //
+                                const Mat& _ctrl_effect,     //
+                                const Mat& _ctrl_effect_se,  //
+                                const Mat& X0,               //
+                                const options_t& opt) {
+  // if (opt.with_ld_matrix()) {
+  //   ELOG("Deprecated: longer use full LD matrix.");
+  //   return Rcpp::List::create();
+  // }
+
+  // if (_effect.rows() != _effect_se.rows()) {
+  //   ELOG("Check dimensions of effect and se");
+  //   return Rcpp::List::create();
+  // }
+
+  // if (_ctrl_effect.rows() != _ctrl_effect_se.rows()) {
+  //   ELOG("Check dimensions of effect and se on the control LD block");
+  //   return Rcpp::List::create();
+  // }
+
+  // Mat U, D, Dsq, Vt;
+  // std::tie(U, D, Vt) = do_svd(X, opt);
+  // Dsq = D.cwiseProduct(D);
+  // TLOG("Finished SVD of genotype matrix : X");
+
+  // Mat U0, D0, D0sq, V0t;
+  // std::tie(U0, D0, V0t) = do_svd(X0, opt);
+  // D0sq = D0.cwiseProduct(D0);
+  // TLOG("Finished SVD of genotype matrix : X0");
+
+  // const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
+  // Mat Z, S, W;
+  // std::tie(Z, S, W) = preprocess_effect(_effect, _effect_se, sample_size);
+
+  // Mat Z0, S0, W0;
+  // std::tie(Z0, S0, W0) =
+  //     preprocess_effect(_ctrl_effect, _ctrl_effect_se, sample_size);
+
+  // dummy_eta_t dummy;
+
+  // // step 1. factorization
+  // const Index K = std::min(static_cast<Index>(opt.k()), Z0.cols());
+  //   Mat Y0 = V0t * Z0;
+  //   Mat DU0t = D0.asDiagonal() * U0.transpose();
+  // auto theta_covar = make_dense_col_slab<Scalar>(DU0t.cols(), K, opt);
+  // auto theta_trait = make_dense_col_spike_slab<Scalar>(Z0.cols(), K, opt);
+  // Rcpp::List step1 = Rcpp::List::create();
+  // {
+  //   auto delta_mf =
+  //       make_factored_regression_eta(DU0t, Y0, theta_covar, theta_trait);
+
+  //   zqtl_model_t<Mat> model_step1(Y0, D0sq);
+  //   Mat llik_mf =
+  //       impl_fit_eta_delta(model_step1, opt, rng, std::make_tuple(dummy),
+  //                          std::make_tuple(delta_mf));
+
+  //   step1 = Rcpp::List::create(
+  //       Rcpp::_["Y"] = Y0, Rcpp::_["DUt"] = DU0t,
+  //       Rcpp::_["theta.covar"] = param_rcpp_list(theta_covar),
+  //       Rcpp::_["theta.trait"] = param_rcpp_list(theta_trait),
+  //       Rcpp::_["llik"] = llik_mf);
+  // }
+
+  // // step2. model estimation and report 
+  // Mat Y = Vt * Z;
+  // Mat DUt = D.cwiseSqrt().asDiagonal() * U.transpose();
+
+  // Mat W = DUt * mean_param(theta_covar); // L x 
+
+}
+
 Rcpp::List impl_fit_ruv(const Mat& _effect, const Mat& _effect_se, const Mat& X,
                         const options_t& opt) {
   if (opt.with_ld_matrix()) {

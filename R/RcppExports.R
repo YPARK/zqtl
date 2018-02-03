@@ -63,6 +63,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
     stopifnot(all(dim(effect) == dim(effect.se)))
+    stopifnot(nrow(effect) == ncol(X))
     stopifnot(is.matrix(X))
 
     default.options <- list(tau.lb = -10,
@@ -88,42 +89,6 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 
     ## call R/C++ functions ##
     return(.Call('rcpp_factorize', effect, effect.se, X, options, PACKAGE = 'zqtl'))
-}
-
-fit.zqtl.ruv <- function(effect,              # marginal effect : y ~ x
-                         effect.se,           # marginal se : y ~ x
-                         X,                   # X matrix
-                         n = 0,               # sample size
-                         options = list()) {
-
-    stopifnot(is.matrix(effect))
-    stopifnot(is.matrix(effect.se))
-    stopifnot(all(dim(effect) == dim(effect.se)))
-    stopifnot(is.matrix(X))
-
-    default.options <- list(tau.lb = -10,
-                            tau.ub = -4,
-                            pi.lb = -4,
-                            pi.ub = -1,
-                            tol = 1e-4,
-                            gammax = 1000,
-                            decay = 0,
-                            rate = 1e-2,
-                            nsample = 10,
-                            vbiter = 2000,
-                            verbose = TRUE,
-                            do.stdize = TRUE,
-                            out.resid = TRUE,
-                            min.se = 1e-4,
-                            k = 1)
-
-    if(length(options) == 0) {
-        options <- default.options
-    }
-    options <- c(options, list(sample.size = n))
-
-    ## call R/C++ functions ##
-    return(.Call('rcpp_ruv_zqtl', effect, effect.se, X, options, PACKAGE = 'zqtl'))
 }
 
 fit.med.zqtl <- function(effect,              # marginal effect : y ~ x

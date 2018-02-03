@@ -38,7 +38,7 @@ struct options_t {
     MED_LODDS_CUTOFF = 0.0;
     MED_FINEMAP = false;
     MF_SVD_INIT = true;
-    MF_RIGHT_NN = false;
+    MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
 
     WEIGHT_M = false;

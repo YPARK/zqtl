@@ -18,9 +18,9 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
     return Rcpp::List::create();
   }
 
-  Mat U, D2, Vt;
-  std::tie(U, D2, Vt) = do_svd(X, opt);
-  D2 = D2.cwiseProduct(D2);
+  Mat U, D, Vt;
+  std::tie(U, D, Vt) = do_svd(X, opt);
+  Mat D2 = D.cwiseProduct(D);
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
@@ -33,18 +33,18 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
   zqtl_model_t<Mat> model(Y, D2);
   dummy_eta_t dummy;
 
+  // Intercept term
+  // eta_conf = Vt * inv(effect_sq) * C * theta_conf
+  Mat C = Mat::Ones(Vt.cols(), 1);
+  Mat VtC = Vt * (C / static_cast<Scalar>(Vt.cols()));
+  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto eta_c = make_regression_eta(VtC, Y, theta_c);
+
   // Factorization
   const Index K = std::min(static_cast<Index>(opt.k()), Y.cols());
 
   // random effect to remove non-genetic bias
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), K, opt);
-  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), K, opt);
-
-  auto delta_random =
-      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
-
-  delta_random.init_by_svd(Y, opt.jitter());
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -55,33 +55,52 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
 #endif
 
   TLOG("Fit the factorization model");
+  Mat llik;
+  Rcpp::List indiv_out = Rcpp::List::create();
+  Rcpp::List trait_out = Rcpp::List::create();
 
-  Mat llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
-                                std::make_tuple(delta_random));
+  if (opt.mf_right_nn()) {
+    // use non-negative gamma
+    auto epsilon_indiv = make_dense_col_spike_slab<Scalar>(DUt.cols(), K, opt);
+    auto epsilon_trait = make_dense_spike_gamma<Scalar>(Y.cols(), K, opt);
 
-  Mat effect_hat = _effect;
-  Mat Zhat = _effect.cwiseQuotient(_effect_se);
+    auto delta_random =
+        make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
 
-  if (opt.out_resid()) {
-    TLOG("Estimate the residuals");
-    delta_random.resolve();
-    Zhat = Vt.transpose() * (Y - delta_random.repr_mean());
-    effect_hat = Zhat.cwiseProduct(effect_sqrt);
+    delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
+
+    llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_c),
+                              std::make_tuple(delta_random));
+    indiv_out = param_rcpp_list(epsilon_indiv);
+    trait_out = param_rcpp_list(epsilon_trait);
+
+  } else {
+    auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), K, opt);
+    auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), K, opt);
+
+    auto delta_random =
+        make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
+
+    delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
+
+    llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_c),
+                              std::make_tuple(delta_random));
+    indiv_out = param_rcpp_list(epsilon_indiv);
+    trait_out = param_rcpp_list(epsilon_trait);
   }
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
 #endif
 
-  TLOG("Successfully finished!");
+  TLOG("Successfully finished factorization!");
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
-      Rcpp::_["param.indiv"] = param_rcpp_list(epsilon_indiv),
-      Rcpp::_["param.trait"] = param_rcpp_list(epsilon_trait),
-      Rcpp::_["effect.corrected"] = effect_hat,
-      Rcpp::_["Z.hat.corrected"] = Zhat, Rcpp::_["llik"] = llik);
+      Rcpp::_["conf"] = param_rcpp_list(theta_c),
+      Rcpp::_["param.indiv"] = indiv_out, Rcpp::_["param.trait"] = trait_out,
+      Rcpp::_["llik"] = llik);
 }
 
 #endif

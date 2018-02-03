@@ -388,6 +388,13 @@ Rcpp::List impl_param_rcpp_list(const T& param,
 }
 
 template <typename T>
+Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_col_spike_gamma) {
+  return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
+                            Rcpp::_["theta.var"] = var_param(param),
+                            Rcpp::_["lodds"] = log_odds_param(param));
+}
+
+template <typename T>
 Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_col_slab) {
   return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
                             Rcpp::_["theta.var"] = var_param(param));

@@ -29,9 +29,9 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     return Rcpp::List::create();
   }
 
-  Mat U, D2, Vt;
-  std::tie(U, D2, Vt) = do_svd(X, opt);
-  D2 = D2.cwiseProduct(D2);
+  Mat U, D, D2, Vt;
+  std::tie(U, D, Vt) = do_svd(X, opt);
+  D2 = D.cwiseProduct(D);
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
@@ -63,11 +63,18 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto eta = make_regression_eta(Vt, Y, theta);
   if (opt.weight_y()) eta.set_weight(weight);
 
-  // random effect
-  auto epsilon_random =
-      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
+  ////////////////////////////////////////////////////////////////
+  // random effect to remove non-genetic bias
+  const Index L = std::min(static_cast<Index>(opt.re_k()), Y.cols());
+  Mat DUt = D.asDiagonal() * U.transpose();
+
+  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), L, opt);
+  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), L, opt);
+
+  auto delta_random =
+      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
+
+  delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
 
   TLOG("Constructed effects");
 
@@ -115,13 +122,16 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   vslDeleteStream(&rng);
 #endif
 
+  TLOG("Successfully finished regression!");
+
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param"] = param_rcpp_list(theta),
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["rand.effect"] = param_rcpp_list(epsilon_random),
+      Rcpp::_["rand.indiv"] = param_rcpp_list(epsilon_indiv),
+      Rcpp::_["rand.trait"] = param_rcpp_list(epsilon_trait),
       Rcpp::_["resid"] = resid, Rcpp::_["llik"] = llik);
 }
 
@@ -150,9 +160,9 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     return Rcpp::List::create();
   }
 
-  Mat U, D2, Vt;
-  std::tie(U, D2, Vt) = do_svd(X, opt);
-  D2 = D2.cwiseProduct(D2);
+  Mat U, D, D2, Vt;
+  std::tie(U, D, Vt) = do_svd(X, opt);
+  D2 = D.cwiseProduct(D);
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
@@ -182,9 +192,20 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
   ////////////////////////////////////////////////////////////////
-  // factored parameters
-  auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
+  // random effect to remove non-genetic bias
+  const Index L = std::min(static_cast<Index>(opt.re_k()), Y.cols());
+  Mat DUt = D.asDiagonal() * U.transpose();
 
+  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), L, opt);
+  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), L, opt);
+
+  auto delta_random =
+      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
+
+  delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
+
+  ////////////////////////////////////////////////////////////////
+  // factored parameters
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
@@ -194,43 +215,49 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   std::mt19937 rng(opt.rseed());
 #endif
 
+  Rcpp::List out_left_param = Rcpp::List::create();
   Rcpp::List out_right_param = Rcpp::List::create();
   Mat llik;
 
   if (opt.mf_right_nn()) {
     // use non-negative gamma
+    auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
     auto theta_right = make_dense_spike_gamma<Scalar>(Y.cols(), K, opt);
 
     auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(Y, opt.jitter());
+      eta_f.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c));
+                              std::make_tuple(delta_random, delta_c));
 
+    out_left_param = param_rcpp_list(theta_left);
     out_right_param = param_rcpp_list(theta_right);
   } else {
+    // use regular spike-slab on both sides
+    auto theta_left = make_dense_spike_slab<Scalar>(Vt.cols(), K, opt);
     auto theta_right = make_dense_spike_slab<Scalar>(Y.cols(), K, opt);
 
     auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(Y, opt.jitter());
+      eta_f.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_c));
+                              std::make_tuple(delta_random, delta_c));
 
+    out_left_param = param_rcpp_list(theta_left);
     out_right_param = param_rcpp_list(theta_right);
   }
 
@@ -238,13 +265,17 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   vslDeleteStream(&rng);
 #endif
 
+  TLOG("Successfully finished factored regression!");
+
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
-      Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
-      Rcpp::_["param.left"] = param_rcpp_list(theta_left),
+      Rcpp::_["VtCd"] = VtCd, Rcpp::_["VtC"] = VtC, Rcpp::_["D2"] = D2,
+      Rcpp::_["S.inv"] = weight, Rcpp::_["param.left"] = out_left_param,
       Rcpp::_["param.right"] = out_right_param,
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
+      Rcpp::_["rand.indiv"] = param_rcpp_list(epsilon_indiv),
+      Rcpp::_["rand.trait"] = param_rcpp_list(epsilon_trait),
       Rcpp::_["llik"] = llik);
 }
 
