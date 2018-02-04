@@ -228,7 +228,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
+      eta_f.init_by_svd(Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
@@ -248,7 +248,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
-      eta_f.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
+      eta_f.init_by_svd(Y, opt.jitter());
     } else {
       std::mt19937 _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
