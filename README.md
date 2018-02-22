@@ -41,6 +41,10 @@ Enjoy!
 
 ## Release notes
 
+### v.1.2.1
+
+- Estimate non-genetic sharing between mediators
+
 ### v.1.2.0
 
 - Matrix factorization for confounder correction

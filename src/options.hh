@@ -45,7 +45,7 @@ struct options_t {
     WEIGHT_Y = false;
     PRETRAIN = false;
     DO_HYPER = false;
-    DO_RUV = true;
+    DO_CLEAN_MEDIATION = false;
     OUT_RESID = false;
 
     BOOTSTRAP_METHOD = 1;
@@ -59,7 +59,7 @@ struct options_t {
   const int nthread() const { return NTHREAD; };
   const int k() const { return K; };
   const int re_k() const { return RE_K; };
-  const bool do_ruv() const { return DO_RUV; };
+  const bool do_clean_mediation() const { return DO_CLEAN_MEDIATION; };
 
   const float vbtol() const { return VBTOL; };
   const float jitter() const { return JITTER; };
@@ -107,7 +107,7 @@ struct options_t {
   int NTHREAD;
   int K;
   int RE_K;
-  bool DO_RUV;
+  bool DO_CLEAN_MEDIATION;
   float VBTOL;
   float JITTER;
   int RSEED;

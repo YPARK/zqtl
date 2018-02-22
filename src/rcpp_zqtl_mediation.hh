@@ -127,8 +127,63 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   Mat U_m, D_m, Vt_m;
   std::tie(U_m, D_m, Vt_m) = do_svd(geno_m.val, opt);
+  Mat D2_m = D_m.cwiseProduct(D_m);
 
   TLOG("Finished SVD of genotype matrix");
+
+  ////////////////////////////////////////////////////////////////
+  // correct putative non-genetic sharing between mediators
+  //
+  // <<< a. fit the model >>>
+  // mediators ~ random_effect
+  // t(X_m) * mediators / sqrt(n_m) ~ t(X_m) * random_effect / sqrt(n_m)
+  //
+  // t(V_m) effect_m_z ~ N(D_m * t(U_m) * random_effect, D_m^2)
+  //
+  // <<< b. subtract out the effect >>>
+  //
+  // effect_m_z - V_m * DUt_m * random_effect
+  //
+  Rcpp::List med_cleanup = Rcpp::List::create();
+  if (opt.do_clean_mediation()) {
+    Mat M0 = Vt_m * effect_m_z;
+    Mat DUt_m = D_m.asDiagonal() * U_m.transpose();
+    const Index K0 = opt.re_k();
+
+    auto med_theta_left =
+        make_dense_col_spike_slab<Scalar>(DUt_m.cols(), K0, opt);
+    auto med_theta_right = make_dense_spike_gamma<Scalar>(M0.cols(), K0, opt);
+    auto med_rand = make_factored_regression_eta(DUt_m, M0, med_theta_left,
+                                                 med_theta_right);
+
+    med_rand.init_by_svd(D_m.cwiseInverse().asDiagonal() * M0, opt.jitter());
+
+#ifdef EIGEN_USE_MKL_ALL
+    VSLStreamStatePtr rng;
+    vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
+    omp_set_num_threads(opt.nthread());
+#else
+    std::mt19937 rng(opt.rseed());
+#endif
+
+    zqtl_model_t<Mat> model_m(M0, D2_m);
+
+    dummy_eta_t dummy;
+    auto llik_med = impl_fit_eta_delta(
+        model_m, opt, rng, std::make_tuple(dummy), std::make_tuple(med_rand));
+
+#ifdef EIGEN_USE_MKL_ALL
+    vslDeleteStream(&rng);
+#endif
+    med_rand.resolve();
+    effect_m_z -= Vt_m.transpose() * med_rand.repr_mean();
+    TLOG("Successfully corrected random effect in mediation z-scores");
+
+    med_cleanup = Rcpp::List::create(
+        Rcpp::_["llik"] = llik_med,
+        Rcpp::_["rand.indiv"] = param_rcpp_list(med_theta_left),
+        Rcpp::_["rand.trait"] = param_rcpp_list(med_theta_right));
+  }
 
   Mat Y = Vt * effect_y_z;
   zqtl_model_t<Mat> model_y(Y, D2);
@@ -161,15 +216,21 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_med = make_regression_eta(M, Y, theta_med);
 
+  Mat m_bias = M * Mat::Ones(M.cols(), 1) / static_cast<Scalar>(M.cols());
+  auto theta_med_bias =
+      make_dense_slab<Scalar>(static_cast<Index>(1), Y.cols(), opt);
+  auto delta_med_bias = make_regression_eta(m_bias, Y, theta_med_bias);
+
   // confounder
   Mat VtC = Vt * conf.val;
   auto theta_conf_y = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
   // delta_u = D t(U) epsilon
-  auto epsilon_random = make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
+  auto epsilon_random =
+      make_dense_col_spike_slab<Scalar>(U.rows(), Y.cols(), opt);
 
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  Mat DUt = D.asDiagonal() * U.transpose();
   auto delta_random = make_regression_eta(DUt, Y, epsilon_random);
 
   // construct eta_conf_y to capture direct (pleiotropic) effect
@@ -179,7 +240,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   ////////////////////////////////////////////////////////////////
   // Estimate observed full model
-  
+
 #ifdef EIGEN_USE_MKL_ALL
   // random seed initialization
   VSLStreamStatePtr rng;
@@ -189,9 +250,9 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   std::mt19937 rng(opt.rseed());
 #endif
 
-  auto llik1 = impl_fit_eta_delta(model_y, opt, rng,
-                                  std::make_tuple(eta_direct, eta_conf_y),
-                                  std::make_tuple(delta_med, delta_random));
+  auto llik1 = impl_fit_eta_delta(
+      model_y, opt, rng, std::make_tuple(eta_direct, eta_conf_y),
+      std::make_tuple(delta_med_bias, delta_med, delta_random));
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
@@ -238,8 +299,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.direct"] = param_rcpp_list(theta_direct),
       Rcpp::_["param.covariate.eta"] = param_rcpp_list(theta_conf_y),
       Rcpp::_["llik"] = llik1, Rcpp::_["bootstrap"] = boot,
-      Rcpp::_["finemap"] = finemap, Rcpp::_["rand.effect"] = rand_effect,
-      Rcpp::_["var.decomp"] = var_decomp);
+      Rcpp::_["med.cleanup"] = med_cleanup, Rcpp::_["finemap"] = finemap,
+      Rcpp::_["rand.effect"] = rand_effect, Rcpp::_["var.decomp"] = var_decomp);
 }
 
 ////////////////////////
@@ -249,8 +310,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 template <typename MODEL_Y, typename DIRECT, typename CONF, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
-                     MEDIATED_E theta_med_org,
-                     const options_t& opt, std::tuple<DATA...>&& data_tup) {
+                     MEDIATED_E theta_med_org, const options_t& opt,
+                     std::tuple<DATA...>&& data_tup) {
   Mat Y, M, U, D2, Vt, VtC, weight_y, weight_m;
   std::tie(Y, M, U, D2, Vt, VtC, weight_y, weight_m) = data_tup;
 
@@ -351,7 +412,8 @@ Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
-  auto theta_boot_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_boot_direct =
+      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
@@ -445,7 +507,8 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
 
-  auto theta_boot_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+  auto theta_boot_direct =
+      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
 
   if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
@@ -469,8 +532,7 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   std::mt19937 rng(opt.rseed());
 #endif
 
-  auto llik =
-    impl_fit_eta(model_marg, opt, rng, std::make_tuple(eta_marg));
+  auto llik = impl_fit_eta(model_marg, opt, rng, std::make_tuple(eta_marg));
 
   TLOG("Finished estimation of the marginal model\n\n");
 

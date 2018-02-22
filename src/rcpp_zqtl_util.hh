@@ -131,8 +131,10 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.NTHREAD = Rcpp::as<Index>(_list["num.thread"]);
   if (_list.containsElementNamed("k")) opt.K = Rcpp::as<Index>(_list["k"]);
   if (_list.containsElementNamed("K")) opt.K = Rcpp::as<Index>(_list["K"]);
-  if (_list.containsElementNamed("re.k")) opt.RE_K = Rcpp::as<Index>(_list["re.k"]);
-  if (_list.containsElementNamed("RE.K")) opt.RE_K = Rcpp::as<Index>(_list["RE.K"]);
+  if (_list.containsElementNamed("re.k"))
+    opt.RE_K = Rcpp::as<Index>(_list["re.k"]);
+  if (_list.containsElementNamed("RE.K"))
+    opt.RE_K = Rcpp::as<Index>(_list["RE.K"]);
   if (_list.containsElementNamed("vbiter"))
     opt.VBITER = Rcpp::as<Index>(_list["vbiter"]);
   if (_list.containsElementNamed("verbose"))
@@ -141,8 +143,10 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.WITH_RANDOM_EFFECT = Rcpp::as<bool>(_list["random.effect"]);
   if (_list.containsElementNamed("ld.matrix"))
     opt.WITH_LD_MATRIX = Rcpp::as<bool>(_list["ld.matrix"]);
-  if (_list.containsElementNamed("do.ruv"))
-    opt.DO_RUV = Rcpp::as<bool>(_list["do.ruv"]);
+  if (_list.containsElementNamed("do.clean.mediation"))
+    opt.DO_CLEAN_MEDIATION = Rcpp::as<bool>(_list["do.clean.mediation"]);
+  if (_list.containsElementNamed("do.clean.med"))
+    opt.DO_CLEAN_MEDIATION = Rcpp::as<bool>(_list["do.clean.med"]);
   if (_list.containsElementNamed("do.stdize"))
     opt.STD_LD = Rcpp::as<bool>(_list["do.stdize"]);
   if (_list.containsElementNamed("svd.init"))
@@ -388,7 +392,8 @@ Rcpp::List impl_param_rcpp_list(const T& param,
 }
 
 template <typename T>
-Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_col_spike_gamma) {
+Rcpp::List impl_param_rcpp_list(const T& param,
+                                const tag_param_col_spike_gamma) {
   return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
                             Rcpp::_["theta.var"] = var_param(param),
                             Rcpp::_["lodds"] = log_odds_param(param));

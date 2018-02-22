@@ -31,6 +31,8 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
 
   \item{options}{A list of inference/optimization options.}
   \item{do.hyper}{Hyper parameter tunign (default: FALSE)}
+  \item{do.clean.med}{Clean up mediation statistics (default: FALSE)}
+  \item{re.k}{Rank of the random effect model (default: 1)}
   \item{tau}{Fixed value of tau}
   \item{pi}{Fixed value of pi}
 
@@ -79,13 +81,15 @@ library(zqtl)
 
 n <- 1000
 p <- 2000
-n.genes <- 20
-h2 <- 0.4
+n.genes <- 100
+h2 <- 0.3
 n.causal.direct <- 4
 n.causal.qtl <- 3
 n.causal.gene <- 2
 
 set.seed(1)
+
+.rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
 X.raw <- sapply(1:p, function(j) {
     f <- runif(1, min = 0.1, max = 0.9)
@@ -96,7 +100,7 @@ X <- scale(X.raw)
 
 c.qtls <- matrix(sapply(1:n.genes, function(j) matrix(sample(p, n.causal.qtl))), nrow = n.causal.qtl)
 
-theta.snp.gene <- matrix(rnorm(n.causal.qtl * n.genes), n.causal.qtl, n.genes) / n.causal.qtl
+theta.snp.gene <- .rnorm(n.causal.qtl, n.genes) / n.causal.qtl
 
 gene.expr <- lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] \%*\% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
 
@@ -134,14 +138,18 @@ xy.beta.se <- xy.beta / z.xy
 
 .idx <- sample(n, 200)
 X.med <- X[.idx, ] ## smaller sample in mediation QTL
-xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
-z.xg <- fast.z.cov(X.med, gene.expr[.idx, ])
+
+# introduce uncorrected confounders
+gene.expr.noisy <- gene.expr + .rnorm(n, 2) \%*\% .rnorm(2, n.genes) / 2
+
+xg.beta <- fast.cov(X.med, gene.expr.noisy[.idx, ])
+z.xg <- fast.z.cov(X.med, gene.expr.noisy[.idx, ])
 xg.beta.se <- xg.beta / z.xg
 
 vb.opt <- list(nsample = 10, vbiter = 10000, rate = 1e-2, decay = - 1e-3, gammax = 1e4,
-               do.stdize = TRUE, pi = -2, tau = -8, do.hyper = FALSE, nboot = 0,
+               do.stdize = TRUE, pi = -1, tau = -8, do.hyper = FALSE, nboot = 0,
                eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
-               print.interv = 1000)
+               print.interv = 1000, do.clean.med = FALSE)
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
@@ -155,7 +163,29 @@ par(mfrow = c(2,1))
 barplot(t(med.out$param.mediated$lodds))
 plot(med.out$param.mediated$theta)
 
-print(med.out$var.decomp)
+## with confounder correction
+
+vb.opt <- list(nsample = 10, vbiter = 10000, rate = 1e-2, decay = - 1e-3, gammax = 1e4,
+               do.stdize = TRUE, pi = -1, tau = -8, do.hyper = FALSE, nboot = 0,
+               eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
+               print.interv = 1000, do.clean.med = TRUE, re.k = 10)
+
+med.out <- fit.med.zqtl(effect = xy.beta,
+                        effect.se = xy.beta.se,
+                        effect.m = xg.beta,
+                        effect.m.se = xg.beta.se,
+                        X.gwas = X, 
+                        X.med = X.med, 
+                        options = vb.opt)
+
+library(Matrix)
+image(Matrix(head(med.out$med.cleanup$rand.indiv$theta, 20)))
+image(Matrix(med.out$med.cleanup$rand.trait$theta))
+
+par(mfrow = c(2,1))
+barplot(t(med.out$param.mediated$lodds))
+plot(med.out$param.mediated$theta)
+
 
 }
 \details{}
