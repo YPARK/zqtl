@@ -177,8 +177,6 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto theta_direct = make_dense_slab<Scalar>(VtI.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(VtI, Y, theta_direct);
 
-  if (opt.weight_y()) eta_direct.set_weight(weight_y);
-
   // confounder -- or bias
   Mat VtC = Vt * conf.val;
   auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
@@ -204,12 +202,16 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     rescale(VtC);
   }
 
+  Mat var_intercept = Mat::Ones(Vt.rows(), 1);
+  auto theta_var = make_dense_slab<Scalar>(var_intercept.cols(), Y.cols(), opt);
+  auto zeta_var = make_regression_eta(var_intercept, Y, theta_var);
+
   ////////////////////////////////////////////////////////////////
   // Estimate observed full model
 
-  auto llik1 = impl_fit_eta_delta(model_y, opt, rng,
-                                  std::make_tuple(eta_direct, eta_conf_y),
-                                  std::make_tuple(delta_med));
+  auto llik1 = impl_fit_eta_delta_zeta(
+      model_y, opt, rng, std::make_tuple(eta_direct, eta_conf_y),
+      std::make_tuple(delta_med), std::make_tuple(zeta_var));
 
 #ifdef EIGEN_USE_MKL_ALL
   vslDeleteStream(&rng);
@@ -252,6 +254,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
       Rcpp::_["param.direct"] = param_rcpp_list(theta_direct),
       Rcpp::_["param.covariate.eta"] = param_rcpp_list(theta_conf_y),
+      Rcpp::_["param.var"] = param_rcpp_list(theta_var),
       Rcpp::_["llik"] = llik1, Rcpp::_["bootstrap"] = boot,
       Rcpp::_["finemap"] = finemap, Rcpp::_["var.decomp"] = var_decomp);
 }
@@ -299,7 +302,6 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
         make_dense_spike_slab<Scalar>(Y.cols(), Msub.cols(), opt);
     auto eta_med = make_mediation_eta(Vt, Msub, Vt, Y, theta_left, theta_right);
     if (opt.weight_m()) eta_med.set_weight_pk(weight_m_sub);
-    if (opt.weight_y()) eta_med.set_weight_pt(weight_y);
 
     auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
     auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
@@ -361,7 +363,6 @@ Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
   auto theta_boot_direct =
       make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
-  if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
   Mat FD = Mat::Ones(M.cols(), Y.cols());
   Mat PVAL(M.cols(), Y.cols());
@@ -447,7 +448,6 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   // this must be without spike-slab; otherwise it will become zero
   auto theta_marg = make_dense_col_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
-  if (opt.weight_y()) eta_marg.set_weight(weight_y);
 
   // bootstrap parameters
   auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
@@ -456,8 +456,6 @@ Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
   auto theta_boot_direct =
       make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
-
-  if (opt.weight_y()) eta_boot_direct.set_weight(weight_y);
 
   Mat FD = Mat::Ones(M.cols(), Y.cols());
   Mat PVAL(M.cols(), Y.cols());

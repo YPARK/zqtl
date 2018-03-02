@@ -47,6 +47,7 @@ Enjoy!
 - Confirmed usefulness of non-negative parameters
 - Simplified pleiotropy model in mediation analysis
 - Adjust scales by standard deviation
+- Variance model in mediation analysis
 
 ### v.1.1.0
 

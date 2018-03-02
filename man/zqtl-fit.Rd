@@ -40,6 +40,7 @@ fit.zqtl(effect,              # marginal effect : y ~ x
   \item{options}{A list of inference/optimization options.}
 
   \item{do.hyper}{Hyper parameter tunign (default: FALSE)}
+  \item{do.rescale}{Rescale z-scores by standard deviation (default: FALSE)}
   \item{tau}{Fixed value of tau}
   \item{pi}{Fixed value of pi}
 

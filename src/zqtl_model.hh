@@ -12,6 +12,12 @@
 // eta = X theta                                    //
 //////////////////////////////////////////////////////
 
+////////////////////////////////////////
+// Modified variance model            //
+//                                    //
+// var = D^2 * (1 + sigmoid(eta_var)) //
+////////////////////////////////////////
+
 template <typename T>
 struct zqtl_model_t {
   using Scalar = typename T::Scalar;
@@ -26,6 +32,7 @@ struct zqtl_model_t {
         m(yy.cols()),
         Y(k, m),
         var0(k, 1),
+        var_mat(k, m),
         llik_mat(k, m),
         resid_mat(k, m),
         evidence_mat(k, m) {
@@ -41,8 +48,7 @@ struct zqtl_model_t {
   }
 
   ////////////////////////////////////////////////////////////////
-  // llik[i] = -var[i] eta[i]^2 / 2
-  //          + y[i] eta[i]
+  // llik[i] = -var[i] eta[i]^2 / 2 + y[i] eta[i]
   template <typename Derived>
   const T& eval_eta(const Dense<Derived>& eta) {
     const Scalar half_val = static_cast<Scalar>(0.5);
@@ -61,6 +67,22 @@ struct zqtl_model_t {
   }
 
   ////////////////////////////////////////////////////////////////
+  // llik[i] = -var[i] eta[i]^2 / 2 + y[i] eta[i]
+  template <typename Derived, typename Derived2>
+  const T& eval_eta_zeta(const Dense<Derived>& eta,
+                         const Dense<Derived2>& zeta) {
+    const Scalar half_val = static_cast<Scalar>(0.5);
+
+    var_mat = var0.asDiagonal() * zeta.unaryExpr(upweight_var_op);
+
+    llik_mat = (var_mat.cwiseProduct(eta).cwiseProduct(eta) * (-half_val) +
+                Y.cwiseProduct(eta))
+                   .cwiseProduct(evidence_mat);
+
+    return llik_mat;
+  }
+
+  ////////////////////////////////////////////////////////////////
   // llik[i] = y[i] eta[i] - var[i] eta[i]^2 / 2
   //           + y[i] delta[i] / var[i] - delta[i]^2 / 2 * var[i]
   //           - delta[i] eta[i]
@@ -70,12 +92,32 @@ struct zqtl_model_t {
   template <typename Derived, typename Derived2>
   const T& eval_eta_delta(const Dense<Derived>& eta,
                           const Dense<Derived2>& delta) {
+    const Scalar neg_half_val = static_cast<Scalar>(-0.5);
+
+    llik_mat = (var0.asDiagonal() * eta.cwiseProduct(eta) * neg_half_val +
+                Y.cwiseProduct(eta) +
+                var0.cwiseInverse().asDiagonal() *
+                    (Y.cwiseProduct(delta) +
+                     delta.cwiseProduct(delta) * neg_half_val) -
+                delta.cwiseProduct(eta))
+                   .cwiseProduct(evidence_mat);
+
+    return llik_mat;
+  }
+
+  template <typename Derived, typename Derived2, typename Derived3>
+  const T& eval_eta_delta_zeta(const Dense<Derived>& eta,
+                               const Dense<Derived2>& delta,
+                               const Dense<Derived3>& zeta) {
+    const Scalar neg_half_val = static_cast<Scalar>(-0.5);
+
+    var_mat = var0.asDiagonal() * zeta.unaryExpr(upweight_var_op);
+
     llik_mat =
-        (var0.asDiagonal() * eta.cwiseProduct(eta) * static_cast<Scalar>(-0.5) +
+        (var_mat.cwiseProduct(eta).cwiseProduct(eta) * neg_half_val +
          Y.cwiseProduct(eta) +
-         var0.cwiseInverse().asDiagonal() *
-             (Y.cwiseProduct(delta) +
-              delta.cwiseProduct(delta) * static_cast<Scalar>(-0.5)) -
+         (Y.cwiseProduct(delta) + delta.cwiseProduct(delta) * neg_half_val)
+             .cwiseQuotient(var_mat) -
          delta.cwiseProduct(eta))
             .cwiseProduct(evidence_mat);
 
@@ -99,6 +141,7 @@ struct zqtl_model_t {
  private:
   T Y;             // k x m, V' * Z
   T var0;          // k x 1, eigen values of LD matrix
+  T var_mat;       // k x m, var0[k] * (1 + sigmoid(zeta[k, m]))
   T llik_mat;      // k x m
   T resid_mat;     // k x m
   T evidence_mat;  // k x m
@@ -107,6 +150,19 @@ struct zqtl_model_t {
     inline const Scalar operator()(const Scalar& v) const { return v + vmin; }
     static constexpr Scalar vmin = 1e-8;
   } add_vmin_op;
+
+  // 1 + sigmoid(x)
+  struct upweight_var_op_t {
+    inline const Scalar operator()(const Scalar& x) const {
+      if (-(x + offset) < large_value)
+        return one_val + one_val / (one_val + fasterexp(-(x + offset)));
+      return one_val +
+             fasterexp(x + offset) / (one_val + fasterexp(x + offset));
+    }
+    const Scalar one_val = 1.0;
+    const Scalar offset = -5.0;
+    const Scalar large_value = 20.0;  // exp(20) is too big
+  } upweight_var_op;
 
   std::mt19937 rng;
   std::normal_distribution<Scalar> distrib;

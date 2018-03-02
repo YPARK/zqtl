@@ -63,20 +63,17 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto eta = make_regression_eta(Vt, Y, theta);
   if (opt.weight_y()) eta.set_weight(weight);
 
-  ////////////////////////////////////////////////////////////////
-  // random effect to remove non-genetic bias
-  const Index L = std::min(static_cast<Index>(opt.re_k()), Y.cols());
-  Mat DUt = D.asDiagonal() * U.transpose();
-
-  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), L, opt);
-  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), L, opt);
-
-  auto delta_random =
-      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
-
-  delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
-
   TLOG("Constructed effects");
+
+  ////////////////////////////////////////////////////////////////
+  // Match scales -- just to help inference
+
+  if (opt.do_rescale()) {
+    rescale(Y);
+    rescale(Vt);
+    rescale(VtC);
+    rescale(VtCd);
+  }
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -88,7 +85,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 #endif
 
   auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
-                                 std::make_tuple(delta_c, delta_random));
+                                 std::make_tuple(delta_c));
 
   // take residuals
   Rcpp::List resid = Rcpp::List::create();
@@ -101,12 +98,11 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     eta.resolve();
     eta_c.resolve();
     delta_c.resolve();
-    delta_random.resolve();
 
     dummy_eta_t dummy;
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(eta, eta_c), std::make_tuple(delta_c, delta_random));
+        std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
 
     delta_resid.resolve();
     Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
@@ -130,8 +126,6 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["param"] = param_rcpp_list(theta),
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["rand.indiv"] = param_rcpp_list(epsilon_indiv),
-      Rcpp::_["rand.trait"] = param_rcpp_list(epsilon_trait),
       Rcpp::_["resid"] = resid, Rcpp::_["llik"] = llik);
 }
 
@@ -190,6 +184,16 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto theta_c_delta =
       make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
+
+  ////////////////////////////////////////////////////////////////
+  // Match scales -- just to help inference
+
+  if (opt.do_rescale()) {
+    rescale(Y);
+    rescale(Vt);
+    rescale(VtC);
+    rescale(VtCd);
+  }
 
   ////////////////////////////////////////////////////////////////
   // factored parameters
