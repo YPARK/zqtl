@@ -706,6 +706,39 @@ auto standardize(Eigen::MatrixBase<Derived>& Xraw,
   Xraw.derived() = X;
 }
 
+////////////////////////////////////////////////////////////////
+template <typename Derived>
+auto rescale(Eigen::MatrixBase<Derived>& Xraw,
+             const typename Derived::Scalar EPS = 1e-8) {
+  using Index = typename Derived::Index;
+  using Scalar = typename Derived::Scalar;
+  using mat_t = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+  using RowVec = typename Eigen::internal::plain_row_type<Derived>::type;
+
+  const Index n = Xraw.rows();
+  const Index p = Xraw.cols();
+  is_obs_op<mat_t> obs_op;
+
+  // Remove NaN
+  mat_t X = Xraw.unaryExpr(obs_op);
+  const RowVec num_obs = X.colwise().sum();
+
+  // calculate statistics
+  remove_missing(Xraw, X);
+  const RowVec x_mean = X.colwise().sum().cwiseQuotient(num_obs);
+  const RowVec x2_mean =
+      X.cwiseProduct(X).colwise().sum().cwiseQuotient(num_obs);
+  const RowVec x_sd = (x2_mean - x_mean.cwiseProduct(x_mean)).cwiseSqrt();
+
+  // standardize
+  for (Index j = 0; j < X.cols(); ++j) {
+    const Scalar sd = x_sd(j) + EPS;
+    X.col(j) = X.col(j) / sd;
+  }
+
+  Xraw.derived() = X;
+}
+
 template <typename Derived>
 auto center(Eigen::MatrixBase<Derived>& Xraw) {
   using Index = typename Derived::Index;

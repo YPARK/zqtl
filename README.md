@@ -41,14 +41,12 @@ Enjoy!
 
 ## Release notes
 
-### v.1.2.1
-
-- Estimate non-genetic sharing between mediators
-
 ### v.1.2.0
 
 - Matrix factorization for confounder correction
 - Confirmed usefulness of non-negative parameters
+- Simplified pleiotropy model in mediation analysis
+- Adjust scales by standard deviation
 
 ### v.1.1.0
 

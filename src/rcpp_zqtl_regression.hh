@@ -192,19 +192,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
   ////////////////////////////////////////////////////////////////
-  // random effect to remove non-genetic bias
-  const Index L = std::min(static_cast<Index>(opt.re_k()), Y.cols());
-  Mat DUt = D.asDiagonal() * U.transpose();
-
-  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), L, opt);
-  auto epsilon_trait = make_dense_col_spike_slab<Scalar>(Y.cols(), L, opt);
-
-  auto delta_random =
-      make_factored_regression_eta(DUt, Y, epsilon_indiv, epsilon_trait);
-
-  delta_random.init_by_svd(D.cwiseInverse().asDiagonal() * Y, opt.jitter());
-
-  ////////////////////////////////////////////////////////////////
   // factored parameters
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -235,7 +222,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_random, delta_c));
+                              std::make_tuple(delta_c));
 
     out_left_param = param_rcpp_list(theta_left);
     out_right_param = param_rcpp_list(theta_right);
@@ -255,7 +242,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     }
 
     llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta_f, eta_c),
-                              std::make_tuple(delta_random, delta_c));
+                              std::make_tuple(delta_c));
 
     out_left_param = param_rcpp_list(theta_left);
     out_right_param = param_rcpp_list(theta_right);
@@ -274,8 +261,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["param.right"] = out_right_param,
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["rand.indiv"] = param_rcpp_list(epsilon_indiv),
-      Rcpp::_["rand.trait"] = param_rcpp_list(epsilon_trait),
       Rcpp::_["llik"] = llik);
 }
 

@@ -143,10 +143,10 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.WITH_RANDOM_EFFECT = Rcpp::as<bool>(_list["random.effect"]);
   if (_list.containsElementNamed("ld.matrix"))
     opt.WITH_LD_MATRIX = Rcpp::as<bool>(_list["ld.matrix"]);
-  if (_list.containsElementNamed("do.clean.mediation"))
-    opt.DO_CLEAN_MEDIATION = Rcpp::as<bool>(_list["do.clean.mediation"]);
-  if (_list.containsElementNamed("do.clean.med"))
-    opt.DO_CLEAN_MEDIATION = Rcpp::as<bool>(_list["do.clean.med"]);
+  if (_list.containsElementNamed("do.rescale"))
+    opt.DO_RESCALE = Rcpp::as<bool>(_list["do.rescale"]);
+  if (_list.containsElementNamed("rescale"))
+    opt.DO_RESCALE = Rcpp::as<bool>(_list["rescale"]);
   if (_list.containsElementNamed("do.stdize"))
     opt.STD_LD = Rcpp::as<bool>(_list["do.stdize"]);
   if (_list.containsElementNamed("svd.init"))
