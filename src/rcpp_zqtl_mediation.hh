@@ -285,8 +285,7 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
         make_dense_spike_slab<Scalar>(Vt.cols(), Msub.cols(), opt);
     auto theta_right = make_dense_slab<Scalar>(Y.cols(), Msub.cols(), opt);
     auto eta_med = make_mediation_eta(Vt, Msub, Vt, Y, theta_left, theta_right);
-
-    eta_med.init_by_ls(Msub, Y, opt.jitter());
+    eta_med.resolve();
 
     auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
     auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
