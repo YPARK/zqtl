@@ -12,7 +12,7 @@ struct options_t {
     RE_K = 1;
     VBTOL = 1e-6;
     NSAMPLE = 10;
-    NBOOT = 100;
+    NBOOT = 0;
     NTHREAD = 1;
     JITTER = 1e-2;
     RSEED = 13;

@@ -218,6 +218,31 @@ struct mediation_t {
     resolve();
   }
 
+  inline void init_by_svd(const YMatrix& yy, const Scalar sd) {
+    YMatrix Y;
+    remove_missing(yy, Y);
+    Y = Y / static_cast<Scalar>(n);
+    YMatrix XtY = X.transpose() * Y;
+    standardize(XtY);
+
+    Eigen::JacobiSVD<YMatrix> svd(XtY,
+                                  Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    ParamLeftMatrix left = svd.matrixU() * sd;
+    ParamRightMatrix right = svd.matrixV() * sd;
+
+    right = right * svd.singularValues().asDiagonal();  // break symmetry
+
+    ThetaL.beta.setZero();
+    ThetaR.beta.setZero();
+    ThetaL.beta.leftCols(k) = left.leftCols(k);
+    ThetaR.beta.leftCols(k) = right.leftCols(k);
+
+    resolve_param(ThetaL);
+    resolve_param(ThetaR);
+    this->resolve();
+  }
+
   template <typename Derived>
   void set_weight_pt(Eigen::MatrixBase<Derived>& _weight_pt) {
     ASSERT(_weight_pt.rows() == p && _weight_pt.cols() == t,
@@ -258,10 +283,9 @@ struct mediation_t {
     ThetaL.beta = XtM * sd;
     for (Index j = 0; j < t; ++j) {
       ThetaR.beta.row(j) +=
-          sd *
-          XtM.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV)
-              .solve(WtY.col(j))
-              .transpose();
+          sd * XtM.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV)
+                   .solve(WtY.col(j))
+                   .transpose();
     }
 
     resolve_param(ThetaL);
@@ -276,9 +300,9 @@ struct mediation_t {
   void resolve() {
     // on M model
     update_mean(EtaM, X * ThetaL.theta.cwiseProduct(weight_pk)); /* X x mean */
-    update_var(EtaM, Xsq *
-                         ThetaL.theta_var.cwiseProduct(weight_pk).cwiseProduct(
-                             weight_pk)); /* X.*X x var */
+    update_var(EtaM,
+               Xsq * ThetaL.theta_var.cwiseProduct(weight_pk).cwiseProduct(
+                         weight_pk)); /* X.*X x var */
 
     // on Y model
     update_mean(EtaY, W * ((ThetaL.theta.cwiseProduct(weight_pk) *
@@ -383,8 +407,8 @@ struct mediation_t {
 
   void _compute_sgd_right() {
     // (3) update of G1R
-    G1R = (EtaY.get_grad_type1().transpose() *
-           W).cwiseProduct(weight_pt.transpose()) *
+    G1R = (EtaY.get_grad_type1().transpose() * W)
+                  .cwiseProduct(weight_pt.transpose()) *
               mean_param(ThetaL).cwiseProduct(weight_pk) +
           ((EtaY.get_grad_type2().transpose() * Wsq)
                .cwiseProduct(weight_pt.transpose())

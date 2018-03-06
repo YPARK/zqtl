@@ -64,6 +64,7 @@ struct zqtl_model_t {
     auto rnorm = [this](const Scalar& x) { return distrib(rng); };
     Y = var0.cwiseSqrt().asDiagonal() * Y.unaryExpr(rnorm) +
         var0.asDiagonal() * eta;
+    return Y;
   }
 
   ////////////////////////////////////////////////////////////////
@@ -129,6 +130,7 @@ struct zqtl_model_t {
     auto rnorm = [this](const Scalar& x) { return distrib(rng); };
     Y = var0.cwiseSqrt().asDiagonal() * Y.unaryExpr(rnorm) +
         var0.asDiagonal() * eta + delta;
+    return Y;
   }
 
   const T& llik() const { return llik_mat; }

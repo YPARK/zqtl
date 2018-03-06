@@ -227,23 +227,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   TLOG("Finished joint model estimation\n\n");
 
-  Rcpp::List boot = Rcpp::List::create();
-
-  if (opt.nboot() > 0) {
-    if (opt.do_hyper())
-      WLOG("bootstrap with do_hyper() can yield invalid null");
-
-    if (opt.bootstrap_method() == 1) {
-      boot = _bootstrap_direct(log_odds_param(theta_med), eta_direct, opt,
-                               std::make_tuple(Y, M, D2, weight_y, Vt));
-    } else if (opt.bootstrap_method() == 2) {
-      boot = _bootstrap_marginal(log_odds_param(theta_med), opt,
-                                 std::make_tuple(Y, M, D2, weight_y, U, Vt));
-    }
-  }
-
   Rcpp::List var_decomp = _variance_calculation(
-      eta_direct, delta_med, theta_med, opt, std::make_tuple(Y, M, U, D2, Vt));
+      eta_direct, delta_med, theta_med, opt, std::make_tuple(Y, M, U, D2));
 
   TLOG("Finished variance decomposition\n\n");
 
@@ -255,8 +240,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.direct"] = param_rcpp_list(theta_direct),
       Rcpp::_["param.covariate.eta"] = param_rcpp_list(theta_conf_y),
       Rcpp::_["param.var"] = param_rcpp_list(theta_var),
-      Rcpp::_["llik"] = llik1, Rcpp::_["bootstrap"] = boot,
-      Rcpp::_["finemap"] = finemap, Rcpp::_["var.decomp"] = var_decomp);
+      Rcpp::_["llik"] = llik1, Rcpp::_["finemap"] = finemap,
+      Rcpp::_["var.decomp"] = var_decomp);
 }
 
 ////////////////////////
@@ -298,10 +283,10 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
 
     auto theta_left =
         make_dense_spike_slab<Scalar>(Vt.cols(), Msub.cols(), opt);
-    auto theta_right =
-        make_dense_spike_slab<Scalar>(Y.cols(), Msub.cols(), opt);
+    auto theta_right = make_dense_slab<Scalar>(Y.cols(), Msub.cols(), opt);
     auto eta_med = make_mediation_eta(Vt, Msub, Vt, Y, theta_left, theta_right);
-    if (opt.weight_m()) eta_med.set_weight_pk(weight_m_sub);
+
+    eta_med.init_by_ls(Msub, Y, opt.jitter());
 
     auto theta_conf_m = make_dense_slab<Scalar>(VtC.cols(), Msub.cols(), opt);
     auto eta_conf_m = make_regression_eta(VtC, Msub, theta_conf_m);
@@ -319,15 +304,15 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
     std::mt19937 rng(opt.rseed());
 #endif
 
-    auto llik2 =
-        impl_fit_mediation(model_y, model_m, opt, rng,
-                           std::make_tuple(eta_med),     // mediation
-                           std::make_tuple(eta_conf_y),  // eta[y] only
-                           std::make_tuple(eta_conf_m),  // eta[m] only
-                           std::make_tuple(dummy),       // delta[y]
-                           std::make_tuple(dummy),       // delta[m]
-                           std::make_tuple(eta_direct),  // clamped eta[y]
-                           std::make_tuple(dummy));      // clamped eta[m]
+    auto llik2 = impl_fit_mediation(
+        model_y, model_m, opt, rng,
+        std::make_tuple(eta_med),                 // mediation
+        std::make_tuple(dummy),                   // eta[y] only
+        std::make_tuple(eta_conf_m),              // eta[m] only
+        std::make_tuple(dummy),                   // delta[y]
+        std::make_tuple(dummy),                   // delta[m]
+        std::make_tuple(eta_direct, eta_conf_y),  // clamped eta[y]
+        std::make_tuple(dummy));                  // clamped eta[m]
 
 #ifdef EIGEN_USE_MKL_ALL
     vslDeleteStream(&rng);
@@ -345,198 +330,13 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
   return finemap;
 }
 
-////////////////////////
-// bootstrap method I //
-////////////////////////
-
-template <typename DIRECT, typename... DATA>
-Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
-                             const options_t& opt,
-                             std::tuple<DATA...>&& data_tup) {
-  Mat Y, M, D2, weight_y, Vt;
-  std::tie(Y, M, D2, weight_y, Vt) = data_tup;
-
-  // bootstrap parameters
-  auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
-  auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
-
-  auto theta_boot_direct =
-      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-  auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
-
-  Mat FD = Mat::Ones(M.cols(), Y.cols());
-  Mat PVAL(M.cols(), Y.cols());
-
-  const Scalar zero_val = 0.0;
-  const Scalar one_val = 1.0;
-
-  auto add_false_discovery = [&](const Scalar& obs, const Scalar& perm) {
-    if (obs <= perm) return one_val;
-    return zero_val;
-  };
-
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
-
-  Index nboot;
-  Index nmed = theta_boot_med.rows();
-  Index nout = theta_boot_med.cols();
-  running_stat_t<Mat> LODDS(nmed, nout);
-  zqtl_model_t<Mat> boot_model(Y, D2);
-  Mat lodds_boot_mat = Mat::Zero(nmed, opt.nboot() * nout);
-
-  for (nboot = 0; nboot < opt.nboot(); ++nboot) {
-    const Scalar denom = static_cast<Scalar>(nboot + 2.0);
-
-    eta_direct.resolve();
-    boot_model.sample(eta_direct.sample(rng));
-
-    initialize_param(theta_boot_direct);
-    initialize_param(theta_boot_med);
-
-    impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
-                       std::make_tuple(delta_boot_med));
-
-    Mat log_odds = log_odds_param(theta_boot_med);
-    FD += obs_lodds.binaryExpr(log_odds, add_false_discovery);
-
-    // start = 1 + nboot * nout, end = (nboot + 1) * nout
-    for (Index j = 0; j < nout; ++j)
-      lodds_boot_mat.col(j + nboot * nout) = log_odds.col(j);
-
-    PVAL = FD / denom;
-    LODDS(log_odds_param(theta_boot_med));
-
-    TLOG("Bootstrap : " << (nboot + 1) << " / " << opt.nboot()
-                        << " min p-value " << PVAL.minCoeff() << " max p-value "
-                        << PVAL.maxCoeff());
-
-    initialize_param(theta_boot_direct);
-    initialize_param(theta_boot_med);
-  }
-  TLOG("Finished bootstrapping by direct model\n\n");
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
-  return Rcpp::List::create(
-      Rcpp::_["stat.mat"] = lodds_boot_mat, Rcpp::_["nboot"] = nboot + 1,
-      Rcpp::_["pval"] = PVAL, Rcpp::_["fd"] = FD,
-      Rcpp::_["lodds.mean"] = LODDS.mean(), Rcpp::_["lodds.var"] = LODDS.var());
-}
-
-/////////////////////////
-// bootstrap method II //
-/////////////////////////
-
-template <typename... DATA>
-Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
-                               std::tuple<DATA...>&& data_tup) {
-  Mat Y, M, D2, weight_y, U, Vt;
-  std::tie(Y, M, D2, weight_y, U, Vt) = data_tup;
-
-  ////////////////////////////////////////////////////////////////
-  // Estimate the marginal model
-  zqtl_model_t<Mat> model_marg(Y, D2);
-
-  // this must be without spike-slab; otherwise it will become zero
-  auto theta_marg = make_dense_col_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-  auto eta_marg = make_regression_eta(Vt, Y, theta_marg);
-
-  // bootstrap parameters
-  auto theta_boot_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
-  auto delta_boot_med = make_regression_eta(M, Y, theta_boot_med);
-
-  auto theta_boot_direct =
-      make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-  auto eta_boot_direct = make_regression_eta(Vt, Y, theta_boot_direct);
-
-  Mat FD = Mat::Ones(M.cols(), Y.cols());
-  Mat PVAL(M.cols(), Y.cols());
-
-  const Scalar zero_val = 0.0;
-  const Scalar one_val = 1.0;
-
-  auto add_false_discovery = [&](const Scalar& obs, const Scalar& perm) {
-    if (obs <= perm) return one_val;
-    return zero_val;
-  };
-
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
-
-  auto llik = impl_fit_eta(model_marg, opt, rng, std::make_tuple(eta_marg));
-
-  TLOG("Finished estimation of the marginal model\n\n");
-
-  Index nboot;
-  Index nmed = theta_boot_med.rows();
-  Index nout = theta_boot_med.cols();
-  running_stat_t<Mat> LODDS(nmed, nout);
-  zqtl_model_t<Mat> boot_model(Y, D2);
-  Mat lodds_boot_mat = Mat::Zero(nmed, opt.nboot() * nout);
-
-  for (nboot = 0; nboot < opt.nboot(); ++nboot) {
-    const Scalar denom = static_cast<Scalar>(nboot + 2.0);
-    eta_marg.resolve();
-    boot_model.sample(eta_marg.sample(rng));
-
-    initialize_param(theta_boot_direct);
-    initialize_param(theta_boot_med);
-
-    impl_fit_eta_delta(boot_model, opt, rng, std::make_tuple(eta_boot_direct),
-                       std::make_tuple(delta_boot_med));
-
-    Mat log_odds = log_odds_param(theta_boot_med);
-    FD += obs_lodds.binaryExpr(log_odds, add_false_discovery);
-
-    // start = 1 + nboot * nout, end = (nboot + 1) * nout
-    for (Index j = 0; j < nout; ++j)
-      lodds_boot_mat.col(j + nboot * nout) = log_odds.col(j);
-
-    PVAL = FD / denom;
-    LODDS(log_odds_param(theta_boot_med));
-
-    TLOG("bootstrap : " << (nboot + 1) << " / " << opt.nboot()
-                        << " min p-value " << PVAL.minCoeff() << " max p-value "
-                        << PVAL.maxCoeff());
-
-    initialize_param(theta_boot_direct);
-    initialize_param(theta_boot_med);
-  }
-
-  TLOG("Finished bootstrapping by marginal model\n\n");
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
-  return Rcpp::List::create(
-      Rcpp::_["stat.mat"] = lodds_boot_mat,
-      Rcpp::_["marginal"] = param_rcpp_list(theta_marg),
-      Rcpp::_["nboot"] = nboot + 1, Rcpp::_["pval"] = PVAL, Rcpp::_["fd"] = FD,
-      Rcpp::_["lodds.mean"] = LODDS.mean(), Rcpp::_["lodds.var"] = LODDS.var(),
-      Rcpp::_["llik.marg"] = llik);
-}
-
 template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
                                  MEDIATED_E theta_med, const options_t& opt,
                                  std::tuple<DATA...>&& data_tup) {
-  Mat Y, M, U, D2, Vt;
-  std::tie(Y, M, U, D2, Vt) = data_tup;
+  Mat Y, M, U, D2;
+  std::tie(Y, M, U, D2) = data_tup;
 
   const Index _n = U.rows();
   const Index _T = Y.cols();
