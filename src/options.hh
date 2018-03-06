@@ -45,7 +45,7 @@ struct options_t {
     WEIGHT_Y = false;
     PRETRAIN = false;
     DO_HYPER = false;
-    DO_RESCALE = false;
+    DO_RESCALE = true;
     OUT_RESID = false;
 
     BOOTSTRAP_METHOD = 1;

@@ -24,27 +24,35 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
-  Mat effect_z, effect_sqrt, weight;
+  Mat _effect_z, effect_sqrt, weight;
 
-  std::tie(effect_z, effect_sqrt, weight) =
+  std::tie(_effect_z, effect_sqrt, weight) =
       preprocess_effect(_effect, _effect_se, sample_size);
 
+  Mat effect_z = _effect_z;
+
+  if (opt.do_rescale()) {
+    effect_z = standardize_zscore(_effect_z, Vt, D);
+    TLOG("Standardized z-scores");
+  }
+
   Mat Y = Vt * effect_z;
+
+  // Intercept term
+  Mat C = Mat::Ones(Vt.cols(), 1);
+  Mat VtC = Vt * (C / static_cast<Scalar>(Vt.cols()));
+  // random effect to remove non-genetic bias
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+
   zqtl_model_t<Mat> model(Y, D2);
   dummy_eta_t dummy;
 
-  // Intercept term
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
-  Mat C = Mat::Ones(Vt.cols(), 1);
-  Mat VtC = Vt * (C / static_cast<Scalar>(Vt.cols()));
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
   // Factorization
   const Index K = std::min(static_cast<Index>(opt.k()), Y.cols());
-
-  // random effect to remove non-genetic bias
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;

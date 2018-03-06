@@ -108,12 +108,12 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   TLOG("GWAS sample size = " << opt.sample_size());
   TLOG("Mediator sample size = " << opt.m_sample_size());
 
-  Mat effect_y_z, effect_sqrt_y, weight_y;
-  std::tie(effect_y_z, effect_sqrt_y, weight_y) =
+  Mat _effect_y_z, effect_sqrt_y, weight_y;
+  std::tie(_effect_y_z, effect_sqrt_y, weight_y) =
       preprocess_effect(yy.val, yy_se.val, n);
 
-  Mat effect_m_z, effect_sqrt_m, weight_m;
-  std::tie(effect_m_z, effect_sqrt_m, weight_m) =
+  Mat _effect_m_z, effect_sqrt_m, weight_m;
+  std::tie(_effect_m_z, effect_sqrt_m, weight_m) =
       preprocess_effect(mm.val, mm_se.val, n1);
 
   /////////////////////////////////
@@ -129,6 +129,16 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Mat D2_m = D_m.cwiseProduct(D_m);
 
   TLOG("Finished SVD of genotype matrix");
+
+  Mat effect_y_z = _effect_y_z;
+  Mat effect_m_z = _effect_m_z;
+
+  if (opt.do_rescale()) {
+    effect_y_z = standardize_zscore(_effect_y_z, Vt, D);
+    effect_m_z = standardize_zscore(_effect_m_z, Vt_m, D_m);
+
+    TLOG("Standardized z-scores");
+  }
 
   // alpha.uni           = S1 R1 inv(S1) alpha
   //
@@ -157,6 +167,9 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   Mat Y = Vt * effect_y_z;
   Mat M = Vt * effect_m_z;
+  Mat VtI = Vt * Mat::Ones(Vt.cols(), static_cast<Index>(1)) /
+            static_cast<Scalar>(Vt.cols());
+  Mat VtC = Vt * conf.val;
 
   zqtl_model_t<Mat> model_y(Y, D2);
 
@@ -172,13 +185,10 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   // intercept    ~ R 1 theta
   // Vt intercept ~ D2 Vt 1 theta
-  Mat VtI = Vt * Mat::Ones(Vt.cols(), static_cast<Index>(1)) /
-            static_cast<Scalar>(Vt.cols());
   auto theta_direct = make_dense_slab<Scalar>(VtI.cols(), Y.cols(), opt);
   auto eta_direct = make_regression_eta(VtI, Y, theta_direct);
 
   // confounder -- or bias
-  Mat VtC = Vt * conf.val;
   auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
 
@@ -190,17 +200,6 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 #else
   std::mt19937 rng(opt.rseed());
 #endif
-
-  ////////////////////////////////////////////////////////////////
-  // Match scales -- just to help inference
-
-  if (opt.do_rescale()) {
-    rescale(Y);
-    rescale(M);
-    rescale(VtI);
-    rescale(Vt);
-    rescale(VtC);
-  }
 
   Mat var_intercept = Mat::Ones(Vt.rows(), 1);
   auto theta_var = make_dense_slab<Scalar>(var_intercept.cols(), Y.cols(), opt);

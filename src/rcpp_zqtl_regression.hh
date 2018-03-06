@@ -35,25 +35,31 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
-  Mat effect_z, effect_sqrt, weight;
+  Mat _effect_z, effect_sqrt, weight;
 
-  std::tie(effect_z, effect_sqrt, weight) =
+  std::tie(_effect_z, effect_sqrt, weight) =
       preprocess_effect(_effect, _effect_se, sample_size);
 
-  Mat Y = Vt * effect_z;
+  Mat effect_z = _effect_z;
+
+  if (opt.do_rescale()) {
+    effect_z = standardize_zscore(_effect_z, Vt, D);
+    TLOG("Standardized z-scores");
+  }
+
+  Mat Y = Vt * effect_z;   // GWAS
+  Mat VtC = Vt * C;        // confounder
+  Mat VtCd = Vt * Cdelta;  // To correct for phenotype corr
+
   zqtl_model_t<Mat> model(Y, D2);
 
   TLOG("Constructed zqtl model");
 
-  // confounder
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
-  Mat VtC = Vt * C;
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
 
-  // This is useful to correct for phenotype correlations
   // delta_conf = Vt * Cdelta * theta_conf
-  Mat VtCd = Vt * Cdelta;
   auto theta_c_delta =
       make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
@@ -62,18 +68,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
   if (opt.weight_y()) eta.set_weight(weight);
-
   TLOG("Constructed effects");
-
-  ////////////////////////////////////////////////////////////////
-  // Match scales -- just to help inference
-
-  if (opt.do_rescale()) {
-    rescale(Y);
-    rescale(Vt);
-    rescale(VtC);
-    rescale(VtCd);
-  }
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -160,10 +155,17 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   TLOG("Finished SVD of genotype matrix");
 
   const Scalar sample_size = static_cast<Scalar>(opt.sample_size());
-  Mat effect_z, effect_sqrt, weight;
+  Mat _effect_z, effect_sqrt, weight;
 
-  std::tie(effect_z, effect_sqrt, weight) =
+  std::tie(_effect_z, effect_sqrt, weight) =
       preprocess_effect(_effect, _effect_se, sample_size);
+
+  Mat effect_z = _effect_z;
+
+  if (opt.do_rescale()) {
+    effect_z = standardize_zscore(_effect_z, Vt, D);
+    TLOG("Standardized z-scores");
+  }
 
   Mat Y = Vt * effect_z;
   zqtl_model_t<Mat> model(Y, D2);
@@ -195,8 +197,8 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     rescale(VtCd);
   }
 
-  ////////////////////////////////////////////////////////////////
-  // factored parameters
+    ////////////////////////////////////////////////////////////////
+    // factored parameters
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
