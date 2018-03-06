@@ -57,7 +57,6 @@ fit.zqtl(effect,              # marginal effect : y ~ x
   \item{vbiter}{Number of variational Bayes iterations (default: 2000)}
   \item{verbose}{Verbosity (default: TRUE)}
   \item{k}{Rank of the factored model (default: 1)}
-  \item{re.k}{Rank of the random effect model (default: 1)}
 
   \item{right.nn}{non-negativity in factored effect (default: TRUE)}
   \item{mu.min}{mininum non-negativity weight (default: 0.01)}
@@ -144,17 +143,6 @@ out <- fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
 .rnd <- c(c.snps, setdiff(sample(p, 20), c.snps))
 image(Matrix(out$param.left$lodds[.rnd, ]))
 image(Matrix(out$param.right$lodds))
-
-## show confounders
-image(Matrix(head(out$rand.indiv$theta, 20)))
-image(Matrix(out$rand.trait$theta))
-
-y.hat <- out$rand.indiv$theta \%*\% t(out$rand.trait$theta)
-
-plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
-plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
-plot(as.numeric(scale(y.hat)), as.numeric(scale(Y)), pch = 19, cex = .3)
-
 }
 \details{
 

@@ -32,7 +32,6 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
   \item{options}{A list of inference/optimization options.}
   \item{do.hyper}{Hyper parameter tunign (default: FALSE)}
   \item{do.rescale}{Rescale z-scores by standard deviation (default: TRUE)}
-  \item{re.k}{Rank of the random effect model (default: 1)}
   \item{tau}{Fixed value of tau}
   \item{pi}{Fixed value of pi}
 
@@ -148,7 +147,7 @@ xg.beta.se <- xg.beta / z.xg
 vb.opt <- list(nsample = 10, vbiter = 10000, rate = 1e-2, decay = - 1e-3, gammax = 1e4,
                do.stdize = TRUE, pi = -1, tau = -8, do.hyper = FALSE,
                eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
-               print.interv = 1000, do.clean.med = FALSE)
+               print.interv = 1000)
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
@@ -157,34 +156,6 @@ med.out <- fit.med.zqtl(effect = xy.beta,
                         X.gwas = X, 
                         X.med = X.med, 
                         options = vb.opt)
-
-par(mfrow = c(2,1))
-barplot(t(med.out$param.mediated$lodds))
-plot(med.out$param.mediated$theta)
-
-## with confounder correction
-
-vb.opt <- list(nsample = 10, vbiter = 10000, rate = 1e-2, decay = - 1e-3, gammax = 1e4,
-               do.stdize = TRUE, pi = -1, tau = -8, do.hyper = FALSE,
-               eigen.tol = 1e-2, tol = 1e-8, verbose = TRUE, min.se = 1e-4,
-               print.interv = 1000, do.clean.med = TRUE, re.k = 10)
-
-med.out <- fit.med.zqtl(effect = xy.beta,
-                        effect.se = xy.beta.se,
-                        effect.m = xg.beta,
-                        effect.m.se = xg.beta.se,
-                        X.gwas = X, 
-                        X.med = X.med, 
-                        options = vb.opt)
-
-library(Matrix)
-image(Matrix(head(med.out$med.cleanup$rand.indiv$theta, 20)))
-image(Matrix(med.out$med.cleanup$rand.trait$theta))
-
-par(mfrow = c(2,1))
-barplot(t(med.out$param.mediated$lodds))
-plot(med.out$param.mediated$theta)
-
 
 }
 \details{}
