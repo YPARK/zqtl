@@ -134,10 +134,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Mat effect_m_z = _effect_m_z;
 
   if (opt.do_rescale()) {
-    effect_y_z = standardize_zscore(_effect_y_z, Vt, D);
     effect_m_z = standardize_zscore(_effect_m_z, Vt_m, D_m);
-
-    TLOG("Standardized z-scores");
+    TLOG("Standardized z-scores of mediation QTLs");
   }
 
   // alpha.uni           = S1 R1 inv(S1) alpha
