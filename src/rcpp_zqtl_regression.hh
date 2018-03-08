@@ -45,6 +45,9 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   if (opt.do_rescale()) {
     effect_z = standardize_zscore(_effect_z, Vt, D);
     TLOG("Standardized z-scores");
+  } else {
+    effect_z = center_zscore(_effect_z, Vt, D);
+    TLOG("Centered z-scores");
   }
 
   Mat Y = Vt * effect_z;   // GWAS
@@ -165,6 +168,9 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   if (opt.do_rescale()) {
     effect_z = standardize_zscore(_effect_z, Vt, D);
     TLOG("Standardized z-scores");
+  } else {
+    effect_z = center_zscore(_effect_z, Vt, D);
+    TLOG("Centered z-scores");
   }
 
   Mat Y = Vt * effect_z;
