@@ -115,14 +115,17 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.RATE_V = Rcpp::as<Scalar>(_list["adam.v"]);
   if (_list.containsElementNamed("nsample"))
     opt.NSAMPLE = Rcpp::as<Index>(_list["nsample"]);
+
   if (_list.containsElementNamed("nboot"))
     opt.NBOOT = Rcpp::as<Index>(_list["nboot"]);
   if (_list.containsElementNamed("bootstrap.method"))
     opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["bootstrap.method"]);
   if (_list.containsElementNamed("boot.method"))
     opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["boot.method"]);
+
   if (_list.containsElementNamed("direct.model"))
     opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
+
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
   if (_list.containsElementNamed("nthread"))

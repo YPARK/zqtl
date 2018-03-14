@@ -41,6 +41,10 @@ Enjoy!
 
 ## Release notes
 
+### v.1.2.1
+
+- Estimation of average unmediated effects
+
 ### v.1.2.0
 
 - Matrix factorization for confounder correction
