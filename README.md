@@ -44,6 +44,7 @@ Enjoy!
 ### v.1.2.1
 
 - Estimation of average unmediated effects
+- Minor bugfix in regression (twice rescaling)
 
 ### v.1.2.0
 

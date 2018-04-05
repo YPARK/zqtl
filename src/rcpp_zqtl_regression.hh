@@ -194,17 +194,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
 
   ////////////////////////////////////////////////////////////////
-  // Match scales -- just to help inference
-
-  if (opt.do_rescale()) {
-    rescale(Y);
-    rescale(Vt);
-    rescale(VtC);
-    rescale(VtCd);
-  }
-
-    ////////////////////////////////////////////////////////////////
-    // factored parameters
+  // factored parameters
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
