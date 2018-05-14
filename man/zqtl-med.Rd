@@ -53,6 +53,8 @@ fit.med.zqtl(effect,              # marginal effect : y ~ x
   \item{direct.model}{1 = average estimated from multiple
     mediators; > 1 = additional effects learn from factorization
     (default: 1)}
+  \item{nsingle}{maxumum number of single mediator model
+    estimation (default: number of mediators)}
   \item{med.lodds.cutoff}{cutoff for additional direct model factors (default: log-odds > 0)}
 
   %% \item{med.finemap}{finemapping QTL holding direct effect fixed

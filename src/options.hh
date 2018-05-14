@@ -50,6 +50,7 @@ struct options_t {
 
     BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
+    N_SINGLE_MED = 0;
   }
 
   const int vbiter() const { return VBITER; };
@@ -98,6 +99,7 @@ struct options_t {
 
   const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
   const int direct_model() const { return DIRECT_MODEL; }
+  const int n_single_model() const { return N_SINGLE_MED; }
 
   int VBITER;
   int MINITER;
@@ -146,6 +148,7 @@ struct options_t {
 
   int BOOTSTRAP_METHOD;
   int DIRECT_MODEL;
+  int N_SINGLE_MED;
 };
 
 #endif

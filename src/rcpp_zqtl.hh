@@ -12,6 +12,7 @@ using namespace Rcpp;
 #include <random>
 #include <string>
 #include <vector>
+#include <numeric>
 
 #include "convergence.hh"
 #include "mediation.hh"

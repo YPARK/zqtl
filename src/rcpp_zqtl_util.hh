@@ -126,6 +126,9 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("direct.model"))
     opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
 
+  if (_list.containsElementNamed("nsingle"))
+    opt.N_SINGLE_MED = Rcpp::as<Index>(_list["nsingle"]);
+
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
   if (_list.containsElementNamed("nthread"))

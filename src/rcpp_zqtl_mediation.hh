@@ -191,18 +191,27 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // STEP 1. Estimate one-mediator model
   ////////////////////////////////////////////////////////////////
 
-  Index n_med = M.cols();
-  Index n_trait = Y.cols();
-  Mat Y_resid = Mat::Zero(Y.rows(), Y.cols() * n_med);
+  Index n_single = M.cols();
+  if (opt.n_single_model() > 0) {
+    n_single = std::min(static_cast<Index>(opt.n_single_model()), n_single);
+  }
 
-  for (Index k = 0; k < n_med; ++k) {
+  Index n_trait = Y.cols();
+  Mat Y_resid = Mat::Zero(Y.rows(), Y.cols() * n_single);
+
+  std::vector<Index> rand_med(M.cols());
+  std::shuffle(rand_med.begin(), rand_med.end(),
+               std::mt19937{std::random_device{}()});
+
+  for (Index k = 0; k < n_single; ++k) {
     zqtl_model_t<Mat> yk(Y, D2);
 
     // estimate each Vt * theta and combine them all
     auto theta_k = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_k = make_regression_eta(Vt, Y, theta_k);
 
-    Mat Mk = M.col(k);
+    Index k_rand = rand_med.at(k);
+    Mat Mk = M.col(k_rand);
 
     auto med_k = make_dense_spike_slab<Scalar>(Mk.cols(), Y.cols(), opt);
     auto delta_k = make_regression_eta(Mk, Y, med_k);
@@ -215,7 +224,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Index kj = n_trait * k + j;
       Y_resid.col(kj) = _y.col(j);
     }
-    TLOG("Residual on the mediator " << (k + 1) << " / " << n_med);
+    TLOG("Residual on the mediator " << (k + 1) << " / " << n_single);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
@@ -226,14 +235,14 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // STEP 2. Estimate average unmediated effect //
   ////////////////////////////////////////////////
 
-  const Scalar denom = static_cast<Scalar>(n_med);
-  Mat resid_z_mean = resid_z * Mat::Ones(n_med, 1) / denom;
+  const Scalar denom = static_cast<Scalar>(n_single);
+  Mat resid_z_mean = resid_z * Mat::Ones(n_single, 1) / denom;
   Mat M0 = Vt * resid_z_mean;
 
   if (opt.direct_model() > 1) {
     Index reK = opt.direct_model() - 1;
-    if (reK > n_med) {
-      reK = n_med;
+    if (reK > n_single) {
+      reK = n_single;
     }
     TLOG("Estimate additional " << reK << " effects ");
     Mat mm = M0;
