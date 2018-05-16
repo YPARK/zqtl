@@ -193,6 +193,9 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.resid"]);
   if (_list.containsElementNamed("out.residual"))
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.residual"]);
+  if (_list.containsElementNamed("multi.med.effect"))
+    opt.MULTI_MED_EFFECT = Rcpp::as<bool>(_list["multi.med.effect"]);
+
 }
 
 Rcpp::List rcpp_adj_list(const Rcpp::NumericVector& d1_loc,

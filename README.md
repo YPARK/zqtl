@@ -41,6 +41,10 @@ Enjoy!
 
 ## Release notes
 
+### v.1.2.3
+
+- Take multivariate effect sizes for mediator QTLs
+
 ### v.1.2.2
 
 - Restrict number of mediator variables during the estimation of unmediated effects

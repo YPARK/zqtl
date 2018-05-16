@@ -47,6 +47,7 @@ struct options_t {
     DO_HYPER = false;
     DO_RESCALE = true;
     OUT_RESID = false;
+    MULTI_MED_EFFECT = false;
 
     BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
@@ -96,6 +97,7 @@ struct options_t {
   void on_hyper() { DO_HYPER = true; }
 
   const bool out_resid() const { return OUT_RESID; }
+  const bool multi_med_effect() const { return MULTI_MED_EFFECT; }
 
   const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
   const int direct_model() const { return DIRECT_MODEL; }
@@ -145,6 +147,7 @@ struct options_t {
   bool PRETRAIN;
   bool DO_HYPER;
   bool OUT_RESID;
+  bool MULTI_MED_EFFECT;
 
   int BOOTSTRAP_METHOD;
   int DIRECT_MODEL;

@@ -108,68 +108,80 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   TLOG("GWAS sample size = " << opt.sample_size());
   TLOG("Mediator sample size = " << opt.m_sample_size());
 
-  Mat _effect_y_z, effect_sqrt_y, weight_y;
-  std::tie(_effect_y_z, effect_sqrt_y, weight_y) =
-      preprocess_effect(yy.val, yy_se.val, n);
-
-  Mat _effect_m_z, effect_sqrt_m, weight_m;
-  std::tie(_effect_m_z, effect_sqrt_m, weight_m) =
-      preprocess_effect(mm.val, mm_se.val, n1);
-
   /////////////////////////////////
   // Pre-process genotype matrix //
   /////////////////////////////////
+
+  Mat _effect_y_z, effect_sqrt_y, weight_y;
+  std::tie(_effect_y_z, effect_sqrt_y, weight_y) =
+      preprocess_effect(yy.val, yy_se.val, n);
 
   Mat U, D, Vt;
   std::tie(U, D, Vt) = do_svd(geno_y.val, opt);
   Mat D2 = D.cwiseProduct(D);
 
-  Mat U_m, D_m, Vt_m;
-  std::tie(U_m, D_m, Vt_m) = do_svd(geno_m.val, opt);
-  Mat D2_m = D_m.cwiseProduct(D_m);
-
-  TLOG("Finished SVD of genotype matrix");
-
   Mat effect_y_z = _effect_y_z;
-  Mat effect_m_z = _effect_m_z;
+  effect_y_z = center_zscore(_effect_y_z, Vt, D);
+  TLOG("Centered z-scores of GWAS QTLs");
 
-  if (opt.do_rescale()) {
-    effect_m_z = standardize_zscore(_effect_m_z, Vt_m, D_m);
-    effect_y_z = center_zscore(_effect_y_z, Vt, D);
-    TLOG("Standardized z-scores of mediation QTLs");
+  ///////////////////////////////////////
+  // construct mediation design matrix //
+  ///////////////////////////////////////
+
+  Mat M;
+  if (opt.multi_med_effect()) {
+    M = D2.asDiagonal() * Vt * mm.val;
+    TLOG("Use multivariate mediation QTL statistics");
   } else {
-    effect_m_z = center_zscore(_effect_m_z, Vt_m, D_m);
-    effect_y_z = center_zscore(_effect_y_z, Vt, D);
-    TLOG("Centered z-scores of mediation QTLs");
+    Mat _effect_m_z, effect_sqrt_m, weight_m;
+    std::tie(_effect_m_z, effect_sqrt_m, weight_m) =
+        preprocess_effect(mm.val, mm_se.val, n1);
+
+    Mat U_m, D_m, Vt_m;
+    std::tie(U_m, D_m, Vt_m) = do_svd(geno_m.val, opt);
+    Mat D2_m = D_m.cwiseProduct(D_m);
+
+    Mat effect_m_z = _effect_m_z;
+    if (opt.do_rescale()) {
+      effect_m_z = standardize_zscore(_effect_m_z, Vt_m, D_m);
+      TLOG("Standardized z-scores of mediation QTLs");
+    } else {
+      effect_m_z = center_zscore(_effect_m_z, Vt_m, D_m);
+      TLOG("Centered z-scores of mediation QTLs");
+    }
+
+    // alpha.uni           = S1 R1 inv(S1) alpha
+    //
+    // alpha               = S1 inv(R1) inv(S1) alpha.uni
+    //                     = S1 V1 inv(D1^2) t(V1) inv(S1) alpha.uni
+    //
+    // t(V) R inv(S) alpha = t(V) V D^2 t(V) inv(S) alpha
+    //                     = D^2 t(V) (S1/S) V1 inv(D1^2) t(V1) inv(S1)
+    //                     alpha.uni
+    //                   M = D^2 t(V) inv(S) S1 (V1/D1) t(V1/D1) * Z_alpha
+
+    Mat Vt_m_d = D_m.cwiseInverse().asDiagonal() * Vt_m;
+
+    // un-normalized version is more stable
+    effect_m_z = Vt.transpose() * D2.asDiagonal() * Vt * Vt_m_d.transpose() *
+                 Vt_m_d * effect_m_z;
+
+    // Mat M(Vt.rows(), effect_m_z.cols());
+    // Mat VtZ = Vt_m_d * effect_m_z;
+    // Mat invS_S1 = weight_y.asDiagonal() * effect_sqrt_m;  // p x K
+    // Mat stuff(Vt.rows(), 1);
+    // for (Index k = 0; k < effect_m_z.cols(); ++k) {
+    //   stuff = Vt_m_d.transpose() * VtZ.col(k);
+    //   M.col(k) = D2.asDiagonal() * Vt * stuff.cwiseProduct(invS_S1.col(k));
+    // }
+
+    M.resize(Vt.rows(), effect_m_z.cols());
+    M = Vt * effect_m_z;
+
+    TLOG("Use summary mediation QTL statistics");
   }
 
-  // alpha.uni           = S1 R1 inv(S1) alpha
-  //
-  // alpha               = S1 inv(R1) inv(S1) alpha.uni
-  //                     = S1 V1 inv(D1^2) t(V1) inv(S1) alpha.uni
-  //
-  // t(V) R inv(S) alpha = t(V) V D^2 t(V) inv(S) alpha
-  //                     = D^2 t(V) (S1/S) V1 inv(D1^2) t(V1) inv(S1)
-  //                     alpha.uni
-  //                   M = D^2 t(V) inv(S) S1 (V1/D1) t(V1/D1) * Z_alpha
-
-  Mat Vt_m_d = D_m.cwiseInverse().asDiagonal() * Vt_m;
-
-  // un-normalized version is more stable
-  effect_m_z = Vt.transpose() * D2.asDiagonal() * Vt * Vt_m_d.transpose() *
-               Vt_m_d * effect_m_z;
-
-  // Mat M(Vt.rows(), effect_m_z.cols());
-  // Mat VtZ = Vt_m_d * effect_m_z;
-  // Mat invS_S1 = weight_y.asDiagonal() * effect_sqrt_m;  // p x K
-  // Mat stuff(Vt.rows(), 1);
-  // for (Index k = 0; k < effect_m_z.cols(); ++k) {
-  //   stuff = Vt_m_d.transpose() * VtZ.col(k);
-  //   M.col(k) = D2.asDiagonal() * Vt * stuff.cwiseProduct(invS_S1.col(k));
-  // }
-
   Mat Y = Vt * effect_y_z;
-  Mat M = Vt * effect_m_z;
   Mat VtI = Vt * Mat::Ones(Vt.cols(), static_cast<Index>(1)) /
             static_cast<Scalar>(Vt.cols());
   Mat VtC = Vt * conf.val;
@@ -327,7 +339,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["resid.Z"] = resid_z, Rcpp::_["U"] = U,
       Rcpp::_["M"] = M, Rcpp::_["Vt"] = Vt, Rcpp::_["S.inv.y"] = weight_y,
-      Rcpp::_["S.inv.m"] = weight_m, Rcpp::_["D2"] = D2,
+      Rcpp::_["D2"] = D2,
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
       Rcpp::_["param.unmediated"] = param_rcpp_list(theta_unmed),
       Rcpp::_["param.intercept"] = param_rcpp_list(theta_intercept),
