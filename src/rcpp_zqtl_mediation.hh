@@ -123,6 +123,12 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Mat effect_y_z = _effect_y_z;
   effect_y_z = center_zscore(_effect_y_z, Vt, D);
   TLOG("Centered z-scores of GWAS QTLs");
+  Mat Y = Vt * effect_y_z;
+
+  Mat _effect_m_z, effect_sqrt_m, weight_m;
+  std::tie(_effect_m_z, effect_sqrt_m, weight_m) =
+      preprocess_effect(mm.val, mm_se.val, n1);
+  Mat effect_m_z = _effect_m_z;
 
   ///////////////////////////////////////
   // construct mediation design matrix //
@@ -130,18 +136,20 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   Mat M;
   if (opt.multi_med_effect()) {
-    M = D2.asDiagonal() * Vt * mm.val;
+    Mat safe_mm_val = mm.val;
+    remove_missing(mm.val, safe_mm_val);
+    Mat M0 = Vt * safe_mm_val;
+    if (opt.do_rescale()) {
+      rescale(M0);
+    }
+    M = D2.asDiagonal() * M0;
     TLOG("Use multivariate mediation QTL statistics");
-  } else {
-    Mat _effect_m_z, effect_sqrt_m, weight_m;
-    std::tie(_effect_m_z, effect_sqrt_m, weight_m) =
-        preprocess_effect(mm.val, mm_se.val, n1);
 
+  } else {
     Mat U_m, D_m, Vt_m;
     std::tie(U_m, D_m, Vt_m) = do_svd(geno_m.val, opt);
     Mat D2_m = D_m.cwiseProduct(D_m);
 
-    Mat effect_m_z = _effect_m_z;
     if (opt.do_rescale()) {
       effect_m_z = standardize_zscore(_effect_m_z, Vt_m, D_m);
       TLOG("Standardized z-scores of mediation QTLs");
@@ -181,7 +189,9 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     TLOG("Use summary mediation QTL statistics");
   }
 
-  Mat Y = Vt * effect_y_z;
+  ////////////////////////////////////////////////////////////////
+  // Other covariates
+
   Mat VtI = Vt * Mat::Ones(Vt.cols(), static_cast<Index>(1)) /
             static_cast<Scalar>(Vt.cols());
   Mat VtC = Vt * conf.val;
@@ -370,15 +380,6 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
   std::mt19937 rng(opt.rseed());
 #endif
 
-  // direct   : X * theta_direct
-  //            sqrt(n) U D Vt * theta_direct
-  //            sqrt(n) U D eta_direct
-  //
-  // mediated : X * inv(R) * mm.val * theta_med
-  //            X * V inv(D2) Vt * mm.val * theta_med
-  //            sqrt(n) U inv(D) * Vt * mm.val * theta_med
-  //            sqrt(n) U inv(D) * delta_med
-  //
   Mat snUD = std::sqrt(n) * U * D2.cwiseSqrt().asDiagonal();
   Mat snUinvD = std::sqrt(n) * U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
   Mat UinvD = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
@@ -393,11 +394,22 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
   running_stat_t<Mat> direct_stat(1, _T);
   running_stat_t<Mat> med_stat(1, _T);
 
+  // direct   : X * theta_direct
+  //            sqrt(n) U D Vt * theta_direct
+  //            sqrt(n) U D eta_direct
+  //
   for (Index b = 0; b < nboot; ++b) {
     direct_ind = snUD * eta_direct.sample(rng);
     column_var(direct_ind, temp);
     direct_stat(temp / n);
+  }
 
+  // mediated : X * inv(R) * mm.val * theta_med
+  //            X * V inv(D2) Vt * mm.val * theta_med
+  //            sqrt(n) U inv(D) * Vt * mm.val * theta_med
+  //            sqrt(n) U inv(D) * delta_med
+  //
+  for (Index b = 0; b < nboot; ++b) {
     med_ind = snUinvD * delta_med.sample(rng);
     column_var(med_ind, temp);
     med_stat(temp / n);

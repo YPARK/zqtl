@@ -81,8 +81,8 @@ library(zqtl)
 
 n <- 1000
 p <- 2000
-n.genes <- 30
-h2 <- 0.3
+n.genes <- 10
+h2 <- 0.9
 n.causal.direct <- 4
 n.causal.qtl <- 3
 n.causal.gene <- 2
@@ -139,11 +139,8 @@ xy.beta.se <- xy.beta / z.xy
 .idx <- sample(n, 200)
 X.med <- X[.idx, ] ## smaller sample in mediation QTL
 
-# introduce uncorrected confounders
-gene.expr.noisy <- gene.expr + .rnorm(n, 2) \%*\% .rnorm(2, n.genes) / 2
-
-xg.beta <- fast.cov(X.med, gene.expr.noisy[.idx, ])
-z.xg <- fast.z.cov(X.med, gene.expr.noisy[.idx, ])
+xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
+z.xg <- fast.z.cov(X.med, gene.expr[.idx, ])
 xg.beta.se <- xg.beta / z.xg
 
 ################################################################
@@ -162,31 +159,46 @@ med.out <- fit.med.zqtl(effect = xy.beta,
                         options = vb.opt)
 
 plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
-plot(med.out$param.unmediated$lodds, ylab = 'lodds', main = 'unmediated')
-print(head(med.out$resid.Z))
-print(med.out$unmed)
-print(med.out$param.intercept)
 
 ################################################################
+## Estimate eQTL multivariate effects
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e4, do.stdize = TRUE, pi = -1, tau = -8,
+               gammax = 1e4, do.stdize = TRUE, pi = 0, tau = -8,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4, re.k = 10,
-               print.interv = 200, do.rescale = FALSE, direct.model = 10)
+               print.interv = 200, do.rescale = TRUE)
+
+eqtl.out <- fit.zqtl(effect = 10 * xg.beta,
+                     effect.se = xg.beta.se,
+                     X = X.med,
+                     options = vb.opt)
+
+
+################################################################
+## Use multivariate effects directly
+vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
+               gammax = 1e4, do.stdize = TRUE,
+               pi = -1, tau = -4,
+               do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
+               verbose = TRUE, min.se = 1e-4, re.k = 10,
+               print.interv = 200, do.rescale = TRUE,
+               multivar.mediator = TRUE)
+
+eqtl.true <- matrix(nrow = p, ncol = n.genes)
+eqtl.se.true <- matrix(1, nrow = p, ncol = n.genes)
+
+for(j in 1:n.genes) {
+    eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
+}
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,
-                        effect.m = xg.beta,
-                        effect.m.se = xg.beta.se,
+                        effect.m = eqtl.true,
+                        effect.m.se = eqtl.se.true,
                         X.gwas = X,
-                        X.med = X.med,
                         options = vb.opt)
 
 plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
-plot(med.out$param.unmediated$lodds, ylab = 'lodds', main = 'unmediated')
-print(head(med.out$resid.Z))
-print(med.out$unmed)
-print(med.out$param.intercept)
 }
 \details{}
 \seealso{}
