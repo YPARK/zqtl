@@ -206,6 +206,16 @@ struct regression_t {
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
 
+  inline void init_by_dot(const ReprMatrix &yy, const Scalar sd) {
+    ReprMatrix Y;
+    remove_missing(yy, Y);
+    Y = Y / static_cast<Scalar>(n);
+    ReprMatrix XtY = X.transpose() * Y;
+    Theta.beta = XtY * sd;
+    resolve_param(Theta);
+    resolve();
+  }
+
   void add_sgd(const ReprMatrix& llik) { update_repr(Eta, llik); }
 
   void eval_sgd() {
@@ -316,6 +326,16 @@ struct transpose_regression_t {
 
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
+
+  inline void init_by_dot(const ReprMatrix &yy, const Scalar sd) {
+    ReprMatrix Y;
+    remove_missing(yy, Y);
+    Y = Y / static_cast<Scalar>(m);
+    ReprMatrix YXt = Y * X.transpose();
+    Theta.beta = YXt * sd;
+    resolve_param(Theta);
+    resolve();
+  }
 
   void add_sgd(const ReprMatrix& llik) { update_repr(Eta, llik); }
 

@@ -70,6 +70,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   // mean effect size --> can be sparse matrix
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
+  eta.init_by_dot(Y, opt.jitter());
   if (opt.weight_y()) eta.set_weight(weight);
   TLOG("Constructed effects");
 

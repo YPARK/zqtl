@@ -44,6 +44,7 @@ Enjoy!
 ### v.1.2.3
 
 - Take multivariate effect sizes for mediator QTLs
+- Initialization by dot product
 
 ### v.1.2.2
 

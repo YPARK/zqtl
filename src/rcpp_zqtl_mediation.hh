@@ -231,12 +231,14 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     // estimate each Vt * theta and combine them all
     auto theta_k = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_k = make_regression_eta(Vt, Y, theta_k);
+    eta_k.init_by_dot(Y, opt.jitter());
 
     Index k_rand = rand_med.at(k);
     Mat Mk = M.col(k_rand);
 
     auto med_k = make_dense_spike_slab<Scalar>(Mk.cols(), Y.cols(), opt);
     auto delta_k = make_regression_eta(Mk, Y, med_k);
+    delta_k.init_by_dot(Y, opt.jitter());
 
     auto _llik = impl_fit_eta_delta(yk, opt, rng, std::make_tuple(eta_k),
                                     std::make_tuple(delta_k));
@@ -318,6 +320,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // construct delta_med to capture overall (potential) mediation effect
   auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
   auto delta_med = make_regression_eta(M, Y, theta_med);
+  delta_med.init_by_dot(Y, opt.jitter());
 
   // intercept    ~ R 1 theta
   // Vt intercept ~ D2 Vt 1 theta
@@ -330,6 +333,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
   auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
+  delta_unmed.init_by_dot(Y, opt.jitter());
 
   auto llik = impl_fit_eta_delta(model_y, opt, rng,
                                  std::make_tuple(eta_intercept, eta_conf_y),
