@@ -45,13 +45,15 @@ struct options_t {
     WEIGHT_Y = false;
     PRETRAIN = false;
     DO_HYPER = false;
-    DO_RESCALE = true;
+    DO_RESCALE = false;
     OUT_RESID = false;
     MULTI_MED_EFFECT = false;
+    DO_PROPENSITY_SAMPLING = true;
 
     BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
     N_SINGLE_MED = 0;
+    N_STRAT_SAMPLE = 5;
   }
 
   const int vbiter() const { return VBITER; };
@@ -97,11 +99,15 @@ struct options_t {
   void on_hyper() { DO_HYPER = true; }
 
   const bool out_resid() const { return OUT_RESID; }
+
   const bool multi_med_effect() const { return MULTI_MED_EFFECT; }
 
+  const bool do_propensity_sampling() const { return DO_PROPENSITY_SAMPLING; }
+
   const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
-  const int direct_model() const { return DIRECT_MODEL; }
+
   const int n_single_model() const { return N_SINGLE_MED; }
+  const int n_strat_sample() const { return N_STRAT_SAMPLE; }
 
   int VBITER;
   int MINITER;
@@ -148,10 +154,12 @@ struct options_t {
   bool DO_HYPER;
   bool OUT_RESID;
   bool MULTI_MED_EFFECT;
+  bool DO_PROPENSITY_SAMPLING;
 
   int BOOTSTRAP_METHOD;
   int DIRECT_MODEL;
   int N_SINGLE_MED;
+  int N_STRAT_SAMPLE;
 };
 
 #endif

@@ -41,6 +41,11 @@ Enjoy!
 
 ## Release notes
 
+### v.1.3.0
+
+- Counterfactual estimation of average unmediated effects via sampling
+- Factored mediation model
+
 ### v.1.2.3
 
 - Take multivariate effect sizes for mediator QTLs

@@ -39,11 +39,11 @@ using Index = Mat::Index;
 
 // "util" header must come first
 #include "rcpp_zqtl_util.hh"
+#include "eigen_sampler.hh"
 
 // mediation and regression headers
 #include "rcpp_zqtl_mediation.hh"
 #include "rcpp_zqtl_regression.hh"
 #include "rcpp_zqtl_factorization.hh"
-#include "rcpp_zqtl_ruv.hh"
 
 #endif

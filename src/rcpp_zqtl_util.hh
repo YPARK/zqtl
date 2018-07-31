@@ -126,11 +126,15 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("direct.model"))
     opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
 
+  if (_list.containsElementNamed("num.strat.sample"))
+    opt.N_STRAT_SAMPLE = Rcpp::as<Index>(_list["num.strat.sample"]);
+
   if (_list.containsElementNamed("nsingle"))
     opt.N_SINGLE_MED = Rcpp::as<Index>(_list["nsingle"]);
 
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
+
   if (_list.containsElementNamed("nthread"))
     opt.NTHREAD = Rcpp::as<Index>(_list["nthread"]);
   if (_list.containsElementNamed("num.thread"))
@@ -189,13 +193,20 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.PRETRAIN = Rcpp::as<bool>(_list["pretrain"]);
   if (_list.containsElementNamed("do.hyper"))
     opt.DO_HYPER = Rcpp::as<bool>(_list["do.hyper"]);
+
+  if (_list.containsElementNamed("do.propensity"))
+    opt.DO_PROPENSITY_SAMPLING = Rcpp::as<bool>(_list["do.propensity"]);
+
+  if (_list.containsElementNamed("do.propensity.sampling"))
+    opt.DO_PROPENSITY_SAMPLING =
+        Rcpp::as<bool>(_list["do.propensity.sampling"]);
+
   if (_list.containsElementNamed("out.resid"))
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.resid"]);
   if (_list.containsElementNamed("out.residual"))
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.residual"]);
   if (_list.containsElementNamed("multivar.mediator"))
     opt.MULTI_MED_EFFECT = Rcpp::as<bool>(_list["multivar.mediator"]);
-
 }
 
 Rcpp::List rcpp_adj_list(const Rcpp::NumericVector& d1_loc,
