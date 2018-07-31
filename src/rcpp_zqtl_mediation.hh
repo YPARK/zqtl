@@ -147,10 +147,12 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // Vt intercept ~ D2 Vt 1 theta
   auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), Y.cols(), opt);
   auto eta_intercept = make_regression_eta(VtI, Y, theta_intercept);
+  eta_intercept.init_by_dot(Y, opt.jitter());
 
   // confounder -- or bias
   auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
+  eta_conf_y.init_by_dot(Y, opt.jitter());
 
   auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
   auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
@@ -238,10 +240,12 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
   // Vt intercept ~ D2 Vt 1 theta
   auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), Y.cols(), opt);
   auto eta_intercept = make_regression_eta(VtI, Y, theta_intercept);
+  eta_intercept.init_by_dot(Y, opt.jitter());
 
   // confounder -- or bias
   auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
+  eta_conf_y.init_by_dot(Y, opt.jitter());
 
   auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
   auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
@@ -559,11 +563,13 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
 
       // intercept    ~ R 1 theta
       // Vt intercept ~ D2 Vt 1 theta
-      auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), Y.cols(), opt);
-      auto eta_intercept = make_regression_eta(VtI, Y, theta_intercept);
+      auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
+      auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
+      eta_intercept.init_by_dot(yy, opt.jitter());
 
       auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), yy.cols(), opt);
       auto eta_conf_y = make_regression_eta(VtC, yy, theta_conf_y);
+      eta_conf_y.init_by_dot(yy, opt.jitter());
 
       auto _llik = impl_fit_eta_delta(
           model_y, opt, rng, std::make_tuple(eta_intercept, eta_conf_y),
@@ -578,6 +584,7 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
       // 2. Estimate direct effect using potential mediator effect
       M0.col(tt).setZero();
       const Index n_med_test = med_test.size();
+      TLOG("Testing direct effects on " << n_med_test << " mediators");
       if (n_med_test > 0) {
         Index c = 0;
         Mat mm(M.rows(), n_med_test);
