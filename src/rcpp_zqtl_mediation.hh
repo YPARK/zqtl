@@ -46,37 +46,36 @@ struct geno_m_mat_t {
 
 template <typename DIRECT, typename... DATA>
 Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
-                             const options_t& opt,
-                             std::tuple<DATA...>&& data_tup);
+                             options_t& opt, std::tuple<DATA...>&& data_tup);
 
 template <typename... DATA>
-Rcpp::List _bootstrap_marginal(const Mat obs_lodds, const options_t& opt,
+Rcpp::List _bootstrap_marginal(const Mat obs_lodds, options_t& opt,
                                std::tuple<DATA...>&& data_tup);
 
 template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
-                                 MEDIATED_E theta_med, const options_t& opt,
+                                 MEDIATED_E theta_med, options_t& opt,
                                  std::tuple<DATA...>&& data_tup);
 
 template <typename DIRECT, typename MEDIATED_D, typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
-                                 const options_t& opt,
+                                 options_t& opt,
                                  std::tuple<DATA...>&& data_tup);
 
 template <typename MODEL_Y, typename DIRECT, typename CONF, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
-                     MEDIATED_E theta_med_org, const options_t& opt,
+                     MEDIATED_E theta_med_org, options_t& opt,
                      std::tuple<DATA...>&& data_tup);
 
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
-                              RNG& rng, const options_t& opt);
+                              RNG& rng, options_t& opt);
 
 template <typename RNG>
 Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
-                               RNG& rng, const options_t& opt);
+                               RNG& rng, options_t& opt);
 
 bool check_mediation_input(const effect_y_mat_t& yy,        // z_y
                            const effect_y_se_mat_t& yy_se,  // z_y_se
@@ -85,7 +84,7 @@ bool check_mediation_input(const effect_y_mat_t& yy,        // z_y
                            const geno_y_mat_t& geno_y,      // genotype_y
                            const geno_m_mat_t& geno_m,      // genotype_m
                            const conf_mat_t& conf,          // snp confounder
-                           const options_t& opt);
+                           options_t& opt);
 
 std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
     const effect_y_mat_t& yy,        // z_y
@@ -95,12 +94,12 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
     const geno_y_mat_t& geno_y,      // genotype_y
     const geno_m_mat_t& geno_m,      // genotype_m
     const conf_mat_t& conf,          // snp confounder
-    const options_t& opt);
+    options_t& opt);
 
 template <typename RNG>
 Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
                            const Mat VtI, const Mat VtC, const Mat D2, RNG& rng,
-                           const options_t& opt);
+                           options_t& opt);
 
 ///////////////////////////////
 // fit basic mediation model //
@@ -113,7 +112,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                              const geno_y_mat_t& geno_y,      // genotype_y
                              const geno_m_mat_t& geno_m,      // genotype_m
                              const conf_mat_t& conf,          // snp confounder
-                             const options_t& opt) {
+                             options_t& opt) {
   if (!check_mediation_input(yy, yy_se, mm, mm_se, geno_y, geno_m, conf, opt)) {
     return Rcpp::List::create();
   }
@@ -203,7 +202,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
                                  const geno_y_mat_t& geno_y,      // genotype_y
                                  const geno_m_mat_t& geno_m,      // genotype_m
                                  const conf_mat_t& conf,  // snp confounder
-                                 const options_t& opt) {
+                                 options_t& opt) {
   if (!check_mediation_input(yy, yy_se, mm, mm_se, geno_y, geno_m, conf, opt)) {
     return Rcpp::List::create();
   }
@@ -296,7 +295,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
 template <typename DIRECT, typename MEDIATED_D, typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
-                                 const options_t& opt,
+                                 options_t& opt,
                                  std::tuple<DATA...>&& data_tup) {
   Mat Y, M, U, D2;
   std::tie(Y, M, U, D2) = data_tup;
@@ -363,7 +362,7 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
-                                 MEDIATED_E theta_med, const options_t& opt,
+                                 MEDIATED_E theta_med, options_t& opt,
                                  std::tuple<DATA...>&& data_tup) {
   Mat Y, M, U, D2;
   std::tie(Y, M, U, D2) = data_tup;
@@ -438,7 +437,7 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
-                              RNG& rng, const options_t& opt) {
+                              RNG& rng, options_t& opt) {
   const Index n_strat = yy.rows();
   const Index n_traits = yy.cols();
   const Index n_strat_repeat = opt.n_strat_sample();
@@ -496,7 +495,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
 template <typename RNG>
 Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
-                               RNG& rng, const options_t& opt) {
+                               RNG& rng, options_t& opt) {
   const Index max_n_single = opt.n_single_model();
   const Index n_single =
       (max_n_single > 0) ? std::min(max_n_single, mm.cols()) : mm.cols();
@@ -553,7 +552,7 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 template <typename RNG>
 Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
                            const Mat VtI, const Mat VtC, const Mat D2, RNG& rng,
-                           const options_t& opt) {
+                           options_t& opt) {
   if (opt.do_propensity_sampling()) {
     TLOG("Estimation of direct effect by propensity sampling");
     Index n_trait = Y.cols();
@@ -561,10 +560,13 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
 
     for (Index tt = 0; tt < n_trait; ++tt) {
       Mat yy = Y.col(tt);
-
       zqtl_model_t<Mat> model_y(yy, D2);
 
-      // 1. Estimate mediation only model
+      // temporarily turn off hyper optimization
+      bool do_hyper = opt.do_hyper();
+      opt.off_hyper();
+
+      // 1. Estimate mediation only model (turning off hyper)
       auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), yy.cols(), opt);
       auto delta_med = make_regression_eta(M, yy, theta_med);
       delta_med.init_by_dot(yy, opt.jitter());
@@ -585,12 +587,18 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
           std::make_tuple(delta_med));
 
       Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
-      std::vector<Index> med_test(0);
+      if (do_hyper) opt.on_hyper();  // turn back on
 
       // 2. Estimate direct effect using potential mediator effect
       for (Index j = 0; j < lodds.size(); ++j) {
+        Index n_med_test = 0;
         if (lodds(j) > opt.med_lodds_cutoff()) {
-          med_test.push_back(j);
+          n_med_test++;
+        }
+
+        TLOG("Propensity sampling on total " << n_med_test << " mediators");
+
+        if (lodds(j) > opt.med_lodds_cutoff()) {
           Mat mm = M.col(j);
           Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
           if (M0.cols() < 1) {
@@ -601,6 +609,8 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
             M0.resize(M0.rows(), temp.cols() + dd.cols());
             M0 << temp, dd;
           }
+          TLOG("Finished propensity sampling on "
+               << (j + 1) << " / " << n_med_test << " mediators");
         }
       }
     }
@@ -628,7 +638,7 @@ bool check_mediation_input(const effect_y_mat_t& yy,        // z_y
                            const geno_y_mat_t& geno_y,      // genotype_y
                            const geno_m_mat_t& geno_m,      // genotype_m
                            const conf_mat_t& conf,          // snp confounder
-                           const options_t& opt) {
+                           options_t& opt) {
   //////////////////////
   // check dimensions //
   //////////////////////
@@ -682,7 +692,7 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
     const geno_y_mat_t& geno_y,      // genotype_y
     const geno_m_mat_t& geno_m,      // genotype_m
     const conf_mat_t& conf,          // snp confounder
-    const options_t& opt) {
+    options_t& opt) {
   const Scalar n = static_cast<Scalar>(opt.sample_size());
   const Scalar n1 = static_cast<Scalar>(opt.m_sample_size());
 
