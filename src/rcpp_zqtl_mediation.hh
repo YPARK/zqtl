@@ -123,6 +123,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   std::tie(Y, M, U, Vt, D2, VtI, VtC) = preprocess_mediation_input(
       yy, yy_se, mm, mm_se, geno_y, geno_m, conf, opt);
 
+  TLOG("Finished preprocessing\n\n");
+
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
@@ -131,7 +133,14 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   std::mt19937 rng(opt.rseed());
 #endif
 
-  Mat M0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
+  Mat M0 = Mat::Zero(M.rows(), 1);
+  if (opt.do_direct_effect_estimation()) {
+    Mat m0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
+    M0.resize(m0.rows(), m0.cols());
+    M0 = m0;
+  } else {
+    TLOG("No direct effect");
+  }
 
   TLOG("Finished direct model estimation\n\n");
 
@@ -545,14 +554,13 @@ template <typename RNG>
 Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
                            const Mat VtI, const Mat VtC, const Mat D2, RNG& rng,
                            const options_t& opt) {
-  Index n_trait = Y.cols();
-  Mat M0(M.rows(), n_trait);
+  if (opt.do_propensity_sampling()) {
+    TLOG("Estimation of direct effect by propensity sampling");
+    Index n_trait = Y.cols();
+    Mat M0(M.rows(), 0);
 
-  for (Index tt = 0; tt < n_trait; ++tt) {
-    Mat yy = Y.col(tt);
-
-    if (opt.do_propensity_sampling()) {
-      TLOG("Estimation of direct effect by propensity sampling");
+    for (Index tt = 0; tt < n_trait; ++tt) {
+      Mat yy = Y.col(tt);
 
       zqtl_model_t<Mat> model_y(yy, D2);
 
@@ -563,7 +571,8 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
 
       // intercept    ~ R 1 theta
       // Vt intercept ~ D2 Vt 1 theta
-      auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
+      auto theta_intercept =
+          make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
       auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
       eta_intercept.init_by_dot(yy, opt.jitter());
 
@@ -577,30 +586,39 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
 
       Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
       std::vector<Index> med_test(0);
-      for (Index j = 0; j < lodds.size(); ++j) {
-        if (lodds(j) > opt.med_lodds_cutoff()) med_test.push_back(j);
-      }
 
       // 2. Estimate direct effect using potential mediator effect
-      M0.col(tt).setZero();
-      const Index n_med_test = med_test.size();
-      TLOG("Testing direct effects on " << n_med_test << " mediators");
-      if (n_med_test > 0) {
-        Index c = 0;
-        Mat mm(M.rows(), n_med_test);
-        for (Index j : med_test) mm.col(c++) = M.col(j);
-        M0.col(tt) = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
-      } else {
-        TLOG("Probably there is no need to estimate direct effect");
+      for (Index j = 0; j < lodds.size(); ++j) {
+        if (lodds(j) > opt.med_lodds_cutoff()) {
+          med_test.push_back(j);
+          Mat mm = M.col(j);
+          Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
+          if (M0.cols() < 1) {
+            M0.resize(M0.rows(), 1);
+            M0 = dd;
+          } else {
+            Mat temp = M0;
+            M0.resize(M0.rows(), temp.cols() + dd.cols());
+            M0 << temp, dd;
+          }
+        }
       }
-
-    } else {
-      TLOG("Estimation of direct effect by invariance");
+    }
+    if (M0.cols() < 1) {
+      M0.resize(M0.rows(), 1);
+      M0.setZero();
+    }
+    return M0;
+  } else {
+    TLOG("Estimation of direct effect by invariance");
+    Index n_trait = Y.cols();
+    Mat M0(M.rows(), n_trait);
+    for (Index tt = 0; tt < n_trait; ++tt) {
+      Mat yy = Y.col(tt);
       M0.col(tt) = _direct_effect_conditional(M, yy, Vt, D2, rng, opt);
     }
+    return M0;
   }
-
-  return M0;
 }
 
 bool check_mediation_input(const effect_y_mat_t& yy,        // z_y

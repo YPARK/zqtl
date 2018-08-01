@@ -438,7 +438,9 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param factored Fit factored model (default: FALSE)#'
 #' @param options A list of inference/optimization options.#'
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
-#' @param do.propensity Propensity sampling to estimate unmediated effect (default: TRUE)
+#' 
+#' @param do.direct.estimation Estimate direct effect (default: TRUE)
+#' @param do.propensity Propensity sampling to estimate direct effect (default: TRUE)
 #' @param med.lodds.cutoff cutoff to select mediators for stratified sampling (default: log-odds > 0)
 #' @param num.strat.sample Number of stratified sampling (default: 5)
 #'
@@ -536,7 +538,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' xy.beta.se <- xy.beta / z.xy
 #'
-#' .idx <- sample(n, 200)
+#' .idx <- sample(n, 300)
 #' X.med <- X[.idx, ] ## smaller sample in mediation QTL
 #'
 #' xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
@@ -548,7 +550,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'                gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -1, tau = -8,
 #'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
 #'                verbose = TRUE, min.se = 1e-4,
-#'                print.interv = 200, do.rescale = TRUE)
+#'                print.interv = 200, do.rescale = FALSE)
 #'
 #' med.out <- fit.med.zqtl(effect = xy.beta,
 #'                         effect.se = xy.beta.se,

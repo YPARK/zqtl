@@ -39,7 +39,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
-\item{do.propensity}{Propensity sampling to estimate unmediated effect (default: TRUE)}
+\item{do.propensity}{Propensity sampling to estimate direct effect (default: TRUE)}
 
 \item{med.lodds.cutoff}{cutoff to select mediators for stratified sampling (default: log-odds > 0)}
 
@@ -94,6 +94,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 \item{weight.y}{Include 1/effect.se in weighted effect in Y model (default: FALSE)}
 
 \item{weight.m}{Include 1/effect.se in weighted effect in M model (default: FALSE)}
+
+\item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 }
 \value{
 a list of variational inference results
@@ -164,7 +166,7 @@ z.xy <- fast.z.cov(X, y)
 
 xy.beta.se <- xy.beta / z.xy
 
-.idx <- sample(n, 200)
+.idx <- sample(n, 300)
 X.med <- X[.idx, ] ## smaller sample in mediation QTL
 
 xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
@@ -176,7 +178,7 @@ vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
                gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -1, tau = -8,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
-               print.interv = 200, do.rescale = TRUE)
+               print.interv = 200, do.rescale = FALSE)
 
 med.out <- fit.med.zqtl(effect = xy.beta,
                         effect.se = xy.beta.se,

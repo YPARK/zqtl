@@ -179,8 +179,6 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.M_SAMPLE_SIZE = Rcpp::as<Scalar>(_list["med.sample.size"]);
   if (_list.containsElementNamed("med.lodds.cutoff"))
     opt.MED_LODDS_CUTOFF = Rcpp::as<Scalar>(_list["med.lodds.cutoff"]);
-  if (_list.containsElementNamed("med.finemap"))
-    opt.MED_FINEMAP = Rcpp::as<bool>(_list["med.finemap"]);
   if (_list.containsElementNamed("weight.m"))
     opt.WEIGHT_M = Rcpp::as<bool>(_list["weight.m"]);
   if (_list.containsElementNamed("weight.y"))
@@ -196,6 +194,10 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
 
   if (_list.containsElementNamed("do.propensity"))
     opt.DO_PROPENSITY_SAMPLING = Rcpp::as<bool>(_list["do.propensity"]);
+
+  if (_list.containsElementNamed("do.direct.estimation"))
+    opt.DO_DIRECT_EFFECT_ESTIMATION =
+        Rcpp::as<bool>(_list["do.direct.estimation"]);
 
   if (_list.containsElementNamed("do.propensity.sampling"))
     opt.DO_PROPENSITY_SAMPLING =

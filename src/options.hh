@@ -36,7 +36,8 @@ struct options_t {
     SAMPLE_SIZE = 0.0;
     M_SAMPLE_SIZE = 0.0;
     MED_LODDS_CUTOFF = 0.0;
-    MED_FINEMAP = false;
+
+    DO_DIRECT_EFFECT_ESTIMATION = true;
     MF_SVD_INIT = true;
     MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
@@ -89,7 +90,9 @@ struct options_t {
   const float sample_size() const { return SAMPLE_SIZE; };
   const float m_sample_size() const { return M_SAMPLE_SIZE; };
   const float med_lodds_cutoff() const { return MED_LODDS_CUTOFF; }
-  const bool med_finemap() const { return MED_FINEMAP; }
+  const bool do_direct_effect_estimation() const {
+    return DO_DIRECT_EFFECT_ESTIMATION;
+  }
 
   const bool weight_m() const { return WEIGHT_M; }
   const bool weight_y() const { return WEIGHT_Y; }
@@ -146,7 +149,7 @@ struct options_t {
   float SAMPLE_SIZE;
   float M_SAMPLE_SIZE;
   float MED_LODDS_CUTOFF;
-  bool MED_FINEMAP;
+  bool DO_DIRECT_EFFECT_ESTIMATION;
 
   bool WEIGHT_M;
   bool WEIGHT_Y;
