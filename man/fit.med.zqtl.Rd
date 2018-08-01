@@ -6,13 +6,14 @@
 \usage{
 fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
   n = 0, n.med = 0, C = NULL, factored = FALSE, options = list(),
-  multivar.mediator = FALSE, do.propensity = TRUE, med.lodds.cutoff = 0,
-  num.strat.sample = 5, do.hyper = FALSE, do.rescale = FALSE,
-  tau = NULL, pi = NULL, tau.lb = -10, tau.ub = -4, pi.lb = -4,
-  pi.ub = -1, tol = 1e-04, gammax = 1000, rate = 0.01, decay = 0,
-  jitter = 0.1, nsample = 10, vbiter = 2000, verbose = TRUE, k = 1,
-  print.interv = 10, nthread = 1, eigen.tol = 0.01, do.stdize = TRUE,
-  min.se = 1e-04, rseed = NULL, weight.y = FALSE, weight.m = FALSE)
+  multivar.mediator = FALSE, do.propensity = TRUE,
+  do.direct.estimation = TRUE, med.lodds.cutoff = 0, num.strat.sample = 5,
+  do.hyper = FALSE, do.rescale = FALSE, tau = NULL, pi = NULL,
+  tau.lb = -10, tau.ub = -4, pi.lb = -4, pi.ub = -1, tol = 1e-04,
+  gammax = 1000, rate = 0.01, decay = 0, jitter = 0.1, nsample = 10,
+  vbiter = 2000, verbose = TRUE, k = 1, print.interv = 10,
+  nthread = 1, eigen.tol = 0.01, do.stdize = TRUE, min.se = 1e-04,
+  rseed = NULL, weight.y = FALSE, weight.m = FALSE)
 }
 \arguments{
 \item{effect}{Marginal effect size matrix (SNP x trait)}
@@ -40,6 +41,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
 \item{do.propensity}{Propensity sampling to estimate direct effect (default: TRUE)}
+
+\item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 
 \item{med.lodds.cutoff}{cutoff to select mediators for stratified sampling (default: log-odds > 0)}
 
@@ -94,8 +97,6 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 \item{weight.y}{Include 1/effect.se in weighted effect in Y model (default: FALSE)}
 
 \item{weight.m}{Include 1/effect.se in weighted effect in M model (default: FALSE)}
-
-\item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 }
 \value{
 a list of variational inference results
