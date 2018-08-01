@@ -586,18 +586,19 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
           model_y, opt, rng, std::make_tuple(eta_intercept, eta_conf_y),
           std::make_tuple(delta_med));
 
-      Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
       if (do_hyper) opt.on_hyper();  // turn back on
 
       // 2. Estimate direct effect using potential mediator effect
+      Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
+      const Scalar _cutoff = opt.med_lodds_cutoff();
+      const Index n_med_test = lodds
+                                   .unaryExpr([&_cutoff](auto& x) {
+                                     return (x > _cutoff) ? 1.0 : 0.0;
+                                   })
+                                   .sum();
+      TLOG("Propensity sampling on total " << n_med_test << " mediators");
+
       for (Index j = 0; j < lodds.size(); ++j) {
-        Index n_med_test = 0;
-        if (lodds(j) > opt.med_lodds_cutoff()) {
-          n_med_test++;
-        }
-
-        TLOG("Propensity sampling on total " << n_med_test << " mediators");
-
         if (lodds(j) > opt.med_lodds_cutoff()) {
           Mat mm = M.col(j);
           Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
