@@ -603,6 +603,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          options = list(),
                          multivar.mediator = FALSE,
                          do.propensity = TRUE,
+                         do.direct.estimation = TRUE,
                          med.lodds.cutoff = 0,
                          num.strat.sample = 5,
                          do.hyper = FALSE,
@@ -657,7 +658,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
                   'rseed', 'weight.y', 'weight.m',
-                  'multivar.mediator', 'do.propensity',
+                  'multivar.mediator', 'do.propensity', 'do.direct.estimation',
                   'med.lodds.cutoff', 'num.strat.sample')
 
     .eval <- function(txt) eval(parse(text = txt))
