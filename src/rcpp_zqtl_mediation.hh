@@ -220,8 +220,14 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
   std::mt19937 rng(opt.rseed());
 #endif
 
-  Mat M0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
-
+  Mat M0 = Mat::Zero(M.rows(), 1);
+  if (opt.do_direct_effect_estimation()) {
+    Mat m0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
+    M0.resize(m0.rows(), m0.cols());
+    M0 = m0;
+  } else {
+    TLOG("No direct effect");
+  }
   TLOG("Finished direct model estimation\n\n");
 
   zqtl_model_t<Mat> model_y(Y, D2);
