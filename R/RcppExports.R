@@ -442,7 +442,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
 #' @param do.propensity Propensity sampling to estimate direct effect (default: TRUE)
 #' @param med.lodds.cutoff cutoff to select mediators for stratified sampling (default: log-odds > 0)
-#' @param num.strat.sample Number of stratified sampling (default: 5)
+#' @param num.strat.sample Number of stratified sampling (default: 3)
+#' @param num.strat.size Size of stratified sampling (default: 2)
 #'
 #' @param do.hyper Hyper parameter tuning (default: FALSE)
 #' @param do.rescale Rescale z-scores by standard deviation (default: FALSE)

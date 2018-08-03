@@ -14,7 +14,7 @@ struct options_t {
     NSAMPLE = 10;
     NBOOT = 0;
     NTHREAD = 1;
-    JITTER = 1e-2;
+    JITTER = 1e-1;
     RSEED = 13;
     RATE0 = 1e-2;
     DECAY = -0.01;
@@ -54,7 +54,8 @@ struct options_t {
     BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
     N_SINGLE_MED = 0;
-    N_STRAT_SAMPLE = 5;
+    N_STRAT_SAMPLE = 3;
+    N_STRAT_SIZE = 2;
   }
 
   const int vbiter() const { return VBITER; };
@@ -111,6 +112,7 @@ struct options_t {
 
   const int n_single_model() const { return N_SINGLE_MED; }
   const int n_strat_sample() const { return N_STRAT_SAMPLE; }
+  const int n_strat_size() const { return N_STRAT_SIZE; }
 
   int VBITER;
   int MINITER;
@@ -163,6 +165,7 @@ struct options_t {
   int DIRECT_MODEL;
   int N_SINGLE_MED;
   int N_STRAT_SAMPLE;
+  int N_STRAT_SIZE;
 };
 
 #endif

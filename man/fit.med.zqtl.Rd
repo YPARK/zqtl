@@ -46,7 +46,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 
 \item{med.lodds.cutoff}{cutoff to select mediators for stratified sampling (default: log-odds > 0)}
 
-\item{num.strat.sample}{Number of stratified sampling (default: 5)}
+\item{num.strat.sample}{Number of stratified sampling (default: 3)}
 
 \item{do.hyper}{Hyper parameter tuning (default: FALSE)}
 
@@ -97,6 +97,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 \item{weight.y}{Include 1/effect.se in weighted effect in Y model (default: FALSE)}
 
 \item{weight.m}{Include 1/effect.se in weighted effect in M model (default: FALSE)}
+
+\item{num.strat.size}{Size of stratified sampling (default: 2)}
 }
 \value{
 a list of variational inference results

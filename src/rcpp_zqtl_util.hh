@@ -129,6 +129,9 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("num.strat.sample"))
     opt.N_STRAT_SAMPLE = Rcpp::as<Index>(_list["num.strat.sample"]);
 
+  if (_list.containsElementNamed("num.strat.size"))
+    opt.N_STRAT_SIZE = Rcpp::as<Index>(_list["num.strat.size"]);
+
   if (_list.containsElementNamed("nsingle"))
     opt.N_SINGLE_MED = Rcpp::as<Index>(_list["nsingle"]);
 

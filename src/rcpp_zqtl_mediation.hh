@@ -444,7 +444,7 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                               RNG& rng, options_t& opt) {
-  const Index n_strat = yy.rows();
+  const Index n_strat = yy.rows() * opt.n_strat_size();
   const Index n_traits = yy.cols();
   const Index n_strat_repeat = opt.n_strat_sample();
   Mat Y_strat(n_strat, n_traits);
@@ -457,11 +457,18 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
   Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_strat_repeat);
 
+  Mat Ik = Mat::Ones(Vt_strat.cols(), static_cast<Index>(1));
+  Mat VtI_strat = Vt_strat * Ik / static_cast<Scalar>(Vt_strat.cols());
+  auto theta_intercept =
+      make_dense_slab<Scalar>(VtI_strat.cols(), Y_strat.cols(), opt);
+  auto eta_intercept = make_regression_eta(VtI_strat, Y_strat, theta_intercept);
+
   for (Index k = 0; k < n_strat_repeat; ++k) {
     // sample eigen components inversely proportional to the
     // divergence of this mediation effect
     Vec logScore =
-        -mm.cwiseProduct(mm).cwiseQuotient(D2) * Mat::Ones(mm.cols(), 1) * half;
+        -(mm.cwiseProduct(mm) * Mat::Ones(mm.cols(), 1)).cwiseQuotient(D2) *
+        half;
 
     for (Index ri = 0; ri < n_strat; ++ri) {
       Index r = randN(logScore, rng_n);
@@ -475,7 +482,10 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     auto theta = make_dense_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
     auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
     eta.init_by_dot(Y_strat, opt.jitter());
-    auto _llik = impl_fit_eta(y_strat_model, opt, rng, std::make_tuple(eta));
+    eta_intercept.init_by_dot(Y_strat, opt.jitter());
+
+    auto _llik = impl_fit_eta(y_strat_model, opt, rng,
+                              std::make_tuple(eta, eta_intercept));
 
     Mat _y = Vt * mean_param(theta);
     for (Index j = 0; j < _y.cols(); ++j) {
@@ -597,30 +607,29 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
       // 2. Estimate direct effect using potential mediator effect
       Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
       const Scalar _cutoff = opt.med_lodds_cutoff();
-      const Index n_med_test = lodds
-                                   .unaryExpr([&_cutoff](auto& x) {
-                                     return (x > _cutoff) ? 1.0 : 0.0;
-                                   })
-                                   .sum();
+      auto is_significant = [&_cutoff](auto& x) {
+        return (x > _cutoff) ? 1.0 : 0.0;
+      };
+      const Index n_med_test = lodds.unaryExpr(is_significant).sum();
       TLOG("Propensity sampling on total " << n_med_test << " mediators");
 
-      for (Index j = 0; j < lodds.size(); ++j) {
-        if (lodds(j) > opt.med_lodds_cutoff()) {
-          Mat mm = M.col(j);
-          Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
-          if (M0.cols() < 1) {
-            M0.resize(M0.rows(), 1);
-            M0 = dd;
-          } else {
-            Mat temp = M0;
-            M0.resize(M0.rows(), temp.cols() + dd.cols());
-            M0 << temp, dd;
+      if (n_med_test > 0) {
+        Mat mm(M.rows(), n_med_test);
+        Index ii = 0;
+        for (Index j = 0; j < lodds.size(); ++j) {
+          if (lodds(j) > _cutoff) {
+            mm.col(ii++) = M.col(j);
           }
-          TLOG("Finished propensity sampling on "
-               << (j + 1) << " / " << n_med_test << " mediators");
         }
+
+        Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
+        Mat temp = M0;
+        M0.resize(M0.rows(), temp.cols() + dd.cols());
+        M0 << temp, dd;
       }
+      TLOG("Finished sampling on trait : " << (tt + 1));
     }
+
     if (M0.cols() < 1) {
       M0.resize(M0.rows(), 1);
       M0.setZero();
@@ -633,6 +642,7 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
     for (Index tt = 0; tt < n_trait; ++tt) {
       Mat yy = Y.col(tt);
       M0.col(tt) = _direct_effect_conditional(M, yy, Vt, D2, rng, opt);
+      TLOG("Finished conditional analysis on trait : " << (tt + 1));
     }
     return M0;
   }
