@@ -734,7 +734,6 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
     Mat safe_mm_val = mm.val;
     remove_missing(mm.val, safe_mm_val);
     Mat M0 = Vt * safe_mm_val;
-    rescale(M0);
     M = D2.asDiagonal() * M0;
     TLOG("Use multivariate mediation QTL statistics");
 
