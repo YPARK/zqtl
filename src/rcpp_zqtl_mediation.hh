@@ -726,8 +726,15 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
   Mat D2 = D.cwiseProduct(D);
 
   Mat effect_y_z = _effect_y_z;
-  effect_y_z = center_zscore(_effect_y_z, Vt, D);
-  TLOG("Centered z-scores of GWAS QTLs");
+
+  if (opt.do_rescale()) {
+      effect_y_z = standardize_zscore(_effect_y_z, Vt, D);
+      TLOG("Standardized z-scores of GWAS QTLs");
+  } else {
+    effect_y_z = center_zscore(_effect_y_z, Vt, D);
+    TLOG("Centered z-scores of GWAS QTLs");
+  }
+
   Mat Y = Vt * effect_y_z;
 
   Mat _effect_m_z, effect_sqrt_m, weight_m;

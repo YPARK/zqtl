@@ -9,4 +9,4 @@ Description: Implementation of zQTL methods
 License: MIT License
 Imports: Rcpp (>= 0.12.6), RcppEigen (>= 0.3.2.9.0), RcppProgress (>= 0.2.1)
 LinkingTo: Rcpp, RcppEigen, RcppProgress
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0

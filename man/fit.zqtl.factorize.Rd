@@ -8,9 +8,10 @@ confounders across GWAS statistids}
 fit.zqtl.factorize(effect, effect.se, X, n = 0, options = list(),
   do.hyper = FALSE, do.rescale = FALSE, tau = NULL, pi = NULL,
   tau.lb = -10, tau.ub = -4, pi.lb = -4, pi.ub = -1, tol = 1e-04,
-  gammax = 1000, rate = 0.01, decay = 0, jitter = 0.1, nsample = 10,
-  vbiter = 2000, verbose = TRUE, k = 1, right.nn = FALSE,
-  mu.min = 0.01, print.interv = 10, nthread = 1, eigen.tol = 0.01,
+  gammax = 1000, rate = 0.01, decay = 0, jitter = 0.1,
+  nsample = 10, vbiter = 2000, verbose = TRUE, k = 1,
+  svd.init = TRUE, right.nn = FALSE, mu.min = 0.01,
+  print.interv = 10, nthread = 1, eigen.tol = 0.01,
   do.stdize = TRUE, min.se = 1e-04, rseed = NULL, weight.y = FALSE)
 }
 \arguments{
@@ -57,6 +58,8 @@ fit.zqtl.factorize(effect, effect.se, X, n = 0, options = list(),
 \item{verbose}{Verbosity (default: TRUE)}
 
 \item{k}{Rank of the factored model (default: 1)}
+
+\item{svd.init}{initialize by SVD (default: TRUE)}
 
 \item{right.nn}{non-negativity in factored effect (default: TRUE)}
 

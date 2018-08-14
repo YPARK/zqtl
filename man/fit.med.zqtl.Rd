@@ -4,16 +4,17 @@
 \alias{fit.med.zqtl}
 \title{Variational inference of zQTL mediation}
 \usage{
-fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
-  n = 0, n.med = 0, C = NULL, factored = FALSE, options = list(),
-  multivar.mediator = FALSE, do.propensity = TRUE,
-  do.direct.estimation = TRUE, med.lodds.cutoff = 0, num.strat.sample = 5,
-  do.hyper = FALSE, do.rescale = FALSE, tau = NULL, pi = NULL,
-  tau.lb = -10, tau.ub = -4, pi.lb = -4, pi.ub = -1, tol = 1e-04,
-  gammax = 1000, rate = 0.01, decay = 0, jitter = 0.1, nsample = 10,
-  vbiter = 2000, verbose = TRUE, k = 1, print.interv = 10,
-  nthread = 1, eigen.tol = 0.01, do.stdize = TRUE, min.se = 1e-04,
-  rseed = NULL, weight.y = FALSE, weight.m = FALSE)
+fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas,
+  X.med = NULL, n = 0, n.med = 0, C = NULL, factored = FALSE,
+  options = list(), multivar.mediator = FALSE, do.propensity = TRUE,
+  do.direct.estimation = TRUE, med.lodds.cutoff = 0,
+  num.strat.sample = 5, do.hyper = FALSE, do.rescale = FALSE,
+  tau = NULL, pi = NULL, tau.lb = -10, tau.ub = -4, pi.lb = -4,
+  pi.ub = -1, tol = 1e-04, gammax = 1000, rate = 0.01, decay = 0,
+  jitter = 0.1, nsample = 10, vbiter = 2000, verbose = TRUE,
+  k = 1, svd.init = TRUE, print.interv = 10, nthread = 1,
+  eigen.tol = 0.01, do.stdize = TRUE, min.se = 1e-04, rseed = NULL,
+  weight.y = FALSE, weight.m = FALSE)
 }
 \arguments{
 \item{effect}{Marginal effect size matrix (SNP x trait)}
@@ -81,6 +82,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas, X.med = NULL,
 \item{verbose}{Verbosity (default: TRUE)}
 
 \item{k}{Rank of the factored model (default: 1)}
+
+\item{svd.init}{initialize by SVD (default: TRUE)}
 
 \item{print.interv}{Printing interval (default: 10)}
 
