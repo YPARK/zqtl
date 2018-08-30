@@ -5,7 +5,7 @@
 \title{Calculate covariance matrix and transform into triangular form for
 visualization}
 \usage{
-take.ld.pairs(X, cutoff = 0.05, stdize = FALSE)
+take.ld.pairs(X, cutoff, stdize)
 }
 \arguments{
 \item{X}{genotype matrix}

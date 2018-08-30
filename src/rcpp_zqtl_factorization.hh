@@ -48,7 +48,7 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
 
   zqtl_model_t<Mat> model(Y, D2);
-  dummy_eta_t dummy;
+  // dummy_eta_t dummy;
 
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);

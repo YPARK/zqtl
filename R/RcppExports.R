@@ -1,6 +1,10 @@
 ################################################################
 #' Variational inference of zQTL regression
 #'
+#' @name fit.zqtl
+#'
+#' @usage fit.zqtl(effect, effect.se, X)
+#'
 #' @param effect Marginal effect size matrix (SNP x trait)
 #' @param effect.se Marginal effect size standard error matrix (SNP x trait)
 #' @param n sample size of actual data (will ignore if n = 0)
@@ -229,6 +233,10 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' Variational inference of zQTL factorization to identify potential
 #' confounders across GWAS statistids
 #'
+#' @name fit.zqtl.factorize
+#'
+#' @usage fit.zqtl.factorize(effect, effect.se, X)
+#'
 #' @param effect Marginal effect size matrix (SNP x trait)
 #' @param effect.se Marginal effect size standard error matrix (SNP x trait)
 #' @param X Design matrix (reference Ind x SNP)
@@ -430,6 +438,10 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 ################################################################
 #' Variational inference of zQTL mediation
 #'
+#' @name fit.med.zqtl
+#'
+#' @usage fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
+#'
 #' @param effect Marginal effect size matrix (SNP x trait)
 #' @param effect.se Marginal effect size standard error matrix (SNP x trait)
 #' @param effect.m Marignal genetic effects of mediators (SNP x mediator)
@@ -442,9 +454,9 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param factored Fit factored model (default: FALSE)#'
 #' @param options A list of inference/optimization options.#'
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
-#' 
+#'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
-#' @param do.propensity Propensity sampling to estimate direct effect (default: TRUE)
+#' @param do.propensity Propensity sampling to estimate direct effect (default: FALSE)
 #' @param med.lodds.cutoff cutoff to select mediators for stratified sampling (default: log-odds > 0)
 #' @param num.strat.sample Number of stratified sampling (default: 3)
 #' @param num.strat.size Size of stratified sampling (default: 2)
@@ -553,7 +565,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' ################################################################
 #' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-#'                gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -1, tau = -8,
+#'                gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -0, tau = -4,
 #'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
 #'                verbose = TRUE, min.se = 1e-4,
 #'                print.interv = 200, do.rescale = FALSE)
@@ -567,12 +579,12 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'                         options = vb.opt)
 #'
 #' plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')#'
-#' 
+#'
 #' ################################################################
 #' ## Use multivariate effects directly
 #' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
 #'                gammax = 1e4, do.stdize = TRUE,
-#'                pi = -1, tau = -4,
+#'                pi = -0, tau = -4,
 #'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
 #'                verbose = TRUE, min.se = 1e-4,
 #'                print.interv = 200,
@@ -594,6 +606,32 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
 #'
+#' ################################################################
+#' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
+#'                gammax = 1e4, do.stdize = TRUE,
+#'                pi = -0, tau = -4, do.propensity = TRUE,
+#'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
+#'                verbose = TRUE, min.se = 1e-4,
+#'                print.interv = 200,
+#'                multivar.mediator = TRUE)
+#'
+#' eqtl.true <- matrix(nrow = p, ncol = n.genes)
+#' eqtl.se.true <- matrix(1, nrow = p, ncol = n.genes)
+#'
+#' for(j in 1:n.genes) {
+#'     eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
+#' }
+#'
+#' med.out <- fit.med.zqtl(effect = xy.beta,
+#'                         effect.se = xy.beta.se,
+#'                         effect.m = eqtl.true,
+#'                         effect.m.se = eqtl.se.true,
+#'                         X.gwas = X,
+#'                         options = vb.opt)
+#'
+#' plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
+#'
+#'
 #' @export
 #'
 fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
@@ -608,7 +646,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          factored = FALSE,    # Factored model
                          options = list(),
                          multivar.mediator = FALSE,
-                         do.propensity = TRUE,
+                         do.propensity = FALSE,
                          do.direct.estimation = TRUE,
                          med.lodds.cutoff = 0,
                          num.strat.sample = 5,
@@ -709,6 +747,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
 
 ################################################################
 #' Read binary PLINK format
+#' @name read.plink
+#' @usage read.plink(bed.header)
 #' @param bed.header header for plink fileset
 #' @return a list of FAM, BIM, BED data.
 #' @author Yongjin Park, \email{ypp@@csail.mit.edu}, \email{yongjin.peter.park@@gmail.com}
@@ -738,6 +778,9 @@ read.plink <- function(bed.header) {
 #' Calculate covariance matrix and transform into triangular form for
 #' visualization
 #'
+#' @name take.ld.pairs
+#' @usage take.ld.pairs(X, cutoff, stdize)
+#'
 #' @param X genotype matrix
 #' @param cutoff LD covariance cutoff (default: 0.05)
 #' @param stdize standardize genotype matrix (default : FALSE)
@@ -753,6 +796,9 @@ take.ld.pairs <- function(X, cutoff = 0.05, stdize = FALSE) {
 #' Decompose the scaled genotype matrix \eqn{n^{-1/2}X = U D
 #' V^{\top}}{X/sqrt(n) = U D V'} such that the LD matrix can become
 #' \deqn{R = V D^{2} V^{\top}}{LD = V D^2 V'} for subsequent analysis.
+#'
+#' @name take.ld.svd
+#' @usage take.ld.svd(X, options, eigen.tol, do.stdize)
 #'
 #' @param X n x p matrix
 #' @param options a list of options

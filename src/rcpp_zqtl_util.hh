@@ -272,7 +272,7 @@ Mat standardize_zscore(const Eigen::MatrixBase<Derived>& _zscore,
   Mat xx = D.asDiagonal() * Vt * Mat::Ones(Vt.cols(), 1);
   Mat rr(Y.rows(), 1);
   Scalar xx_sum = xx.cwiseProduct(xx).sum();
-  Scalar n = Z.rows();
+  // Scalar n = Z.rows();
   Scalar denom = Y.rows();
 
   for (Index k = 0; k < Z.cols(); ++k) {
@@ -298,7 +298,7 @@ Mat center_zscore(const Eigen::MatrixBase<Derived>& _zscore,
   Mat Y = D.cwiseInverse().asDiagonal() * Vt * Z;
   Mat xx = D.asDiagonal() * Vt * Mat::Ones(Vt.cols(), 1);
   Scalar xx_sum = xx.cwiseProduct(xx).sum();
-  Scalar denom = Y.rows();
+  // Scalar denom = Y.rows();
 
   for (Index k = 0; k < Z.cols(); ++k) {
     Scalar xy = Y.col(k).cwiseProduct(xx).sum();

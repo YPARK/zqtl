@@ -9,7 +9,7 @@ MAN := $(wildcard man/*.Rd)
 all: R/RcppExports.R $(PKG)_$(VER).tar.gz
 
 $(PKG)_$(VER).tar.gz: $(SRC) $(HDR) $(MAN) R/RcppExports.R
-	R -e "roxygen2::roxygenise();"
+	R -e "options(buildtools.check = function(action) TRUE); roxygen2::roxygenise();"
 	R CMD build .
 
 R/RcppExports.R: zqtl_R_source.R

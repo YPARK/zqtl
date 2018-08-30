@@ -5,14 +5,7 @@
 \title{Variational inference of zQTL factorization to identify potential
 confounders across GWAS statistids}
 \usage{
-fit.zqtl.factorize(effect, effect.se, X, n = 0, options = list(),
-  do.hyper = FALSE, do.rescale = FALSE, tau = NULL, pi = NULL,
-  tau.lb = -10, tau.ub = -4, pi.lb = -4, pi.ub = -1, tol = 1e-04,
-  gammax = 1000, rate = 0.01, decay = 0, jitter = 0.1,
-  nsample = 10, vbiter = 2000, verbose = TRUE, k = 1,
-  svd.init = TRUE, right.nn = FALSE, mu.min = 0.01,
-  print.interv = 10, nthread = 1, eigen.tol = 0.01,
-  do.stdize = TRUE, min.se = 1e-04, rseed = NULL, weight.y = FALSE)
+fit.zqtl.factorize(effect, effect.se, X)
 }
 \arguments{
 \item{effect}{Marginal effect size matrix (SNP x trait)}

@@ -678,8 +678,8 @@ auto standardize(Eigen::MatrixBase<Derived>& Xraw,
   using mat_t = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
   using RowVec = typename Eigen::internal::plain_row_type<Derived>::type;
 
-  const Index n = Xraw.rows();
-  const Index p = Xraw.cols();
+  // const Index n = Xraw.rows();
+  // const Index p = Xraw.cols();
   is_obs_op<mat_t> obs_op;
 
   // Remove NaN
@@ -741,13 +741,13 @@ auto rescale(Eigen::MatrixBase<Derived>& Xraw,
 
 template <typename Derived>
 auto center(Eigen::MatrixBase<Derived>& Xraw) {
-  using Index = typename Derived::Index;
+  // using Index = typename Derived::Index;
   using Scalar = typename Derived::Scalar;
   using mat_t = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
   using RowVec = typename Eigen::internal::plain_row_type<Derived>::type;
 
-  const Index n = Xraw.rows();
-  const Index p = Xraw.cols();
+  // const Index n = Xraw.rows();
+  // const Index p = Xraw.cols();
   is_obs_op<mat_t> obs_op;
 
   // Remove NaN

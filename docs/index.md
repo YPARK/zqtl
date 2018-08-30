@@ -1,5 +1,11 @@
 # Summary-based QTL mapping
 
+## Notes on Mac OS X users
+
+For some unknown reason, compiled Eigen library does not work as
+expected with `clang` compiler.  We recommend using `gcc` after
+version 5.
+
 ## Installation (a simple version)
 
 Just do this in `R`
@@ -40,6 +46,11 @@ options.
 Enjoy!
 
 ## Release notes
+
+### v.1.3.1
+
+- Make propensity sampling as second option
+- Estimate the unmediated effect as before
 
 ### v.1.3.0
 

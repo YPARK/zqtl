@@ -4,17 +4,7 @@
 \alias{fit.med.zqtl}
 \title{Variational inference of zQTL mediation}
 \usage{
-fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas,
-  X.med = NULL, n = 0, n.med = 0, C = NULL, factored = FALSE,
-  options = list(), multivar.mediator = FALSE, do.propensity = TRUE,
-  do.direct.estimation = TRUE, med.lodds.cutoff = 0,
-  num.strat.sample = 5, do.hyper = FALSE, do.rescale = FALSE,
-  tau = NULL, pi = NULL, tau.lb = -10, tau.ub = -4, pi.lb = -4,
-  pi.ub = -1, tol = 1e-04, gammax = 1000, rate = 0.01, decay = 0,
-  jitter = 0.1, nsample = 10, vbiter = 2000, verbose = TRUE,
-  k = 1, svd.init = TRUE, print.interv = 10, nthread = 1,
-  eigen.tol = 0.01, do.stdize = TRUE, min.se = 1e-04, rseed = NULL,
-  weight.y = FALSE, weight.m = FALSE)
+fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 }
 \arguments{
 \item{effect}{Marginal effect size matrix (SNP x trait)}
@@ -41,7 +31,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas,
 
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
-\item{do.propensity}{Propensity sampling to estimate direct effect (default: TRUE)}
+\item{do.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
 
 \item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 
@@ -181,7 +171,7 @@ xg.beta.se <- xg.beta / z.xg
 
 ################################################################
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -1, tau = -8,
+               gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -0, tau = -4,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
                print.interv = 200, do.rescale = FALSE)
@@ -200,7 +190,7 @@ plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')#'
 ## Use multivariate effects directly
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
                gammax = 1e4, do.stdize = TRUE,
-               pi = -1, tau = -4,
+               pi = -0, tau = -4,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
                print.interv = 200,
@@ -221,6 +211,32 @@ med.out <- fit.med.zqtl(effect = xy.beta,
                         options = vb.opt)
 
 plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
+
+################################################################
+vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
+               gammax = 1e4, do.stdize = TRUE,
+               pi = -0, tau = -4, do.propensity = TRUE,
+               do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
+               verbose = TRUE, min.se = 1e-4,
+               print.interv = 200,
+               multivar.mediator = TRUE)
+
+eqtl.true <- matrix(nrow = p, ncol = n.genes)
+eqtl.se.true <- matrix(1, nrow = p, ncol = n.genes)
+
+for(j in 1:n.genes) {
+    eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
+}
+
+med.out <- fit.med.zqtl(effect = xy.beta,
+                        effect.se = xy.beta.se,
+                        effect.m = eqtl.true,
+                        effect.m.se = eqtl.se.true,
+                        X.gwas = X,
+                        options = vb.opt)
+
+plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
+
 
 }
 \author{

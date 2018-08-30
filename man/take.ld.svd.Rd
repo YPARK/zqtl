@@ -6,7 +6,7 @@
 V^{\top}}{X/sqrt(n) = U D V'} such that the LD matrix can become
 \deqn{R = V D^{2} V^{\top}}{LD = V D^2 V'} for subsequent analysis.}
 \usage{
-take.ld.svd(X, options = list(), eigen.tol = 0.01, do.stdize = TRUE)
+take.ld.svd(X, options, eigen.tol, do.stdize)
 }
 \arguments{
 \item{X}{n x p matrix}

@@ -49,7 +49,7 @@ struct options_t {
     DO_RESCALE = false;
     OUT_RESID = false;
     MULTI_MED_EFFECT = false;
-    DO_PROPENSITY_SAMPLING = true;
+    DO_PROPENSITY_SAMPLING = false;
 
     BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;

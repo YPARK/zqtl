@@ -310,7 +310,6 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
   const Index _T = Y.cols();
   const Scalar n = static_cast<Scalar>(U.rows());
   const Index nboot = 500;
-  const Index _K = M.cols();
 
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
@@ -444,9 +443,20 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                               RNG& rng, options_t& opt) {
-  const Index n_strat = yy.rows() * opt.n_strat_size();
+  const Index max_n_single = opt.n_single_model();
+  const Index n_single =
+      (max_n_single > 0) ? std::min(max_n_single, mm.cols()) : mm.cols();
+
   const Index n_traits = yy.cols();
-  const Index n_strat_repeat = opt.n_strat_sample();
+
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_single);
+
+  std::vector<Index> rand_med(mm.cols());
+
+  std::shuffle(rand_med.begin(), rand_med.end(),
+               std::mt19937{std::random_device{}()});
+
+  const Index n_strat = Y_resid.rows() * opt.n_strat_size();
   Mat Y_strat(n_strat, n_traits);
   Mat Vt_strat(n_strat, Vt.cols());
   Mat D2_strat(n_strat, D2.cols());
@@ -455,20 +465,20 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
   discrete_sampler_t<Vec> randN(yy.rows());
   const Scalar half = static_cast<Scalar>(0.5);
 
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_strat_repeat);
-
   Mat Ik = Mat::Ones(Vt_strat.cols(), static_cast<Index>(1));
   Mat VtI_strat = Vt_strat * Ik / static_cast<Scalar>(Vt_strat.cols());
   auto theta_intercept =
       make_dense_slab<Scalar>(VtI_strat.cols(), Y_strat.cols(), opt);
   auto eta_intercept = make_regression_eta(VtI_strat, Y_strat, theta_intercept);
 
-  for (Index k = 0; k < n_strat_repeat; ++k) {
+  for (Index k = 0; k < n_single; ++k) {
     // sample eigen components inversely proportional to the
     // divergence of this mediation effect
-    Vec logScore =
-        -(mm.cwiseProduct(mm) * Mat::Ones(mm.cols(), 1)).cwiseQuotient(D2) *
-        half;
+
+    Index k_rand = rand_med.at(k);
+    Mat Mk = mm.col(k_rand);
+
+    Vec logScore = -(Mk.cwiseProduct(Mk)).cwiseQuotient(D2) * half;
 
     for (Index ri = 0; ri < n_strat; ++ri) {
       Index r = randN(logScore, rng_n);
@@ -492,19 +502,20 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       Index kj = n_traits * k + j;
       Y_resid.col(kj) = _y.col(j);
     }
+
+    TLOG("Single mediator model : " << (k + 1) << " / " << n_single);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
   Mat resid_z = _resid_z;
-
   if (opt.do_rescale()) {
     resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
   } else {
     resid_z = center_zscore(_resid_z, Vt, D2.cwiseSqrt());
   }
 
-  const Scalar denom = static_cast<Scalar>(n_strat_repeat * n_traits);
-  Mat resid_z_mean = resid_z * Mat::Ones(n_strat_repeat * n_traits, 1) / denom;
+  const Scalar denom = static_cast<Scalar>(n_single * n_traits);
+  Mat resid_z_mean = resid_z * Mat::Ones(n_single * n_traits, 1) / denom;
 
   return Vt * resid_z_mean;
 }
@@ -542,7 +553,6 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                                     std::make_tuple(delta));
 
     Mat _y = Vt * mean_param(theta);
-
     for (Index j = 0; j < _y.cols(); ++j) {
       Index kj = n_traits * k + j;
       Y_resid.col(kj) = _y.col(j);
@@ -569,83 +579,28 @@ template <typename RNG>
 Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
                            const Mat VtI, const Mat VtC, const Mat D2, RNG& rng,
                            options_t& opt) {
+  Index n_trait = Y.cols();
+  Mat M0 = Mat::Zero(M.rows(), n_trait);
+
   if (opt.do_propensity_sampling()) {
     TLOG("Estimation of direct effect by propensity sampling");
-    Index n_trait = Y.cols();
-    Mat M0(M.rows(), 0);
 
     for (Index tt = 0; tt < n_trait; ++tt) {
       Mat yy = Y.col(tt);
-      zqtl_model_t<Mat> model_y(yy, D2);
-
-      // temporarily turn off hyper optimization
-      bool do_hyper = opt.do_hyper();
-      opt.off_hyper();
-
-      // 1. Estimate mediation only model (turning off hyper)
-      auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), yy.cols(), opt);
-      auto delta_med = make_regression_eta(M, yy, theta_med);
-      delta_med.init_by_dot(yy, opt.jitter());
-
-      // intercept    ~ R 1 theta
-      // Vt intercept ~ D2 Vt 1 theta
-      auto theta_intercept =
-          make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
-      auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
-      eta_intercept.init_by_dot(yy, opt.jitter());
-
-      auto theta_conf_y = make_dense_slab<Scalar>(VtC.cols(), yy.cols(), opt);
-      auto eta_conf_y = make_regression_eta(VtC, yy, theta_conf_y);
-      eta_conf_y.init_by_dot(yy, opt.jitter());
-
-      auto _llik = impl_fit_eta_delta(
-          model_y, opt, rng, std::make_tuple(eta_intercept, eta_conf_y),
-          std::make_tuple(delta_med));
-
-      if (do_hyper) opt.on_hyper();  // turn back on
-
-      // 2. Estimate direct effect using potential mediator effect
-      Mat lodds = log_odds_param(theta_med).rowwise().maxCoeff();
-      const Scalar _cutoff = opt.med_lodds_cutoff();
-      auto is_significant = [&_cutoff](auto& x) {
-        return (x > _cutoff) ? 1.0 : 0.0;
-      };
-      const Index n_med_test = lodds.unaryExpr(is_significant).sum();
-      TLOG("Propensity sampling on total " << n_med_test << " mediators");
-
-      if (n_med_test > 0) {
-        Mat mm(M.rows(), n_med_test);
-        Index ii = 0;
-        for (Index j = 0; j < lodds.size(); ++j) {
-          if (lodds(j) > _cutoff) {
-            mm.col(ii++) = M.col(j);
-          }
-        }
-
-        Mat dd = _direct_effect_propensity(mm, yy, Vt, D2, rng, opt);
-        Mat temp = M0;
-        M0.resize(M0.rows(), temp.cols() + dd.cols());
-        M0 << temp, dd;
-      }
-      TLOG("Finished sampling on trait : " << (tt + 1));
+      M0.col(tt) = _direct_effect_propensity(M, yy, Vt, D2, rng, opt);
+      TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
     }
 
-    if (M0.cols() < 1) {
-      M0.resize(M0.rows(), 1);
-      M0.setZero();
-    }
-    return M0;
   } else {
     TLOG("Estimation of direct effect by invariance");
-    Index n_trait = Y.cols();
-    Mat M0(M.rows(), n_trait);
     for (Index tt = 0; tt < n_trait; ++tt) {
       Mat yy = Y.col(tt);
       M0.col(tt) = _direct_effect_conditional(M, yy, Vt, D2, rng, opt);
-      TLOG("Finished conditional analysis on trait : " << (tt + 1));
+      TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
     }
-    return M0;
   }
+
+  return M0;
 }
 
 bool check_mediation_input(const effect_y_mat_t& yy,        // z_y
@@ -728,8 +683,8 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
   Mat effect_y_z = _effect_y_z;
 
   if (opt.do_rescale()) {
-      effect_y_z = standardize_zscore(_effect_y_z, Vt, D);
-      TLOG("Standardized z-scores of GWAS QTLs");
+    effect_y_z = standardize_zscore(_effect_y_z, Vt, D);
+    TLOG("Standardized z-scores of GWAS QTLs");
   } else {
     effect_y_z = center_zscore(_effect_y_z, Vt, D);
     TLOG("Centered z-scores of GWAS QTLs");
