@@ -489,7 +489,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     zqtl_model_t<Mat> y_strat_model(Y_strat, D2_strat);
 
-    auto theta = make_dense_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
+    auto theta = make_dense_spike_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
     auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
     eta.init_by_dot(Y_strat, opt.jitter());
     eta_intercept.init_by_dot(Y_strat, opt.jitter());
@@ -542,11 +542,11 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     Index k_rand = rand_med.at(k);
     Mat Mk = mm.col(k_rand);
 
-    auto med = make_dense_spike_slab<Scalar>(Mk.cols(), yy.cols(), opt);
+    auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
     auto delta = make_regression_eta(Mk, yy, med);
     delta.init_by_dot(yy, opt.jitter());
 
-    auto theta = make_dense_slab<Scalar>(Vt.cols(), yy.cols(), opt);
+    auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), yy.cols(), opt);
     auto eta = make_regression_eta(Vt, yy, theta);
     eta.init_by_dot(yy, opt.jitter());
     auto _llik = impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta),
