@@ -118,10 +118,6 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
 
   if (_list.containsElementNamed("nboot"))
     opt.NBOOT = Rcpp::as<Index>(_list["nboot"]);
-  if (_list.containsElementNamed("bootstrap.method"))
-    opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["bootstrap.method"]);
-  if (_list.containsElementNamed("boot.method"))
-    opt.BOOTSTRAP_METHOD = Rcpp::as<Index>(_list["boot.method"]);
 
   if (_list.containsElementNamed("direct.model"))
     opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
@@ -182,16 +178,7 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.M_SAMPLE_SIZE = Rcpp::as<Scalar>(_list["med.sample.size"]);
   if (_list.containsElementNamed("med.lodds.cutoff"))
     opt.MED_LODDS_CUTOFF = Rcpp::as<Scalar>(_list["med.lodds.cutoff"]);
-  if (_list.containsElementNamed("weight.m"))
-    opt.WEIGHT_M = Rcpp::as<bool>(_list["weight.m"]);
-  if (_list.containsElementNamed("weight.y"))
-    opt.WEIGHT_Y = Rcpp::as<bool>(_list["weight.y"]);
-  if (_list.containsElementNamed("weight")) {
-    opt.WEIGHT_Y = Rcpp::as<bool>(_list["weight"]);
-    opt.WEIGHT_M = Rcpp::as<bool>(_list["weight"]);
-  }
-  if (_list.containsElementNamed("pretrain"))
-    opt.PRETRAIN = Rcpp::as<bool>(_list["pretrain"]);
+
   if (_list.containsElementNamed("do.hyper"))
     opt.DO_HYPER = Rcpp::as<bool>(_list["do.hyper"]);
 

@@ -149,9 +149,7 @@ struct regression_t {
         Xsq(n, p),
         XtG1(p, m),
         X2tG2(p, m),
-        weight(p, m),
-        Eta(make_gaus_repr(yy)),
-        max_weight(1.0) {
+        Eta(make_gaus_repr(yy)) {
     check_dim(Theta, p, m, "Theta in regression_t");
     check_dim(Eta, n, m, "Eta in regression_t");
     copy_matrix(mean_param(Theta), Nobs);
@@ -162,7 +160,6 @@ struct regression_t {
     XtY_nobs(xx, yy, Nobs);
     copy_matrix(Nobs, XtG1);
     copy_matrix(Nobs, X2tG2);
-    weight.setOnes();
 
     remove_missing(xx, X);
     remove_missing(xx.unaryExpr([](const auto& x) { return x * x; }), Xsq);
@@ -179,22 +176,11 @@ struct regression_t {
   ReprMatrix Xsq;
   ParamMatrix XtG1;
   ParamMatrix X2tG2;
-  ParamMatrix weight;
   Repr Eta;
 
-  Scalar max_weight;
-
-  template <typename Derived>
-  void set_weight(Eigen::MatrixBase<Derived>& _weight) {
-    ASSERT(_weight.rows() == p && _weight.cols() == m, "invalid weight matrix");
-    weight = _weight.derived();
-    max_weight = weight.cwiseAbs().maxCoeff() + static_cast<Scalar>(1e-4);
-  }
-
   void resolve() {
-    update_mean(Eta, X * mean_param(Theta).cwiseProduct(weight));
-    update_var(
-        Eta, Xsq * var_param(Theta).cwiseProduct(weight).cwiseProduct(weight));
+    update_mean(Eta, X * mean_param(Theta));
+    update_var(Eta, Xsq * var_param(Theta));
   }
 
   template <typename RNG>
@@ -206,7 +192,7 @@ struct regression_t {
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
 
-  inline void init_by_dot(const ReprMatrix &yy, const Scalar sd) {
+  inline void init_by_dot(const ReprMatrix& yy, const Scalar sd) {
     ReprMatrix Y;
     remove_missing(yy, Y);
     Y = Y / static_cast<Scalar>(n);
@@ -222,12 +208,11 @@ struct regression_t {
     Eta.summarize();
     trans_times_set(X, Eta.get_grad_type1(), XtG1);
     trans_times_set(Xsq, Eta.get_grad_type2(), X2tG2);
-    eval_param_sgd(Theta, XtG1.cwiseProduct(weight),
-                   X2tG2.cwiseProduct(weight).cwiseProduct(weight), Nobs);
+    eval_param_sgd(Theta, XtG1, X2tG2, Nobs);
   }
 
   void update_sgd(const Scalar rate) {
-    update_param_sgd(Theta, rate / max_weight);
+    update_param_sgd(Theta, rate);
     resolve_param(Theta);
     resolve();
   }
@@ -236,14 +221,11 @@ struct regression_t {
     Eta.summarize();
     trans_times_set(X, Eta.get_grad_type1(), XtG1);
     trans_times_set(Xsq, Eta.get_grad_type2(), X2tG2);
-    eval_hyperparam_sgd(Theta, XtG1.cwiseProduct(weight),
-                        X2tG2.cwiseProduct(weight).cwiseProduct(weight), Nobs);
+    eval_hyperparam_sgd(Theta, XtG1, X2tG2, Nobs);
   }
 
   void update_hyper_sgd(const Scalar rate) {
-    const Scalar max_weight =
-        weight.cwiseAbs().maxCoeff() + static_cast<Scalar>(1e-4);
-    update_hyperparam_sgd(Theta, rate / max_weight);
+    update_hyperparam_sgd(Theta, rate);
     resolve_hyperparam(Theta);
     resolve();
   }
@@ -275,7 +257,6 @@ struct transpose_regression_t {
         Xsq(p, m),
         G1Xt(n, p),
         G2X2t(n, p),
-        weight(n, p),
         Eta(make_gaus_repr(yy)) {
     check_dim(Theta, n, p, "Theta in transpose_regression_t");
     check_dim(Eta, n, m, "Eta in transpose_regression_t");
@@ -287,7 +268,6 @@ struct transpose_regression_t {
     XY_nobs(yy, xx.transpose(), Nobs);
     copy_matrix(Nobs, G1Xt);
     copy_matrix(Nobs, G2X2t);
-    weight.setOnes();
 
     remove_missing(xx, X);
     Xsq = X.cwiseProduct(X);
@@ -304,19 +284,11 @@ struct transpose_regression_t {
   ReprMatrix Xsq;
   ParamMatrix G1Xt;
   ParamMatrix G2X2t;
-  ParamMatrix weight;
   Repr Eta;
 
   void resolve() {
-    update_mean(Eta, mean_param(Theta).cwiseProduct(weight) * X);
-    update_var(
-        Eta, var_param(Theta).cwiseProduct(weight).cwiseProduct(weight) * Xsq);
-  }
-
-  template <typename Derived>
-  void set_weight(Eigen::MatrixBase<Derived>& _weight) {
-    ASSERT(_weight.rows() == p && _weight.cols() == m, "invalid weight matrix");
-    weight = _weight.derived();
+    update_mean(Eta, mean_param(Theta) * X);
+    update_var(Eta, var_param(Theta) * Xsq);
   }
 
   template <typename RNG>
@@ -327,7 +299,7 @@ struct transpose_regression_t {
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
 
-  inline void init_by_dot(const ReprMatrix &yy, const Scalar sd) {
+  inline void init_by_dot(const ReprMatrix& yy, const Scalar sd) {
     ReprMatrix Y;
     remove_missing(yy, Y);
     Y = Y / static_cast<Scalar>(m);
@@ -343,8 +315,7 @@ struct transpose_regression_t {
     Eta.summarize();
     times_set(Eta.get_grad_type1(), X.transpose(), G1Xt);
     times_set(Eta.get_grad_type2(), Xsq.transpose(), G2X2t);
-    eval_param_sgd(Theta, G1Xt.cwiseProduct(weight),
-                   G2X2t.cwiseProduct(weight).cwiseProduct(weight), Nobs);
+    eval_param_sgd(Theta, G1Xt, G2X2t, Nobs);
   }
 
   void update_sgd(const Scalar rate) {
@@ -357,8 +328,7 @@ struct transpose_regression_t {
     Eta.summarize();
     times_set(Eta.get_grad_type1(), X.transpose(), G1Xt);
     times_set(Eta.get_grad_type2(), Xsq.transpose(), G2X2t);
-    eval_hyperparam_sgd(Theta, G1Xt.cwiseProduct(weight),
-                        G2X2t.cwiseProduct(weight).cwiseProduct(weight), Nobs);
+    eval_hyperparam_sgd(Theta, G1Xt, G2X2t, Nobs);
   }
 
   void update_hyper_sgd(const Scalar rate) {

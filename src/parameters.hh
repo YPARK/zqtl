@@ -63,8 +63,8 @@ struct tag_param_dense {};
 // include implementations
 #include "param_col_slab.hh"
 #include "param_col_slab_zero.hh"
-#include "param_col_spike_slab.hh"
 #include "param_col_spike_gamma.hh"
+#include "param_col_spike_slab.hh"
 #include "param_mixture.hh"
 #include "param_row_spike_slab.hh"
 #include "param_slab.hh"

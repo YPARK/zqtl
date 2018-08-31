@@ -114,9 +114,9 @@ struct param_row_spike_slab_t {
       const scalar_t lo = gam_aux - tau_aux;
       scalar_t ret;
       if (-lo > large_exp_value) {
-        ret = gammax * fasterexp(lo) / (one_val + fasterexp(lo));
+        ret = gammax * std::exp(lo) / (one_val + std::exp(lo));
       } else {
-        ret = gammax / (one_val + fasterexp(-lo));
+        ret = gammax / (one_val + std::exp(-lo));
       }
       return ret + small_value;
     }
@@ -133,9 +133,9 @@ struct param_row_spike_slab_t {
       const scalar_t lo = tau_aux;
       scalar_t ret;
       if (-lo > large_exp_value) {
-        ret = gammax * fasterexp(lo) / (one_val + fasterexp(lo));
+        ret = gammax * std::exp(lo) / (one_val + std::exp(lo));
       } else {
-        ret = gammax / (one_val + fasterexp(-lo));
+        ret = gammax / (one_val + std::exp(-lo));
       }
       return ret + small_value;
     }
@@ -149,9 +149,9 @@ struct param_row_spike_slab_t {
     inline const scalar_t operator()(const scalar_t& alpha_aux) const {
       const scalar_t lo = alpha_aux + pi_aux;
       if (-lo > large_exp_value) {
-        return fasterexp(lo) / (one_val + fasterexp(lo));
+        return std::exp(lo) / (one_val + std::exp(lo));
       }
-      return one_val / (one_val + fasterexp(-lo));
+      return one_val / (one_val + std::exp(-lo));
     }
     const scalar_t& pi_aux;
 
@@ -175,7 +175,7 @@ struct param_row_spike_slab_t {
         : tau_val(_tau_val) {}
     inline const scalar_t operator()(const scalar_t& b,
                                      const scalar_t& g) const {
-      return half_val * (one_val + fasterlog(tau_val) - fasterlog(g) -
+      return half_val * (one_val + std::log(tau_val) - std::log(g) -
                          tau_val * (b * b + one_val / g));
     }
     const scalar_t& tau_val;
@@ -227,8 +227,8 @@ struct param_row_spike_slab_t {
     inline const scalar_t operator()(const scalar_t& g_aux) const {
       const scalar_t lo = g_aux - tau_aux;
       if (lo > large_exp_value)
-        return fasterexp(-lo) / (one_val + fasterexp(-lo));
-      return one_val / (one_val + fasterexp(lo));
+        return std::exp(-lo) / (one_val + std::exp(-lo));
+      return one_val / (one_val + std::exp(lo));
     }
     const scalar_t& tau_aux;
 
@@ -261,9 +261,9 @@ struct param_row_spike_slab_t {
                                      const scalar_t& b) const {
       scalar_t ret = (one_val - tau_val / g - tau_val * b * b) / two_val;
       if (tau_aux > large_exp_value) {
-        ret = ret * fasterexp(-tau_aux) / (one_val + fasterexp(-tau_aux));
+        ret = ret * std::exp(-tau_aux) / (one_val + std::exp(-tau_aux));
       } else {
-        ret = ret / (one_val + fasterexp(tau_aux));
+        ret = ret / (one_val + std::exp(tau_aux));
       }
       return ret;
     }
@@ -433,7 +433,7 @@ void impl_perturb_param(Parameter& P, const Scalar sd,
 
   const auto gammax = P.resolve_prec_op.gammax;
   // gam_aux > - ln(gammax) - 2 ln(sd)
-  const auto gam_aux_min = -fasterlog(gammax) - 2.0 * fasterlog(sd);
+  const auto gam_aux_min = -std::log(gammax) - 2.0 * std::log(sd);
   setConstant(P.gamma_aux, gam_aux_min);
 
   resolve_param(P);

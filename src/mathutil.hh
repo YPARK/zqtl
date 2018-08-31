@@ -3,17 +3,17 @@
 
 #include <cmath>
 #include <random>
-#include "fastexp.h"
-#include "fastgamma.h"
-#include "fastlog.h"
+// #include "fastexp.h"
+// #include "fastgamma.h"
+// #include "fastlog.h"
 
 ////////////////////////////////////////////////////////////////
 template <typename T>
 struct sigmoid_op_t {
   explicit sigmoid_op_t() {}
   const T operator()(const T& x) const {
-    if (-x < large_value) return one_val / (one_val + fasterexp(-x));
-    return fasterexp(x) / (one_val + fasterexp(x));
+    if (-x < large_value) return one_val / (one_val + std::exp(-x));
+    return std::exp(x) / (one_val + std::exp(x));
   }
   const T one_val = 1.0;
   const T large_value = 20.0;  // exp(20) is too big
@@ -22,19 +22,19 @@ struct sigmoid_op_t {
 template <typename T>
 struct log_op_t {
   explicit log_op_t() {}
-  const T operator()(const T& x) const { return fasterlog(x); }
+  const T operator()(const T& x) const { return std::log(x); }
 };
 
 template <typename T>
 struct exp_op_t {
   explicit exp_op_t() {}
-  const T operator()(const T& x) const { return fasterexp(x); }
+  const T operator()(const T& x) const { return std::exp(x); }
 };
 
 template <typename T>
 struct log1p_op_t {
   explicit log1p_op_t() {}
-  const T operator()(const T& x) const { return fasterlog(1.0 + x); }
+  const T operator()(const T& x) const { return std::log(1.0 + x); }
 };
 
 template <typename T>
@@ -54,9 +54,9 @@ struct log1pExp_op_t {
   explicit log1pExp_op_t() {}
   const T operator()(const T& x) const {
     if (x > large_value) {
-      return x + fasterlog(1.0 + fasterexp(-x));
+      return x + std::log(1.0 + std::exp(-x));
     }
-    return fasterlog(1.0 + fasterexp(x));
+    return std::log(1.0 + std::exp(x));
   }
   const T large_value = 20.0;  // exp(20) is too big
 };
@@ -67,7 +67,7 @@ struct gammaln_op_t {
 #ifdef DEBUG
     ASSERT(x + TOL > 0.0f, "x must be postive in gammaln : " << x);
 #endif
-    return fasterlgamma(x + TOL);
+    return std::lgamma(x + TOL);
   }
   constexpr static T TOL = 1e-8;
 };

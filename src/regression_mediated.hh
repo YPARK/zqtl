@@ -164,9 +164,8 @@ struct mediated_regression_t {
     // trans_times_add(Eta.get_grad_type1(), temp_nk,
     //                 G1R); /* (n x m)' (n x k) = (m x k) */
 
-    G1R = 2.0 *
-              (Eta.get_grad_type2().transpose() * Xsq * ThetaLVar)
-                  .cwiseProduct(mean_param(ThetaR)) +
+    G1R = 2.0 * (Eta.get_grad_type2().transpose() * Xsq * ThetaLVar)
+                    .cwiseProduct(mean_param(ThetaR)) +
           Eta.get_grad_type1().transpose() * X * ThetaLMean;
 
     // update of G2R

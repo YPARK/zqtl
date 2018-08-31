@@ -1,6 +1,7 @@
 ################################################################
 #' Variational inference of zQTL regression
 #'
+#' @export
 #' @name fit.zqtl
 #'
 #' @usage fit.zqtl(effect, effect.se, X)
@@ -39,7 +40,7 @@
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
-#' @param weight.y Include 1/effect.se in weighted effect (default: FALSE)
+#'
 #'
 #' @return a list of variational inference results
 #'
@@ -146,7 +147,6 @@
 #' image(Matrix(out$param.left$lodds[.rnd, ]))
 #' image(Matrix(out$param.right$lodds))
 #'
-#' @export
 #'
 fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.se,           # marginal se : y ~ x
@@ -181,8 +181,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      eigen.tol = 1e-2,
                      do.stdize = TRUE,
                      min.se = 1e-4,
-                     rseed = NULL,
-                     weight.y = FALSE) {
+                     rseed = NULL) {
 
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
@@ -209,7 +208,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed', 'weight.y')
+                  'rseed')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {
@@ -268,7 +267,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
-#' @param weight.y Include 1/effect.se in weighted effect (default: FALSE)
+#'
 #'
 #' @return a list of variational inference results
 #'
@@ -404,8 +403,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
                                eigen.tol = 1e-2,
                                do.stdize = TRUE,
                                min.se = 1e-4,
-                               rseed = NULL,
-                               weight.y = FALSE) {
+                               rseed = NULL) {
 
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
@@ -419,7 +417,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed', 'weight.y')
+                  'rseed')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {
@@ -437,6 +435,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 
 ################################################################
 #' Variational inference of zQTL mediation
+#'
+#' @export
 #'
 #' @name fit.med.zqtl
 #'
@@ -485,8 +485,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
-#' @param weight.y Include 1/effect.se in weighted effect in Y model (default: FALSE)
-#' @param weight.m Include 1/effect.se in weighted effect in M model (default: FALSE)
+#'
+#'
 #'
 #' @return a list of variational inference results
 #'
@@ -632,8 +632,6 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
 #'
 #'
-#' @export
-#'
 fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          effect.se,           # marginal se : y ~ x
                          effect.m,            # marginal : m ~ x
@@ -673,9 +671,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          eigen.tol = 1e-2,
                          do.stdize = TRUE,
                          min.se = 1e-4,
-                         rseed = NULL,
-                         weight.y = FALSE,
-                         weight.m = FALSE) {
+                         rseed = NULL) {
 
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
@@ -702,7 +698,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed', 'weight.y', 'weight.m',
+                  'rseed',
                   'multivar.mediator', 'do.propensity', 'do.direct.estimation',
                   'med.lodds.cutoff', 'num.strat.sample')
 

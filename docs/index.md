@@ -51,6 +51,7 @@ Enjoy!
 
 - Make propensity sampling as second option
 - Estimate the unmediated effect as before
+- Drop weight features (not so useful)
 
 ### v.1.3.0
 

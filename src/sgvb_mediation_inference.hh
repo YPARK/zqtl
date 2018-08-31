@@ -4,8 +4,6 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
-// [[Rcpp::plugins(openmp)]]
-#include <omp.h>
 
 #include "convergence.hh"
 #include "dummy.hh"
@@ -106,7 +104,6 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
   bool do_hyper = false;
 
   auto update_m = [&](auto &&eta) {
-
     for (Index s = 0; s < nstoch; ++s) {
       m_eta_sampled.setZero();
       func_apply(sample_med_m_eta, std::move(med_eta_tup));
@@ -128,7 +125,6 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
   };
 
   auto update_y = [&](auto &&eta) {
-
     for (Index s = 0; s < nstoch; ++s) {
       y_eta_sampled.setZero();
       func_apply(sample_med_y_eta, std::move(med_eta_tup));
@@ -150,7 +146,6 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
   };
 
   auto update_my_eta = [&](auto &&eta) {
-
     for (Index s = 0; s < nstoch; ++s) {
       // sample on Y
       y_eta_sampled.setZero();

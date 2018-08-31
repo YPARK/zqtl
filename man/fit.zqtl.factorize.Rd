@@ -69,8 +69,6 @@ fit.zqtl.factorize(effect, effect.se, X)
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
 \item{rseed}{Random seed}
-
-\item{weight.y}{Include 1/effect.se in weighted effect (default: FALSE)}
 }
 \value{
 a list of variational inference results

@@ -32,7 +32,7 @@ struct param_col_spike_gamma_t {
 
   template <typename Opt>
   explicit param_col_spike_gamma_t(const index_t n1, const index_t n2,
-                               const Opt& opt)
+                                   const Opt& opt)
       : nrow(n1),
         ncol(n2),
         onesN1(1, n1),
@@ -104,9 +104,9 @@ struct param_col_spike_gamma_t {
     inline const scalar_t operator()(const scalar_t& alpha_aux) const {
       const scalar_t lo = alpha_aux + pi_aux;
       if (-lo > large_exp_value) {
-        return fasterexp(lo) / (one_val + fasterexp(lo));
+        return std::exp(lo) / (one_val + std::exp(lo));
       }
-      return one_val / (one_val + fasterexp(-lo));
+      return one_val / (one_val + std::exp(-lo));
     }
     const scalar_t& pi_aux;
   } resolve_spike_op;
@@ -118,7 +118,7 @@ struct param_col_spike_gamma_t {
       if (b > large_exp_value) {
         return mu_min + b;
       }
-      return mu_min + fasterlog(one_val + fasterexp(b));
+      return mu_min + std::log(one_val + std::exp(b));
     }
     const scalar_t mu_min;
   } resolve_mu_op;
@@ -166,9 +166,9 @@ struct param_col_spike_gamma_t {
     inline const scalar_t operator()(const scalar_t& x,
                                      const scalar_t& b) const {
       if (-b > large_exp_value) {
-        return x * fasterexp(b) / (one_val + fasterexp(b));
+        return x * std::exp(b) / (one_val + std::exp(b));
       }
-      return x / (one_val + fasterexp(-b));
+      return x / (one_val + std::exp(-b));
     }
   } grad_beta_chain_op;
 
@@ -213,7 +213,8 @@ void impl_initialize_param(Parameter& P, const tag_param_col_spike_gamma) {
 
 // factory functions
 template <typename scalar_t, typename Index, typename Opt>
-auto make_dense_col_spike_gamma(const Index n1, const Index n2, const Opt& opt) {
+auto make_dense_col_spike_gamma(const Index n1, const Index n2,
+                                const Opt& opt) {
   using Mat = Eigen::Matrix<scalar_t, Eigen::Dynamic, Eigen::Dynamic>;
   using Param = param_col_spike_gamma_t<Mat, tag_param_dense>;
 
@@ -228,7 +229,7 @@ auto make_dense_col_spike_gamma(const Index n1, const Index n2, const Opt& opt) 
 // factory functions
 template <typename scalar_t, typename Index, typename Opt>
 auto make_dense_col_spike_gamma_ptr(const Index n1, const Index n2,
-                                const Opt& opt) {
+                                    const Opt& opt) {
   using Mat = Eigen::Matrix<scalar_t, Eigen::Dynamic, Eigen::Dynamic>;
   using Param = param_col_spike_gamma_t<Mat, tag_param_dense>;
 
@@ -244,7 +245,7 @@ auto make_dense_col_spike_gamma_ptr(const Index n1, const Index n2,
 // initialize non-zeroness by adjacency A
 template <typename scalar_t, typename Derived, typename Opt>
 auto make_sparse_col_spike_gamma(const Eigen::SparseMatrixBase<Derived>& A,
-                             const Opt& opt) {
+                                 const Opt& opt) {
   const auto n1 = A.rows();
   const auto n2 = A.cols();
 
@@ -282,7 +283,6 @@ auto make_sparse_col_spike_gamma(const Eigen::SparseMatrixBase<Derived>& A,
 template <typename Parameter, typename scalar_t>
 void impl_update_param_sgd(Parameter& P, const scalar_t rate,
                            const tag_param_col_spike_gamma) {
-
   const typename Parameter::scalar_t denom = P.rows();
 
   P.grad_alpha_aux_col = P.onesN1 * P.grad_alpha_aux / denom;
@@ -304,9 +304,7 @@ void impl_update_hyperparam_sgd(Parameter& P, const scalar_t rate,
 // mean and variance
 template <typename Parameter>
 void impl_resolve_param(Parameter& P, const tag_param_col_spike_gamma) {
-
-  for (auto r = 0; r < P.rows(); ++r)
-    P.alpha_aux.row(r) = P.alpha_aux_col;
+  for (auto r = 0; r < P.rows(); ++r) P.alpha_aux.row(r) = P.alpha_aux_col;
 
   P.alpha = P.alpha_aux.unaryExpr(P.resolve_spike_op);
   P.mu = P.beta.unaryExpr(P.resolve_mu_op);

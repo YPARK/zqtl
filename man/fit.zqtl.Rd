@@ -11,9 +11,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{effect.se}{Marginal effect size standard error matrix (SNP x trait)}
 
-\item{X}{Design matrix (reference Ind x SNP)}
-
 \item{n}{sample size of actual data (will ignore if n = 0)}
+
+\item{X}{Design matrix (reference Ind x SNP)}
 
 \item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
 
@@ -74,8 +74,6 @@ fit.zqtl(effect, effect.se, X)
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
 \item{rseed}{Random seed}
-
-\item{weight.y}{Include 1/effect.se in weighted effect (default: FALSE)}
 }
 \value{
 a list of variational inference results
@@ -182,6 +180,7 @@ out <- fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
 .rnd <- c(c.snps, setdiff(sample(p, 20), c.snps))
 image(Matrix(out$param.left$lodds[.rnd, ]))
 image(Matrix(out$param.right$lodds))
+
 
 }
 \author{

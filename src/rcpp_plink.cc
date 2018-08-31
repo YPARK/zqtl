@@ -1,12 +1,12 @@
 #include "rcpp_plink.hh"
 
-auto geno_dosage(const BYTE geno) {
+int geno_dosage(const BYTE geno) {
   // 01 -> (10) -> missing
   if (geno == 1) return NA_INTEGER;
   const int a1 = static_cast<int>(!(geno & 1));   // minor allele
   const int a2 = static_cast<int>(!(geno >> 1));  // minor allele
   return a1 + a2;                                 // minor allele dosage
-};
+}
 
 #define ASSERT_IM_RET(cond, msg)         \
   if (!(cond)) {                         \

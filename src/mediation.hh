@@ -117,14 +117,10 @@ struct mediation_t {
         Wsq(r, p),
         G1L(p, k),
         G2L(p, k),
-        weight_pk(p, k),
         G1R(t, k),
         G2R(t, k),
-        weight_pt(p, t),
         EtaM(make_gaus_repr(mm)),
-        EtaY(make_gaus_repr(yy)),
-        max_weight_pk(1.0),
-        max_weight_pt(1.0) {
+        EtaY(make_gaus_repr(yy)) {
     // check dimensions : Y ~ W * ThetaL * ThetaR'
     //                    M ~ X * ThetaL
     check_dim(ThetaL, p, k,
@@ -156,9 +152,6 @@ struct mediation_t {
     remove_missing(ww, W);
     Wsq = W.cwiseProduct(W);
 
-    weight_pk.setOnes();
-    weight_pt.setOnes();
-
     // 3. create representation Eta
     copy_matrix(NobsL, G1L);
     copy_matrix(NobsL, G2L);
@@ -188,18 +181,11 @@ struct mediation_t {
   ParamLeftMatrix G1L;  // p x k
   ParamLeftMatrix G2L;  // p x k
 
-  ParamLeftMatrix weight_pk;  // p x t
-
   ParamRightMatrix G1R;  // t x k
   ParamRightMatrix G2R;  // t x k
 
-  ParamRightMatrix weight_pt;  // p x t
-
   ReprM EtaM;  // n x m
   ReprY EtaY;  // k x t
-
-  Scalar max_weight_pk;
-  Scalar max_weight_pt;
 
   void jitter(const Scalar sd) {
     perturb_param(ThetaL, sd);
@@ -243,24 +229,6 @@ struct mediation_t {
     this->resolve();
   }
 
-  template <typename Derived>
-  void set_weight_pt(Eigen::MatrixBase<Derived>& _weight_pt) {
-    ASSERT(_weight_pt.rows() == p && _weight_pt.cols() == t,
-           "invalid weight_pt matrix");
-    weight_pt = _weight_pt.derived();
-
-    max_weight_pt = weight_pt.cwiseAbs().maxCoeff() + static_cast<Scalar>(1e-4);
-  }
-
-  template <typename Derived>
-  void set_weight_pk(Eigen::MatrixBase<Derived>& _weight_pk) {
-    ASSERT(_weight_pk.rows() == p && _weight_pk.cols() == k,
-           "invalid weight_pk matrix");
-    weight_pk = _weight_pk.derived();
-
-    max_weight_pk = weight_pk.cwiseAbs().maxCoeff() + static_cast<Scalar>(1e-4);
-  }
-
   // Initialize by solving linear systems
   // [p x t] -> [p x k] [t x k]'
   // mm [n x k], xx [n x p] -> xx' * mm [p x k]
@@ -299,28 +267,21 @@ struct mediation_t {
   // var_y  = W^2 * (Var[L] * Var[R]' + E[L]^2 * Var[R]' + Var[L] * E[R']^2)
   void resolve() {
     // on M model
-    update_mean(EtaM, X * ThetaL.theta.cwiseProduct(weight_pk)); /* X x mean */
-    update_var(EtaM,
-               Xsq * ThetaL.theta_var.cwiseProduct(weight_pk).cwiseProduct(
-                         weight_pk)); /* X.*X x var */
+    update_mean(EtaM, X * ThetaL.theta);      /* X x mean */
+    update_var(EtaM, Xsq * ThetaL.theta_var); /* X.*X x var */
 
     // on Y model
-    update_mean(EtaY, W * ((ThetaL.theta.cwiseProduct(weight_pk) *
-                            mean_param(ThetaR).transpose())
-                               .cwiseProduct(weight_pt))); /* mean x mean */
+    update_mean(EtaY, W * (ThetaL.theta *
+                           mean_param(ThetaR).transpose())); /* Mean x mean */
 
-    update_var(
-        EtaY, /* hopefully optimized away */
-        Wsq *
-            ((ThetaL.theta_var.cwiseProduct(weight_pk).cwiseProduct(weight_pk) *
-                  var_param(ThetaR).transpose() + /* var x var */
-              ThetaL.theta.cwiseProduct(ThetaL.theta).cwiseProduct(weight_pk) *
-                  var_param(ThetaR).transpose() + /* mu^2 x var */
-              ThetaL.theta_var.cwiseProduct(weight_pk).cwiseProduct(weight_pk) *
-                  (mean_param(ThetaR).cwiseProduct(mean_param(ThetaR)))
-                      .transpose()) /* var x mu^2 */
-                 .cwiseProduct(weight_pt)
-                 .cwiseProduct(weight_pt)));
+    update_var(EtaY, /* hopefully optimized away */
+               Wsq * (ThetaL.theta_var *
+                          (var_param(ThetaR).transpose()) + /* var x var */
+                      ThetaL.theta.cwiseProduct(ThetaL.theta) *
+                          (var_param(ThetaR).transpose()) + /* mu^2 x var */
+                      ThetaL.theta_var *
+                          ((mean_param(ThetaR).cwiseProduct(mean_param(ThetaR)))
+                               .transpose()))); /* var x mu^2 */
   }
 
   void add_sgd(const MMatrix& llik_m, const YMatrix& llik_y) {
@@ -371,16 +332,12 @@ struct mediation_t {
   void _compute_sgd_left() {
     // (1) update of G1L
     G1L = X.transpose() * EtaM.get_grad_type1() +
-          (W.transpose() * EtaY.get_grad_type1()).cwiseProduct(weight_pt) *
-              mean_param(ThetaR) +
-          ((Wsq.transpose() * EtaY.get_grad_type2())
-               .cwiseProduct(weight_pt)
-               .cwiseProduct(weight_pt) *
-           var_param(ThetaR))
+          (W.transpose() * EtaY.get_grad_type1()) * mean_param(ThetaR) +
+          (Wsq.transpose() * EtaY.get_grad_type2() * var_param(ThetaR))
                   .cwiseProduct(mean_param(ThetaL)) *
               static_cast<Scalar>(2.0);
 
-    G1L = G1L.cwiseProduct(weight_pk);
+    G1L = G1L;
 
     // times_set(EtaY.get_grad_type2(), var_param(ThetaR), temp_rk);
     // trans_times_set(Wsq, temp_rk, G1L);
@@ -391,13 +348,11 @@ struct mediation_t {
 
     // (2) update of G2L
     G2L = Xsq.transpose() * EtaM.get_grad_type2() +
-          (Wsq.transpose() * EtaY.get_grad_type2())
-                  .cwiseProduct(weight_pt)
-                  .cwiseProduct(weight_pt) *
+          Wsq.transpose() * EtaY.get_grad_type2() *
               (mean_param(ThetaR).cwiseProduct(mean_param(ThetaR)) +
                var_param(ThetaR));
 
-    G2L = G2L.cwiseProduct(weight_pk).cwiseProduct(weight_pk);
+    G2L = G2L;
 
     // times_set(EtaY.get_grad_type2(), var_param(ThetaR), temp_rk);
     // times_add(EtaY.get_grad_type2(), thetaRsq, temp_rk);
@@ -407,14 +362,9 @@ struct mediation_t {
 
   void _compute_sgd_right() {
     // (3) update of G1R
-    G1R = (EtaY.get_grad_type1().transpose() * W)
-                  .cwiseProduct(weight_pt.transpose()) *
-              mean_param(ThetaL).cwiseProduct(weight_pk) +
-          ((EtaY.get_grad_type2().transpose() * Wsq)
-               .cwiseProduct(weight_pt.transpose())
-               .cwiseProduct(weight_pt.transpose()) *
-           var_param(ThetaL).cwiseProduct(weight_pk).cwiseProduct(weight_pk))
-                  .cwiseProduct(mean_param(ThetaR)) *
+    G1R = EtaY.get_grad_type1().transpose() * W * mean_param(ThetaL) +
+          EtaY.get_grad_type2().transpose() * Wsq *
+              var_param(ThetaL).cwiseProduct(mean_param(ThetaR)) *
               static_cast<Scalar>(2.0);
 
     // times_set(Wsq, ThetaL.theta_var, temp_rk);
@@ -424,13 +374,9 @@ struct mediation_t {
     // trans_times_add(EtaY.get_grad_type1(), temp_rk, G1R);
 
     // (4) update of G2R
-    G2R = (EtaY.get_grad_type2().transpose() * Wsq)
-              .cwiseProduct(weight_pt.transpose())
-              .cwiseProduct(weight_pt.transpose()) *
+    G2R = EtaY.get_grad_type2().transpose() * Wsq *
           (var_param(ThetaL) +
-           mean_param(ThetaL).cwiseProduct(mean_param(ThetaL)))
-              .cwiseProduct(weight_pk)
-              .cwiseProduct(weight_pk);
+           mean_param(ThetaL).cwiseProduct(mean_param(ThetaL)));
 
     // times_set(Wsq, ThetaL.theta_var, temp_rk);
     // times_add(Wsq, thetaLsq, temp_rk);
@@ -460,16 +406,16 @@ struct mediation_t {
   }
 
   void update_sgd(const Scalar rate) {
-    update_param_sgd(ThetaL, rate / max_weight_pk);
-    update_param_sgd(ThetaR, rate / max_weight_pt);
+    update_param_sgd(ThetaL, rate);
+    update_param_sgd(ThetaR, rate);
     resolve_param(ThetaL);
     resolve_param(ThetaR);
     this->resolve();
   }
 
   void update_hyper_sgd(const Scalar rate) {
-    update_hyperparam_sgd(ThetaL, rate / max_weight_pk);
-    update_hyperparam_sgd(ThetaR, rate / max_weight_pt);
+    update_hyperparam_sgd(ThetaL, rate);
+    update_hyperparam_sgd(ThetaR, rate);
     resolve_param(ThetaL);
     resolve_param(ThetaR);
     this->resolve();

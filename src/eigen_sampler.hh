@@ -94,7 +94,7 @@ struct discrete_sampler_t {
     explicit safe_exp_op_t(Scalar& _maxval) : maxval(_maxval) {}
 
     const Scalar operator()(const Scalar& x) const {
-      return fasterexp(x - maxval);
+      return std::exp(x - maxval);
     }
 
     Scalar& maxval;

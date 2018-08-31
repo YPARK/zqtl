@@ -169,7 +169,7 @@ struct param_mixture_t {
         : vmin(1 / _gammax), tau_aux(_tau_aux) {}
 
     inline const scalar_t operator()(const scalar_t& gam_aux) const {
-      return vmin * (one_val + fasterexp(-gam_aux + tau_aux)) + small_val;
+      return vmin * (one_val + std::exp(-gam_aux + tau_aux)) + small_val;
     }
 
     const scalar_t vmin;
@@ -187,7 +187,7 @@ struct param_mixture_t {
         : vmin(1 / _gammax), tau_aux(_tau_aux) {}
 
     inline const scalar_t operator()() const {
-      return vmin * (one_val + fasterexp(-tau_aux)) + small_val;
+      return vmin * (one_val + std::exp(-tau_aux)) + small_val;
     }
 
     const scalar_t vmin;
@@ -203,9 +203,9 @@ struct param_mixture_t {
     inline const scalar_t operator()(const scalar_t& alpha_aux) const {
       const scalar_t lo = alpha_aux + pi_aux;
       if (-lo > large_exp_value) {
-        return fasterexp(lo) / (one_val + fasterexp(lo));
+        return std::exp(lo) / (one_val + std::exp(lo));
       }
-      return one_val / (one_val + fasterexp(-lo));
+      return one_val / (one_val + std::exp(-lo));
     }
     const scalar_t& pi_aux;
 
@@ -244,8 +244,8 @@ struct param_mixture_t {
         : v1(_v1), v0(_v0) {}
     inline const scalar_t operator()(const scalar_t& w1,
                                      const scalar_t& w0) const {
-      const scalar_t ln_ratio_prior = fasterlog(one_val + v1 / v0);
-      return fasterlog(one_val + w1 / w0) - ln_ratio_prior;
+      const scalar_t ln_ratio_prior = std::log(one_val + v1 / v0);
+      return std::log(one_val + w1 / w0) - ln_ratio_prior;
     }
 
     const scalar_t& v1;
@@ -311,7 +311,7 @@ struct param_mixture_t {
         : vmin(1 / _gammax), tau_aux(_tau_aux) {}
 
     inline const scalar_t operator()(const scalar_t& gam_aux) const {
-      return -vmin * fasterexp(-gam_aux + tau_aux);
+      return -vmin * std::exp(-gam_aux + tau_aux);
     }
 
     const scalar_t vmin;
@@ -373,7 +373,7 @@ struct param_mixture_t {
         : vmin(1 / _gammax) {}
 
     inline const scalar_t operator()(const scalar_t& tau_aux) const {
-      return -vmin * fasterexp(-tau_aux);
+      return -vmin * std::exp(-tau_aux);
     }
 
     const scalar_t vmin;

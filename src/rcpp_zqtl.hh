@@ -9,10 +9,10 @@ using namespace Rcpp;
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
+#include <numeric>
 #include <random>
 #include <string>
 #include <vector>
-#include <numeric>
 
 #include "convergence.hh"
 #include "mediation.hh"
@@ -38,12 +38,12 @@ using Scalar = Mat::Scalar;
 using Index = Mat::Index;
 
 // "util" header must come first
-#include "rcpp_zqtl_util.hh"
 #include "eigen_sampler.hh"
+#include "rcpp_zqtl_util.hh"
 
 // mediation and regression headers
+#include "rcpp_zqtl_factorization.hh"
 #include "rcpp_zqtl_mediation.hh"
 #include "rcpp_zqtl_regression.hh"
-#include "rcpp_zqtl_factorization.hh"
 
 #endif

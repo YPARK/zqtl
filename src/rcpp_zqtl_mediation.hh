@@ -489,7 +489,8 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     zqtl_model_t<Mat> y_strat_model(Y_strat, D2_strat);
 
-    auto theta = make_dense_spike_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
+    auto theta =
+        make_dense_spike_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
     auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
     eta.init_by_dot(Y_strat, opt.jitter());
     eta_intercept.init_by_dot(Y_strat, opt.jitter());

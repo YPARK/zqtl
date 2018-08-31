@@ -71,7 +71,6 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
   eta.init_by_dot(Y, opt.jitter());
-  if (opt.weight_y()) eta.set_weight(weight);
   TLOG("Constructed effects");
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -215,7 +214,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     auto theta_right = make_dense_spike_gamma<Scalar>(Y.cols(), K, opt);
 
     auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
-    if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());
@@ -235,7 +233,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     auto theta_right = make_dense_spike_slab<Scalar>(Y.cols(), K, opt);
 
     auto eta_f = make_factored_regression_eta(Vt, Y, theta_left, theta_right);
-    if (opt.weight_y()) eta_f.set_weight(weight);
 
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());

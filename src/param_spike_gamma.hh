@@ -95,9 +95,9 @@ struct param_spike_gamma_t {
     inline const scalar_t operator()(const scalar_t& alpha_aux) const {
       const scalar_t lo = alpha_aux + pi_aux;
       if (-lo > large_exp_value) {
-        return fasterexp(lo) / (one_val + fasterexp(lo));
+        return std::exp(lo) / (one_val + std::exp(lo));
       }
-      return one_val / (one_val + fasterexp(-lo));
+      return one_val / (one_val + std::exp(-lo));
     }
     const scalar_t& pi_aux;
   } resolve_spike_op;
@@ -109,7 +109,7 @@ struct param_spike_gamma_t {
       if (b > large_exp_value) {
         return mu_min + b;
       }
-      return mu_min + fasterlog(one_val + fasterexp(b));
+      return mu_min + std::log(one_val + std::exp(b));
     }
     const scalar_t mu_min;
   } resolve_mu_op;
@@ -157,9 +157,9 @@ struct param_spike_gamma_t {
     inline const scalar_t operator()(const scalar_t& x,
                                      const scalar_t& b) const {
       if (-b > large_exp_value) {
-        return x * fasterexp(b) / (one_val + fasterexp(b));
+        return x * std::exp(b) / (one_val + std::exp(b));
       }
-      return x / (one_val + fasterexp(-b));
+      return x / (one_val + std::exp(-b));
     }
   } grad_beta_chain_op;
 

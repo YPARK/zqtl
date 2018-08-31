@@ -4,8 +4,6 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
-// [[Rcpp::plugins(openmp)]]
-#include <omp.h>
 
 #include <typeinfo>
 #include "convergence.hh"
@@ -118,7 +116,6 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
   auto sample_delta = [&](auto &&delta) { delta_sampled += delta.sample(rng); };
 
   auto update_sgd = [&](auto &&effect) {
-
     for (Index s = 0; s < nstoch; ++s) {
       eta_sampled.setZero();
       delta_sampled.setZero();
@@ -209,9 +206,9 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
 template <typename Model, typename Opt, typename RNG, typename... Etas,
           typename... Deltas, typename... Zetas>
 auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
-                        std::tuple<Etas...> &&eta_tup,
-                        std::tuple<Deltas...> &&delta_tup,
-                        std::tuple<Zetas...> &&zeta_tup) {
+                             std::tuple<Etas...> &&eta_tup,
+                             std::tuple<Deltas...> &&delta_tup,
+                             std::tuple<Zetas...> &&zeta_tup) {
   using Scalar = typename Model::Scalar;
   using Index = typename Model::Index;
   using Mat = typename Model::Data;
@@ -248,7 +245,6 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
   auto sample_zeta = [&](auto &&zeta) { zeta_sampled += zeta.sample(rng); };
 
   auto update_sgd = [&](auto &&effect) {
-
     for (Index s = 0; s < nstoch; ++s) {
       eta_sampled.setZero();
       delta_sampled.setZero();
@@ -321,7 +317,6 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
   return conv.summarize();
 }
 
-
 ////////////////////////////////////////////////////////////////
 // Fit multiple eta's without clamping effects
 template <typename Model, typename Opt, typename RNG, typename... MeanEtas>
@@ -373,7 +368,6 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
   auto update_sgd_eta = [&do_hyper, &nstoch, &mean_eta_tup,
                          &clamped_mean_eta_tup, &sample_mean_eta, &mean_sampled,
                          &model, &rate](auto &&eta) {
-
     for (Index s = 0; s < nstoch; ++s) {
       mean_sampled.setZero();
       func_apply(sample_mean_eta, std::move(mean_eta_tup));

@@ -54,7 +54,7 @@ using BYTE = unsigned char;
 // already have been read in, so PLINK knows how many SNPs and
 // individuals to expect.
 
-auto geno_dosage(const BYTE geno);
+int geno_dosage(const BYTE geno);
 bool check_bed_format(std::ifstream& ifs);
 Rcpp::IntegerMatrix _read_plink_bed(const std::string file_name,
                                     const unsigned int N,

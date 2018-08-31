@@ -42,16 +42,16 @@ struct options_t {
     MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
 
-    WEIGHT_M = false;
-    WEIGHT_Y = false;
-    PRETRAIN = false;
+    // WEIGHT_M = false;
+    // WEIGHT_Y = false;
+    // PRETRAIN = false;
     DO_HYPER = false;
     DO_RESCALE = false;
     OUT_RESID = false;
     MULTI_MED_EFFECT = false;
     DO_PROPENSITY_SAMPLING = false;
 
-    BOOTSTRAP_METHOD = 1;
+    // BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
     N_SINGLE_MED = 0;
     N_STRAT_SAMPLE = 3;
@@ -95,9 +95,9 @@ struct options_t {
     return DO_DIRECT_EFFECT_ESTIMATION;
   }
 
-  const bool weight_m() const { return WEIGHT_M; }
-  const bool weight_y() const { return WEIGHT_Y; }
-  const bool pretrain() const { return PRETRAIN; }
+  // const bool weight_m() const { return WEIGHT_M; }
+  // const bool weight_y() const { return WEIGHT_Y; }
+  // const bool pretrain() const { return PRETRAIN; }
   const bool do_hyper() const { return DO_HYPER; }
   void off_hyper() { DO_HYPER = false; }
   void on_hyper() { DO_HYPER = true; }
@@ -108,7 +108,7 @@ struct options_t {
 
   const bool do_propensity_sampling() const { return DO_PROPENSITY_SAMPLING; }
 
-  const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
+  // const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
 
   const int n_single_model() const { return N_SINGLE_MED; }
   const int n_strat_sample() const { return N_STRAT_SAMPLE; }
@@ -153,15 +153,15 @@ struct options_t {
   float MED_LODDS_CUTOFF;
   bool DO_DIRECT_EFFECT_ESTIMATION;
 
-  bool WEIGHT_M;
-  bool WEIGHT_Y;
-  bool PRETRAIN;
+  // bool WEIGHT_M;
+  // bool WEIGHT_Y;
+  // bool PRETRAIN;
   bool DO_HYPER;
   bool OUT_RESID;
   bool MULTI_MED_EFFECT;
   bool DO_PROPENSITY_SAMPLING;
 
-  int BOOTSTRAP_METHOD;
+  // int BOOTSTRAP_METHOD;
   int DIRECT_MODEL;
   int N_SINGLE_MED;
   int N_STRAT_SAMPLE;
