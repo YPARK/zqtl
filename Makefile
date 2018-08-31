@@ -6,7 +6,7 @@ SRC := $(wildcard src/*.cc)
 HDR := $(wildcard src/*.hh)
 MAN := $(wildcard man/*.Rd)
 
-all: $(PKG)_$(VER).tar.gz
+all: R/RcppExports.R $(PKG)_$(VER).tar.gz
 
 clean:
 	rm -f src/*.o src/*.so

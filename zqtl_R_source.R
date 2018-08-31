@@ -451,16 +451,19 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param X.gwas Design matrix (reference Ind.GWAS x SNP)
 #' @param X.med Design matrix (reference Ind.MED x SNP)
 #' @param C SNP confounding factors (SNP x confounder; default: NULL)#'
-#' @param factored Fit factored model (default: FALSE)#'
-#' @param options A list of inference/optimization options.#'
+#' @param factored Fit factored model (default: FALSE)
+#' @param options A list of inference/optimization options.
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
 #'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
-#' @param do.propensity Propensity sampling to estimate direct effect (default: FALSE)
-#' @param med.lodds.cutoff cutoff to select mediators for stratified sampling (default: log-odds > 0)
-#' @param num.strat.sample Number of stratified sampling (default: 3)
-#' @param num.strat.size Size of stratified sampling (default: 2)
+#' @param do.finemap.direct Fine-map direct effect SNPs (default: TRUE)
+#' @param num.conditional number of conditional models
+#' @param conditional.size size of each conditional model
 #'
+#' @param do.propensity Propensity sampling to estimate direct effect (default: FALSE)
+#' @param do.var.calc variance calculation (default: FALSE)
+#' @param num.strat.size Size of stratified sampling (default: 2)
+#' 
 #' @param do.hyper Hyper parameter tuning (default: FALSE)
 #' @param do.rescale Rescale z-scores by standard deviation (default: FALSE)
 #' @param tau Fixed value of tau
@@ -499,15 +502,15 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @examples
 #'
 #' library(zqtl)
-#' n <- 1000
-#' p <- 2000
+#' n <- 500
+#' p <- 1000
 #' n.genes <- 10
-#' h2 <- 0.9
-#' n.causal.direct <- 4
+#' h2 <- 0.8
+#' n.causal.direct <- 3
 #' n.causal.qtl <- 3
 #' n.causal.gene <- 2
 #'
-#' set.seed(1)
+#' set.seed(13)
 #'
 #' .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 #'
@@ -533,10 +536,9 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
 #' y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
-#'
 #' y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 #'
-#' ################################################################
+#' ## just caculate univariate z-scores
 #' fast.cov <- function(x, y) {
 #'     n.obs <- crossprod(!is.na(x), !is.na(y))
 #'     ret <- crossprod(replace(x, is.na(x), 0),
@@ -551,34 +553,9 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'     return(ret)
 #' }
 #'
-#' xy.beta <- fast.cov(X, y)
-#' z.xy <- fast.z.cov(X, y)
-#'
-#' xy.beta.se <- xy.beta / z.xy
-#'
-#' .idx <- sample(n, 300)
-#' X.med <- X[.idx, ] ## smaller sample in mediation QTL
-#'
-#' xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
-#' z.xg <- fast.z.cov(X.med, gene.expr[.idx, ])
-#' xg.beta.se <- xg.beta / z.xg
-#'
-#' ################################################################
-#' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-#'                gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -0, tau = -4,
-#'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
-#'                verbose = TRUE, min.se = 1e-4,
-#'                print.interv = 200, do.rescale = FALSE)
-#'
-#' med.out <- fit.med.zqtl(effect = xy.beta,
-#'                         effect.se = xy.beta.se,
-#'                         effect.m = xg.beta * 10,
-#'                         effect.m.se = xg.beta.se,
-#'                         X.gwas = X,
-#'                         X.med = X.med,
-#'                         options = vb.opt)
-#'
-#' plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')#'
+#' xy.beta <- fast.cov(X, scale(y))
+#' z.xy <- fast.z.cov(X, scale(y))
+#' xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
 #'
 #' ################################################################
 #' ## Use multivariate effects directly
@@ -609,7 +586,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' ################################################################
 #' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
 #'                gammax = 1e4, do.stdize = TRUE,
-#'                pi = -0, tau = -4, do.propensity = TRUE,
+#'                pi = -0, tau = -4, conditional.size = 3, 
 #'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
 #'                verbose = TRUE, min.se = 1e-4,
 #'                print.interv = 200,
@@ -646,8 +623,12 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          multivar.mediator = FALSE,
                          do.propensity = FALSE,
                          do.direct.estimation = TRUE,
+                         do.finemap.direct = TRUE,
+                         do.var.calc = FALSE,
                          med.lodds.cutoff = 0,
                          num.strat.sample = 5,
+                         num.conditional = 0,
+                         conditional.size = 1,
                          do.hyper = FALSE,
                          do.rescale = FALSE,
                          tau = NULL,
@@ -698,9 +679,9 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed',
-                  'multivar.mediator', 'do.propensity', 'do.direct.estimation',
-                  'med.lodds.cutoff', 'num.strat.sample')
+                  'rseed', 'do.var.calc',
+                  'multivar.mediator', 'do.propensity', 'do.direct.estimation', 'do.finemap.direct',
+                  'med.lodds.cutoff', 'num.strat.sample', 'num.conditional', 'conditional.size')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {

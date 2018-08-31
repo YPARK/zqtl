@@ -141,7 +141,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     TLOG("No direct effect");
   }
 
-  TLOG("Finished direct model estimation\n\n");
+  TLOG("Finished direct model estimation");
 
   zqtl_model_t<Mat> model_y(Y, D2);
 
@@ -176,16 +176,40 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   TLOG("Finished joint model estimation\n\n");
 
-  Rcpp::List var_decomp = _variance_calculation(
-      eta_intercept, delta_med, theta_med, opt, std::make_tuple(Y, M, U, D2));
+  // Fine-map residual unmediated effect
+  Rcpp::List param_unmediated_finemap = Rcpp::List::create();
 
-  TLOG("Finished variance decomposition\n\n");
+  if (opt.do_finemap_unmediated()) {
+    dummy_eta_t dummy;
+    auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+    auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
+    eta_direct.init_by_dot(Y, opt.jitter());
+    eta_intercept.resolve();
+    eta_conf_y.resolve();
+    delta_med.resolve();
+    auto llik_fm = impl_fit_eta_delta(
+        model_y, opt, rng,
+        std::make_tuple(eta_direct, eta_intercept, eta_conf_y),
+        std::make_tuple(dummy), std::make_tuple(dummy),
+        std::make_tuple(delta_med));
+
+    param_unmediated_finemap = param_rcpp_list(theta_direct);
+  }
+
+  Rcpp::List var_decomp = Rcpp::List::create();
+
+  if (opt.do_var_calc()) {
+    var_decomp = _variance_calculation(eta_intercept, delta_med, theta_med, opt,
+                                       std::make_tuple(Y, M, U, D2));
+    TLOG("Finished variance decomposition\n\n");
+  }
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["M"] = M, Rcpp::_["M0"] = M0,
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
       Rcpp::_["param.unmediated"] = param_rcpp_list(theta_unmed),
+      Rcpp::_["param.finemap.direct"] = param_unmediated_finemap,
       Rcpp::_["param.intercept"] = param_rcpp_list(theta_intercept),
       Rcpp::_["param.covariate"] = param_rcpp_list(theta_conf_y),
       Rcpp::_["llik"] = llik, Rcpp::_["var.decomp"] = var_decomp);
@@ -278,11 +302,14 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Rcpp::List out_left_param = param_rcpp_list(theta_med_left);
   Rcpp::List out_right_param = param_rcpp_list(theta_med_right);
 
-  Rcpp::List var_decomp =
-      _variance_calculation(eta_intercept, delta_med, theta_med_left, opt,
-                            std::make_tuple(Y, M, U, D2));
+  Rcpp::List var_decomp = Rcpp::List::create();
 
-  TLOG("Finished variance decomposition\n\n");
+  if (opt.do_var_calc()) {
+    var_decomp = _variance_calculation(eta_intercept, delta_med, theta_med_left,
+                                       opt, std::make_tuple(Y, M, U, D2));
+
+    TLOG("Finished variance decomposition\n\n");
+  }
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
@@ -443,13 +470,14 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                               RNG& rng, options_t& opt) {
-  const Index max_n_single = opt.n_single_model();
-  const Index n_single =
-      (max_n_single > 0) ? std::min(max_n_single, mm.cols()) : mm.cols();
+  const Index max_n_conditional = opt.n_conditional_model();
+  const Index n_conditional = (max_n_conditional > 0)
+                                  ? std::min(max_n_conditional, mm.cols())
+                                  : mm.cols();
 
   const Index n_traits = yy.cols();
 
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_single);
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_conditional);
 
   std::vector<Index> rand_med(mm.cols());
 
@@ -471,7 +499,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       make_dense_slab<Scalar>(VtI_strat.cols(), Y_strat.cols(), opt);
   auto eta_intercept = make_regression_eta(VtI_strat, Y_strat, theta_intercept);
 
-  for (Index k = 0; k < n_single; ++k) {
+  for (Index k = 0; k < n_conditional; ++k) {
     // sample eigen components inversely proportional to the
     // divergence of this mediation effect
 
@@ -504,7 +532,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       Y_resid.col(kj) = _y.col(j);
     }
 
-    TLOG("Single mediator model : " << (k + 1) << " / " << n_single);
+    TLOG("Conditional mediator model : " << (k + 1) << " / " << n_conditional);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
@@ -515,8 +543,8 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     resid_z = center_zscore(_resid_z, Vt, D2.cwiseSqrt());
   }
 
-  const Scalar denom = static_cast<Scalar>(n_single * n_traits);
-  Mat resid_z_mean = resid_z * Mat::Ones(n_single * n_traits, 1) / denom;
+  const Scalar denom = static_cast<Scalar>(n_conditional * n_traits);
+  Mat resid_z_mean = resid_z * Mat::Ones(n_conditional * n_traits, 1) / denom;
 
   return Vt * resid_z_mean;
 }
@@ -524,24 +552,39 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 template <typename RNG>
 Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                                RNG& rng, options_t& opt) {
-  const Index max_n_single = opt.n_single_model();
-  const Index n_single =
-      (max_n_single > 0) ? std::min(max_n_single, mm.cols()) : mm.cols();
-
+  const Index n_conditional = mm.cols();
+  const Index max_n_conditional =
+      std::max(n_conditional, static_cast<Index>(opt.n_conditional_model()));
   const Index n_traits = yy.cols();
 
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_single);
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * max_n_conditional);
 
-  std::vector<Index> rand_med(mm.cols());
+  const Index cond_size =
+      std::min(n_conditional, static_cast<Index>(opt.n_conditional_size() - 1));
 
-  std::shuffle(rand_med.begin(), rand_med.end(),
-               std::mt19937{std::random_device{}()});
+  const Index n_med = mm.cols();
+  std::vector<Index> rand_med(n_med);
 
-  for (Index k = 0; k < n_single; ++k) {
+  for (Index k = 0; k < max_n_conditional; ++k) {
     zqtl_model_t<Mat> y_model(yy, D2);
 
-    Index k_rand = rand_med.at(k);
-    Mat Mk = mm.col(k_rand);
+    if (k % n_med == 0) {
+      std::shuffle(rand_med.begin(), rand_med.end(),
+                   std::mt19937{std::random_device{}()});
+    }
+
+    // construct mediators not to regress out
+    Mat Mk;
+    if (cond_size < 1) {
+      Mk.resize(mm.rows(), 1);
+      Mk = Mat::Zero(mm.rows(), 1);
+    } else {
+      Mk.resize(mm.rows(), cond_size);
+      for (Index j = 0; j < cond_size; ++j) {
+        Index k_rand = rand_med.at((k + j) % n_med);
+        Mk.col(j) = mm.col(k_rand);
+      }
+    }
 
     auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
     auto delta = make_regression_eta(Mk, yy, med);
@@ -559,7 +602,8 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       Y_resid.col(kj) = _y.col(j);
     }
 
-    TLOG("Single mediator model : " << (k + 1) << " / " << n_single);
+    TLOG("Conditional mediator model : " << (k + 1) << " / "
+                                         << max_n_conditional);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
@@ -570,8 +614,9 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     resid_z = center_zscore(_resid_z, Vt, D2.cwiseSqrt());
   }
 
-  const Scalar denom = static_cast<Scalar>(n_single * n_traits);
-  Mat resid_z_mean = resid_z * Mat::Ones(n_single * n_traits, 1) / denom;
+  const Scalar denom = static_cast<Scalar>(max_n_conditional * n_traits);
+  Mat resid_z_mean =
+      resid_z * Mat::Ones(max_n_conditional * n_traits, 1) / denom;
 
   return Vt * resid_z_mean;
 }

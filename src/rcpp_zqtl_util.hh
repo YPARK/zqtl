@@ -128,8 +128,14 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("num.strat.size"))
     opt.N_STRAT_SIZE = Rcpp::as<Index>(_list["num.strat.size"]);
 
-  if (_list.containsElementNamed("nsingle"))
-    opt.N_SINGLE_MED = Rcpp::as<Index>(_list["nsingle"]);
+  if (_list.containsElementNamed("nconditional"))
+    opt.N_CONDITIONAL_MED = Rcpp::as<Index>(_list["nconditional"]);
+
+  if (_list.containsElementNamed("num.conditional"))
+    opt.N_CONDITIONAL_MED = Rcpp::as<Index>(_list["num.conditional"]);
+
+  if (_list.containsElementNamed("conditional.size"))
+    opt.N_CONDITIONAL_SIZE = Rcpp::as<Index>(_list["conditional.size"]);
 
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
@@ -184,6 +190,15 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
 
   if (_list.containsElementNamed("do.propensity"))
     opt.DO_PROPENSITY_SAMPLING = Rcpp::as<bool>(_list["do.propensity"]);
+
+  if (_list.containsElementNamed("do.finemap.unmed"))
+    opt.DO_FINEMAP_UNMEDIATED = Rcpp::as<bool>(_list["do.finemap.unmed"]);
+
+  if (_list.containsElementNamed("do.finemap.direct"))
+    opt.DO_FINEMAP_UNMEDIATED = Rcpp::as<bool>(_list["do.finemap.direct"]);
+
+  if (_list.containsElementNamed("do.var.calc"))
+    opt.DO_VAR_CALC = Rcpp::as<bool>(_list["do.var.calc"]);
 
   if (_list.containsElementNamed("do.direct.estimation"))
     opt.DO_DIRECT_EFFECT_ESTIMATION =

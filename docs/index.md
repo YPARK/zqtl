@@ -52,6 +52,7 @@ Enjoy!
 - Make propensity sampling as second option
 - Estimate the unmediated effect as before
 - Drop weight features (not so useful)
+- Allow multiple mediators in the conditional analysis
 
 ### v.1.3.0
 

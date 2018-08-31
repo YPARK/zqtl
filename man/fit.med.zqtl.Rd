@@ -25,9 +25,9 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{C}{SNP confounding factors (SNP x confounder; default: NULL)#'}
 
-\item{factored}{Fit factored model (default: FALSE)#'}
+\item{factored}{Fit factored model (default: FALSE)}
 
-\item{options}{A list of inference/optimization options.#'}
+\item{options}{A list of inference/optimization options.}
 
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
@@ -35,9 +35,13 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 
-\item{med.lodds.cutoff}{cutoff to select mediators for stratified sampling (default: log-odds > 0)}
+\item{do.finemap.direct}{Fine-map direct effect SNPs (default: TRUE)}
 
-\item{num.strat.sample}{Number of stratified sampling (default: 3)}
+\item{do.var.calc}{variance calculation (default: FALSE)}
+
+\item{num.conditional}{number of conditional models}
+
+\item{conditional.size}{size of each conditional model}
 
 \item{do.hyper}{Hyper parameter tuning (default: FALSE)}
 
@@ -101,15 +105,15 @@ Mediation analysis
 \examples{
 
 library(zqtl)
-n <- 1000
-p <- 2000
+n <- 500
+p <- 1000
 n.genes <- 10
-h2 <- 0.9
-n.causal.direct <- 4
+h2 <- 0.8
+n.causal.direct <- 3
 n.causal.qtl <- 3
 n.causal.gene <- 2
 
-set.seed(1)
+set.seed(13)
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
@@ -135,10 +139,9 @@ theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direc
 
 y <- gene.expr[,1:n.causal.gene,drop = FALSE] \\\%*\\\% theta.med # mediation
 y <- y + X[, causal.direct, drop = FALSE] \\\%*\\\% theta.dir # direct
-
 y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
-################################################################
+## just caculate univariate z-scores
 fast.cov <- function(x, y) {
     n.obs <- crossprod(!is.na(x), !is.na(y))
     ret <- crossprod(replace(x, is.na(x), 0),
@@ -153,34 +156,9 @@ fast.z.cov <- function(x, y) {
     return(ret)
 }
 
-xy.beta <- fast.cov(X, y)
-z.xy <- fast.z.cov(X, y)
-
-xy.beta.se <- xy.beta / z.xy
-
-.idx <- sample(n, 300)
-X.med <- X[.idx, ] ## smaller sample in mediation QTL
-
-xg.beta <- fast.cov(X.med, gene.expr[.idx, ])
-z.xg <- fast.z.cov(X.med, gene.expr[.idx, ])
-xg.beta.se <- xg.beta / z.xg
-
-################################################################
-vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e2, jitter = 0.1, do.stdize = TRUE, pi = -0, tau = -4,
-               do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
-               verbose = TRUE, min.se = 1e-4,
-               print.interv = 200, do.rescale = FALSE)
-
-med.out <- fit.med.zqtl(effect = xy.beta,
-                        effect.se = xy.beta.se,
-                        effect.m = xg.beta * 10,
-                        effect.m.se = xg.beta.se,
-                        X.gwas = X,
-                        X.med = X.med,
-                        options = vb.opt)
-
-plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')#'
+xy.beta <- fast.cov(X, scale(y))
+z.xy <- fast.z.cov(X, scale(y))
+xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
 
 ################################################################
 ## Use multivariate effects directly
@@ -211,7 +189,7 @@ plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
 ################################################################
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
                gammax = 1e4, do.stdize = TRUE,
-               pi = -0, tau = -4, do.propensity = TRUE,
+               pi = -0, tau = -4, conditional.size = 3, 
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
                print.interv = 200,

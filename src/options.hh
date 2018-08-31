@@ -42,18 +42,18 @@ struct options_t {
     MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
 
-    // WEIGHT_M = false;
-    // WEIGHT_Y = false;
-    // PRETRAIN = false;
     DO_HYPER = false;
     DO_RESCALE = false;
     OUT_RESID = false;
     MULTI_MED_EFFECT = false;
     DO_PROPENSITY_SAMPLING = false;
+    DO_FINEMAP_UNMEDIATED = true;
+    DO_VAR_CALC = false;
 
     // BOOTSTRAP_METHOD = 1;
     DIRECT_MODEL = 1;
-    N_SINGLE_MED = 0;
+    N_CONDITIONAL_MED = 0;
+    N_CONDITIONAL_SIZE = 1;
     N_STRAT_SAMPLE = 3;
     N_STRAT_SIZE = 2;
   }
@@ -103,14 +103,15 @@ struct options_t {
   void on_hyper() { DO_HYPER = true; }
 
   const bool out_resid() const { return OUT_RESID; }
-
   const bool multi_med_effect() const { return MULTI_MED_EFFECT; }
-
   const bool do_propensity_sampling() const { return DO_PROPENSITY_SAMPLING; }
+  const bool do_finemap_unmediated() const { return DO_FINEMAP_UNMEDIATED; }
+  const bool do_var_calc() const { return DO_VAR_CALC; }
 
   // const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
 
-  const int n_single_model() const { return N_SINGLE_MED; }
+  const int n_conditional_model() const { return N_CONDITIONAL_MED; }
+  const int n_conditional_size() const { return N_CONDITIONAL_SIZE; }
   const int n_strat_sample() const { return N_STRAT_SAMPLE; }
   const int n_strat_size() const { return N_STRAT_SIZE; }
 
@@ -160,10 +161,13 @@ struct options_t {
   bool OUT_RESID;
   bool MULTI_MED_EFFECT;
   bool DO_PROPENSITY_SAMPLING;
+  bool DO_FINEMAP_UNMEDIATED;
+  bool DO_VAR_CALC;
 
   // int BOOTSTRAP_METHOD;
   int DIRECT_MODEL;
-  int N_SINGLE_MED;
+  int N_CONDITIONAL_MED;
+  int N_CONDITIONAL_SIZE;
   int N_STRAT_SAMPLE;
   int N_STRAT_SIZE;
 };
