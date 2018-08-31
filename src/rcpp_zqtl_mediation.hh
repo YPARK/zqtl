@@ -127,7 +127,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   std::mt19937 rng(opt.rseed());
 #endif
@@ -215,7 +215,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   std::mt19937 rng(opt.rseed());
 #endif
@@ -314,7 +314,7 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   std::mt19937 rng(opt.rseed());
 #endif
@@ -381,7 +381,7 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   std::mt19937 rng(opt.rseed());
 #endif

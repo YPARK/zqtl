@@ -76,7 +76,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   // random seed initialization
   std::mt19937 rng(opt.rseed());
@@ -198,7 +198,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 #ifdef EIGEN_USE_MKL_ALL
   VSLStreamStatePtr rng;
   vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  omp_set_num_threads(opt.nthread());
+  // omp_set_num_threads(opt.nthread());
 #else
   // random seed initialization
   std::mt19937 rng(opt.rseed());
