@@ -441,8 +441,8 @@ void remove_missing(const Eigen::MatrixBase<Derived>& X,
       const_cast<Eigen::MatrixBase<OtherDerived>&>(ret);
 
   if (X.rows() != R.rows() || X.cols() != R.cols()) {
-    WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
-                                   << X.rows() << " x " << X.cols());
+    // WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
+    //                                << X.rows() << " x " << X.cols());
     R.derived().resize(X.rows(), X.cols());
   }
 
@@ -499,8 +499,8 @@ void subset_rows(const Eigen::MatrixBase<Derived>& X, const Rows& rows,
   using Index = typename Derived::Index;
   Index i = 0;
   if (R.rows() != static_cast<Index>(rows.size()) || X.cols() != R.cols()) {
-    WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
-                                   << rows.size() << " x " << X.cols());
+    // WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
+    //                                << rows.size() << " x " << X.cols());
     R.derived().resize(rows.size(), X.cols());
   }
 
@@ -518,8 +518,8 @@ void subset_cols(const Eigen::MatrixBase<Derived>& X, const Cols& cols,
   using Index = typename Derived::Index;
   Index i = 0;
   if (R.cols() != static_cast<Index>(cols.size()) || X.rows() != R.rows()) {
-    WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
-                                   << X.rows() << " x " << cols.size());
+    // WLOG("resizing the matrix of " << R.rows() << " x " << R.cols() << " -> "
+    //                                << X.rows() << " x " << cols.size());
     R.derived().resize(X.rows(), cols.size());
   }
 
