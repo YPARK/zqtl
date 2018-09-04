@@ -585,14 +585,23 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       }
     }
 
-    auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
+    Mat Ik = Mat::Ones(Vt.cols(), static_cast<Index>(1));
+    Mat VtI = Vt * Ik / static_cast<Scalar>(Vt.cols());
+
+    auto med = make_dense_spike_slab<Scalar>(Mk.cols(), yy.cols(), opt);
     auto delta = make_regression_eta(Mk, yy, med);
     delta.init_by_dot(yy, opt.jitter());
 
     auto theta = make_dense_slab<Scalar>(Vt.cols(), yy.cols(), opt);
     auto eta = make_regression_eta(Vt, yy, theta);
     eta.init_by_dot(yy, opt.jitter());
-    auto _llik = impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta),
+
+    auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
+    auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
+    eta_intercept.init_by_dot(yy, opt.jitter());
+
+    auto _llik = impl_fit_eta_delta(y_model, opt, rng,
+                                    std::make_tuple(eta, eta_intercept),
                                     std::make_tuple(delta));
 
     Mat _y = Vt * mean_param(theta);
