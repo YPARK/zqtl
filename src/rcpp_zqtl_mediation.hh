@@ -170,10 +170,6 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                                  std::make_tuple(eta_intercept, eta_conf_y),
                                  std::make_tuple(delta_med, delta_unmed));
 
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
   TLOG("Finished joint model estimation\n\n");
 
   // Fine-map residual unmediated effect
@@ -203,6 +199,10 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
                                        std::make_tuple(Y, M, U, D2));
     TLOG("Finished variance decomposition\n\n");
   }
+
+#ifdef EIGEN_USE_MKL_ALL
+  vslDeleteStream(&rng);
+#endif
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
@@ -517,8 +517,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     zqtl_model_t<Mat> y_strat_model(Y_strat, D2_strat);
 
-    auto theta =
-        make_dense_spike_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
+    auto theta = make_dense_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
     auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
     eta.init_by_dot(Y_strat, opt.jitter());
     eta_intercept.init_by_dot(Y_strat, opt.jitter());
@@ -590,7 +589,7 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     auto delta = make_regression_eta(Mk, yy, med);
     delta.init_by_dot(yy, opt.jitter());
 
-    auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), yy.cols(), opt);
+    auto theta = make_dense_slab<Scalar>(Vt.cols(), yy.cols(), opt);
     auto eta = make_regression_eta(Vt, yy, theta);
     eta.init_by_dot(yy, opt.jitter());
     auto _llik = impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta),
