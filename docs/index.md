@@ -42,7 +42,7 @@ R:
 
 To speed up matrix-vector multiplication, one can compile codes with
 Intel MKL library.  Currently `RcppEigen` does not support `BLAS` only
-options.
+options (this may not be true).
 
 Enjoy!
 
@@ -50,7 +50,9 @@ Enjoy!
 
 ### v.1.3.2
 
+- Estimate an unmediated factor by average marginal effects
 - Boost sample size by resampling eigen vectors
+- Allow two step optimization
 
 ### v.1.3.1
 

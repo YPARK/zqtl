@@ -456,15 +456,19 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
 #'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
-#' @param do.finemap.direct Fine-map direct effect SNPs (default: TRUE)
-#' @param num.conditional number of conditional models
-#' @param conditional.size size of each conditional model
+#' @param do.med.two.step Estimate mediation in two steps (default: FALSE)
+#' @param de.marginal Estimate direct effect by marignal effects (default: FALSE)
+#' @param de.propensity Propensity sampling to estimate direct effect (default: FALSE)
 #'
-#' @param do.propensity Propensity sampling to estimate direct effect (default: FALSE)
+#' @param do.finemap.direct Fine-map direct effect SNPs (default: FALSE)
+#' @param num.conditional number of conditional models
+#' @param submodel.size size of each conditional model
+#'
+#'
 #' @param do.var.calc variance calculation (default: FALSE)
 #' @param num.strat.size Size of stratified sampling (default: 2)
 #' @param num.duplicate.sample Duplicate number of independent components (default: 1)
-#' 
+#'
 #' @param do.hyper Hyper parameter tuning (default: FALSE)
 #' @param do.rescale Rescale z-scores by standard deviation (default: FALSE)
 #' @param tau Fixed value of tau
@@ -587,7 +591,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' ################################################################
 #' vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
 #'                gammax = 1e4, do.stdize = TRUE,
-#'                pi = -0, tau = -4, conditional.size = 3, 
+#'                pi = -0, tau = -4, submodel.size = 3,
 #'                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
 #'                verbose = TRUE, min.se = 1e-4,
 #'                print.interv = 200,
@@ -622,14 +626,17 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          factored = FALSE,    # Factored model
                          options = list(),
                          multivar.mediator = FALSE,
-                         do.propensity = FALSE,
+                         de.propensity = FALSE,
+                         de.marginal = FALSE,
+                         num.strat.size = 2,
                          do.direct.estimation = TRUE,
-                         do.finemap.direct = TRUE,
+                         do.med.two.step = FALSE,
+                         do.finemap.direct = FALSE,
                          do.var.calc = FALSE,
                          med.lodds.cutoff = 0,
                          num.duplicate.sample = 1,
                          num.conditional = 0,
-                         conditional.size = 1,
+                         submodel.size = 1,
                          do.hyper = FALSE,
                          do.rescale = FALSE,
                          tau = NULL,
@@ -680,9 +687,11 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed', 'do.var.calc',
-                  'multivar.mediator', 'do.propensity', 'do.direct.estimation', 'do.finemap.direct',
-                  'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional', 'conditional.size')
+                  'rseed', 'do.var.calc', 'num.strat.size',
+                  'multivar.mediator', 'de.propensity', 'de.marginal',
+                  'do.direct.estimation', 'do.med.two.step', 'do.finemap.direct',
+                  'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',
+                  'submodel.size')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {

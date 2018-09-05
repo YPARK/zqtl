@@ -37,7 +37,11 @@ struct options_t {
     M_SAMPLE_SIZE = 0.0;
     MED_LODDS_CUTOFF = 0.0;
 
-    DO_DIRECT_EFFECT_ESTIMATION = true;
+    DO_DIRECT_EFFECT = true;
+    DO_DIRECT_EFFECT_PROPENSITY = false;
+    DO_DIRECT_EFFECT_MARGINAL = false;
+    DO_DIRECT_EFFECT_CONDITIONAL = false;
+
     MF_SVD_INIT = true;
     MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
@@ -46,12 +50,13 @@ struct options_t {
     DO_RESCALE = false;
     OUT_RESID = false;
     MULTI_MED_EFFECT = false;
-    DO_PROPENSITY_SAMPLING = false;
-    DO_FINEMAP_UNMEDIATED = true;
+
+    DO_FINEMAP_UNMEDIATED = false;
+    DO_MED_TWO_STEP = false;
     DO_VAR_CALC = false;
 
-    N_CONDITIONAL_MED = 0;
-    N_CONDITIONAL_SIZE = 1;
+    N_SUBMODEL_MED = 0;
+    N_SUBMODEL_SIZE = 1;
     N_DUPLICATE_SAMPLE = 1;
     N_STRAT_SIZE = 2;
   }
@@ -89,9 +94,13 @@ struct options_t {
   const float sample_size() const { return SAMPLE_SIZE; };
   const float m_sample_size() const { return M_SAMPLE_SIZE; };
   const float med_lodds_cutoff() const { return MED_LODDS_CUTOFF; }
-  const bool do_direct_effect_estimation() const {
-    return DO_DIRECT_EFFECT_ESTIMATION;
-  }
+
+  const bool do_direct_effect() const { return DO_DIRECT_EFFECT; }
+
+  const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
+  const bool do_de_marginal() const { return DO_DIRECT_EFFECT_MARGINAL; }
+  const bool do_de_conditional() const { return DO_DIRECT_EFFECT_CONDITIONAL; }
+  const bool do_med_two_step() const { return DO_MED_TWO_STEP; }
 
   const bool do_hyper() const { return DO_HYPER; }
   void off_hyper() { DO_HYPER = false; }
@@ -99,12 +108,11 @@ struct options_t {
 
   const bool out_resid() const { return OUT_RESID; }
   const bool multi_med_effect() const { return MULTI_MED_EFFECT; }
-  const bool do_propensity_sampling() const { return DO_PROPENSITY_SAMPLING; }
   const bool do_finemap_unmediated() const { return DO_FINEMAP_UNMEDIATED; }
   const bool do_var_calc() const { return DO_VAR_CALC; }
 
-  const int n_conditional_model() const { return N_CONDITIONAL_MED; }
-  const int n_conditional_size() const { return N_CONDITIONAL_SIZE; }
+  const int n_submodel_model() const { return N_SUBMODEL_MED; }
+  const int n_submodel_size() const { return N_SUBMODEL_SIZE; }
   const int n_duplicate_sample() const { return N_DUPLICATE_SAMPLE; }
   const int n_strat_size() const { return N_STRAT_SIZE; }
 
@@ -145,17 +153,21 @@ struct options_t {
   float SAMPLE_SIZE;
   float M_SAMPLE_SIZE;
   float MED_LODDS_CUTOFF;
-  bool DO_DIRECT_EFFECT_ESTIMATION;
+
+  bool DO_DIRECT_EFFECT;
+  bool DO_DIRECT_EFFECT_PROPENSITY;
+  bool DO_DIRECT_EFFECT_MARGINAL;
+  bool DO_DIRECT_EFFECT_CONDITIONAL;
 
   bool DO_HYPER;
   bool OUT_RESID;
   bool MULTI_MED_EFFECT;
-  bool DO_PROPENSITY_SAMPLING;
+  bool DO_MED_TWO_STEP;
   bool DO_FINEMAP_UNMEDIATED;
   bool DO_VAR_CALC;
 
-  int N_CONDITIONAL_MED;
-  int N_CONDITIONAL_SIZE;
+  int N_SUBMODEL_MED;
+  int N_SUBMODEL_SIZE;
   int N_DUPLICATE_SAMPLE;
   int N_STRAT_SIZE;
 };

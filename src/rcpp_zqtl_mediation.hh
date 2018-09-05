@@ -44,14 +44,6 @@ struct geno_m_mat_t {
 // eta3 = V' Theta_conf                                  //
 ///////////////////////////////////////////////////////////
 
-template <typename DIRECT, typename... DATA>
-Rcpp::List _bootstrap_direct(const Mat obs_lodds, DIRECT& eta_direct,
-                             options_t& opt, std::tuple<DATA...>&& data_tup);
-
-template <typename... DATA>
-Rcpp::List _bootstrap_marginal(const Mat obs_lodds, options_t& opt,
-                               std::tuple<DATA...>&& data_tup);
-
 template <typename DIRECT, typename MEDIATED_D, typename MEDIATED_E,
           typename... DATA>
 Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
@@ -76,6 +68,10 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 template <typename RNG>
 Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                                RNG& rng, options_t& opt);
+
+template <typename RNG>
+Mat _direct_effect_marginal(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
+                            RNG& rng, options_t& opt);
 
 bool check_mediation_input(const effect_y_mat_t& yy,        // z_y
                            const effect_y_se_mat_t& yy_se,  // z_y_se
@@ -133,7 +129,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 #endif
 
   Mat M0 = Mat::Zero(M.rows(), 1);
-  if (opt.do_direct_effect_estimation()) {
+  if (opt.do_direct_effect()) {
     Mat m0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
     M0.resize(m0.rows(), m0.cols());
     M0 = m0;
@@ -144,12 +140,6 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   TLOG("Finished direct model estimation");
 
   zqtl_model_t<Mat> model_y(Y, D2);
-
-  ////////////////////////////////////////////////////////////////
-  // construct delta_med to capture overall (potential) mediation effect
-  auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
-  auto delta_med = make_regression_eta(M, Y, theta_med);
-  delta_med.init_by_dot(Y, opt.jitter());
 
   // intercept    ~ R 1 theta
   // Vt intercept ~ D2 Vt 1 theta
@@ -162,19 +152,44 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
   eta_conf_y.init_by_dot(Y, opt.jitter());
 
+  // the unmediated component
   auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
   auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
   delta_unmed.init_by_dot(Y, opt.jitter());
 
-  auto llik = impl_fit_eta_delta(model_y, opt, rng,
-                                 std::make_tuple(eta_intercept, eta_conf_y),
-                                 std::make_tuple(delta_med, delta_unmed));
+  auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
+  auto delta_med = make_regression_eta(M, Y, theta_med);
+  delta_med.init_by_dot(Y, opt.jitter());
 
-  TLOG("Finished joint model estimation\n\n");
-
-  // Fine-map residual unmediated effect
+  Mat llik0, llik, llik_fm;
   Rcpp::List param_unmediated_finemap = Rcpp::List::create();
 
+  if (opt.do_med_two_step()) {
+    // just include the unmediated compnent
+    llik0 = impl_fit_eta_delta(model_y, opt, rng,
+                               std::make_tuple(eta_intercept, eta_conf_y),
+                               std::make_tuple(delta_unmed));
+
+    TLOG("Finished the null model estimation\n\n");
+
+    dummy_eta_t dummy;
+    delta_unmed.resolve();
+    eta_intercept.resolve();
+    eta_conf_y.resolve();
+
+    llik = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(dummy),
+                              std::make_tuple(delta_med),
+                              std::make_tuple(eta_intercept, eta_conf_y),
+                              std::make_tuple(delta_unmed));
+    TLOG("Finished two-step estimation\n\n");
+  } else {
+    llik = impl_fit_eta_delta(model_y, opt, rng,
+                              std::make_tuple(eta_intercept, eta_conf_y),
+                              std::make_tuple(delta_med, delta_unmed));
+    TLOG("Finished joint model estimation\n\n");
+  }
+
+  // Fine-map residual unmediated effect
   if (opt.do_finemap_unmediated()) {
     dummy_eta_t dummy;
     auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
@@ -183,7 +198,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     eta_intercept.resolve();
     eta_conf_y.resolve();
     delta_med.resolve();
-    auto llik_fm = impl_fit_eta_delta(
+    llik_fm = impl_fit_eta_delta(
         model_y, opt, rng,
         std::make_tuple(eta_direct, eta_intercept, eta_conf_y),
         std::make_tuple(dummy), std::make_tuple(dummy),
@@ -212,7 +227,8 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.finemap.direct"] = param_unmediated_finemap,
       Rcpp::_["param.intercept"] = param_rcpp_list(theta_intercept),
       Rcpp::_["param.covariate"] = param_rcpp_list(theta_conf_y),
-      Rcpp::_["llik"] = llik, Rcpp::_["var.decomp"] = var_decomp);
+      Rcpp::_["llik"] = llik, Rcpp::_["llik.fm"] = llik_fm,
+      Rcpp::_["llik.null"] = llik0, Rcpp::_["var.decomp"] = var_decomp);
 }
 
 //////////////////////////////////
@@ -245,7 +261,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
 #endif
 
   Mat M0 = Mat::Zero(M.rows(), 1);
-  if (opt.do_direct_effect_estimation()) {
+  if (opt.do_direct_effect()) {
     Mat m0 = estimate_direct_effect(Y, M, Vt, VtI, VtC, D2, rng, opt);
     M0.resize(m0.rows(), m0.cols());
     M0 = m0;
@@ -285,7 +301,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
   eta_conf_y.init_by_dot(Y, opt.jitter());
 
-  auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
+  auto theta_unmed = make_dense_slab<Scalar>(M0.cols(), Y.cols(), opt);
   auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
   delta_unmed.init_by_dot(Y, opt.jitter());
 
@@ -470,14 +486,13 @@ Rcpp::List _variance_calculation(DIRECT& eta_direct, MEDIATED_D& delta_med,
 template <typename RNG>
 Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                               RNG& rng, options_t& opt) {
-  const Index max_n_conditional = opt.n_conditional_model();
-  const Index n_conditional = (max_n_conditional > 0)
-                                  ? std::min(max_n_conditional, mm.cols())
-                                  : mm.cols();
+  const Index max_n_submodel = opt.n_submodel_model();
+  const Index n_submodel =
+      (max_n_submodel > 0) ? std::min(max_n_submodel, mm.cols()) : mm.cols();
 
   const Index n_traits = yy.cols();
 
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_conditional);
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_submodel);
 
   std::vector<Index> rand_med(mm.cols());
 
@@ -499,7 +514,7 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
       make_dense_slab<Scalar>(VtI_strat.cols(), Y_strat.cols(), opt);
   auto eta_intercept = make_regression_eta(VtI_strat, Y_strat, theta_intercept);
 
-  for (Index k = 0; k < n_conditional; ++k) {
+  for (Index k = 0; k < n_submodel; ++k) {
     // sample eigen components inversely proportional to the
     // divergence of this mediation effect
 
@@ -525,25 +540,22 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
     auto _llik = impl_fit_eta(y_strat_model, opt, rng,
                               std::make_tuple(eta, eta_intercept));
 
+    eta.resolve();
     Mat _y = Vt * mean_param(theta);
     for (Index j = 0; j < _y.cols(); ++j) {
       Index kj = n_traits * k + j;
       Y_resid.col(kj) = _y.col(j);
     }
 
-    TLOG("Conditional mediator model : " << (k + 1) << " / " << n_conditional);
+    TLOG("Propensity sampling model : " << (k + 1) << " / " << n_submodel);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
   Mat resid_z = _resid_z;
-  if (opt.do_rescale()) {
-    resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
-  } else {
-    resid_z = center_zscore(_resid_z, Vt, D2.cwiseSqrt());
-  }
+  resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
 
-  const Scalar denom = static_cast<Scalar>(n_conditional * n_traits);
-  Mat resid_z_mean = resid_z * Mat::Ones(n_conditional * n_traits, 1) / denom;
+  const Scalar denom = static_cast<Scalar>(resid_z.cols());
+  Mat resid_z_mean = resid_z * Mat::Ones(resid_z.cols(), 1) / denom;
 
   return Vt * resid_z_mean;
 }
@@ -551,20 +563,20 @@ Mat _direct_effect_propensity(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 template <typename RNG>
 Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                                RNG& rng, options_t& opt) {
-  const Index n_conditional = mm.cols();
-  const Index max_n_conditional =
-      std::max(n_conditional, static_cast<Index>(opt.n_conditional_model()));
+  const Index n_submodel = mm.cols();
+  const Index max_n_submodel =
+      std::max(n_submodel, static_cast<Index>(opt.n_submodel_model()));
   const Index n_traits = yy.cols();
 
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * max_n_conditional);
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * max_n_submodel);
 
-  const Index cond_size =
-      std::min(n_conditional, static_cast<Index>(opt.n_conditional_size() - 1));
+  const Index submodel_size =
+      std::min(n_submodel - 1, static_cast<Index>(opt.n_submodel_size()));
 
   const Index n_med = mm.cols();
   std::vector<Index> rand_med(n_med);
 
-  for (Index k = 0; k < max_n_conditional; ++k) {
+  for (Index k = 0; k < max_n_submodel; ++k) {
     zqtl_model_t<Mat> y_model(yy, D2);
 
     if (k % n_med == 0) {
@@ -574,12 +586,12 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     // construct mediators not to regress out
     Mat Mk;
-    if (cond_size < 1) {
+    if (submodel_size < 1) {
       Mk.resize(mm.rows(), 1);
       Mk = Mat::Zero(mm.rows(), 1);
     } else {
-      Mk.resize(mm.rows(), cond_size);
-      for (Index j = 0; j < cond_size; ++j) {
+      Mk.resize(mm.rows(), submodel_size);
+      for (Index j = 0; j < submodel_size; ++j) {
         Index k_rand = rand_med.at((k + j) % n_med);
         Mk.col(j) = mm.col(k_rand);
       }
@@ -590,7 +602,6 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     auto med = make_dense_spike_slab<Scalar>(Mk.cols(), yy.cols(), opt);
     auto delta = make_regression_eta(Mk, yy, med);
-    delta.init_by_dot(yy, opt.jitter());
 
     auto theta = make_dense_slab<Scalar>(Vt.cols(), yy.cols(), opt);
     auto eta = make_regression_eta(Vt, yy, theta);
@@ -602,27 +613,96 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
                                     std::make_tuple(eta, eta_intercept),
                                     std::make_tuple(delta));
 
+    eta.resolve();
     Mat _y = Vt * mean_param(theta);
     for (Index j = 0; j < _y.cols(); ++j) {
       Index kj = n_traits * k + j;
       Y_resid.col(kj) = _y.col(j);
     }
 
-    TLOG("Conditional mediator model : " << (k + 1) << " / "
-                                         << max_n_conditional);
+    TLOG("Submodel mediator model : " << (k + 1) << " / " << max_n_submodel);
   }
 
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
   Mat resid_z = _resid_z;
-  if (opt.do_rescale()) {
-    resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
-  } else {
-    resid_z = center_zscore(_resid_z, Vt, D2.cwiseSqrt());
+  resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
+
+  const Scalar denom = static_cast<Scalar>(resid_z.cols());
+  Mat resid_z_mean = resid_z * Mat::Ones(resid_z.cols(), 1) / denom;
+
+  return Vt * resid_z_mean;
+}
+
+////////////////////////////////////////////////////////////////
+template <typename RNG>
+Mat _direct_effect_marginal(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
+                            RNG& rng, options_t& opt) {
+  const Index n_submodel = mm.cols();
+  const Index max_n_submodel =
+      std::max(n_submodel, static_cast<Index>(opt.n_submodel_model()));
+  const Index n_traits = yy.cols();
+
+  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * max_n_submodel);
+
+  const Index submodel_size =
+      std::min(n_submodel - 1, static_cast<Index>(opt.n_submodel_size()));
+
+  const Index n_med = mm.cols();
+  std::vector<Index> rand_med(n_med);
+
+  for (Index k = 0; k < max_n_submodel; ++k) {
+    zqtl_model_t<Mat> y_model(yy, D2);
+
+    if (k % n_med == 0) {
+      std::shuffle(rand_med.begin(), rand_med.end(),
+                   std::mt19937{std::random_device{}()});
+    }
+
+    // construct mediators to capture marginal effects
+    Mat Mk;
+    if (submodel_size < 1) {
+      Mk.resize(mm.rows(), 1);
+      Mk = Mat::Zero(mm.rows(), 1);
+    } else {
+      Mk.resize(mm.rows(), submodel_size);
+      for (Index j = 0; j < submodel_size; ++j) {
+        Index k_rand = rand_med.at((k + j) % n_med);
+        Mk.col(j) = mm.col(k_rand);
+      }
+    }
+
+    Mat Ik = Mat::Ones(Vt.cols(), static_cast<Index>(1));
+    Mat VtI = Vt * Ik / static_cast<Scalar>(Vt.cols());
+
+    auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
+    auto delta = make_regression_eta(Mk, yy, med);
+    delta.init_by_dot(yy, opt.jitter());
+
+    auto theta_intercept =
+        make_dense_spike_slab<Scalar>(VtI.cols(), yy.cols(), opt);
+    auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
+
+    auto _llik =
+        impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta_intercept),
+                           std::make_tuple(delta));
+
+    delta.resolve();
+    Mat _y = Mk * mean_param(med);
+
+    for (Index j = 0; j < _y.cols(); ++j) {
+      Index kj = n_traits * k + j;
+      Y_resid.col(kj) = _y.col(j);
+    }
+
+    TLOG("Marginal model : " << (k + 1) << " / " << max_n_submodel);
   }
 
-  const Scalar denom = static_cast<Scalar>(max_n_conditional * n_traits);
-  Mat resid_z_mean =
-      resid_z * Mat::Ones(max_n_conditional * n_traits, 1) / denom;
+  Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
+  Mat resid_z = _resid_z;
+  resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
+
+  const Scalar denom = static_cast<Scalar>(resid_z.cols());
+  Mat resid_z_mean = resid_z * Mat::Ones(resid_z.cols(), 1) / denom;
 
   return Vt * resid_z_mean;
 }
@@ -634,22 +714,20 @@ Mat estimate_direct_effect(const Mat Y, const Mat M, const Mat Vt,
   Index n_trait = Y.cols();
   Mat M0 = Mat::Zero(M.rows(), n_trait);
 
-  if (opt.do_propensity_sampling()) {
-    TLOG("Estimation of direct effect by propensity sampling");
+  for (Index tt = 0; tt < n_trait; ++tt) {
+    Mat yy = Y.col(tt);
 
-    for (Index tt = 0; tt < n_trait; ++tt) {
-      Mat yy = Y.col(tt);
+    if (opt.do_de_propensity()) {
+      TLOG("Estimation of direct effect by propensity sampling");
       M0.col(tt) = _direct_effect_propensity(M, yy, Vt, D2, rng, opt);
-      TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
-    }
-
-  } else {
-    TLOG("Estimation of direct effect by invariance");
-    for (Index tt = 0; tt < n_trait; ++tt) {
-      Mat yy = Y.col(tt);
+    } else if (opt.do_de_marginal()) {
+      TLOG("Estimation of direct effect from aggregated marginal effects");
+      M0.col(tt) = _direct_effect_marginal(M, yy, Vt, D2, rng, opt);
+    } else {
+      TLOG("Estimation of direct effect by invariance");
       M0.col(tt) = _direct_effect_conditional(M, yy, Vt, D2, rng, opt);
-      TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
     }
+    TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
   }
 
   return M0;

@@ -125,17 +125,20 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("num.strat.size"))
     opt.N_STRAT_SIZE = Rcpp::as<Index>(_list["num.strat.size"]);
 
-  if (_list.containsElementNamed("nconditional"))
-    opt.N_CONDITIONAL_MED = Rcpp::as<Index>(_list["nconditional"]);
+  if (_list.containsElementNamed("nsubmodel"))
+    opt.N_SUBMODEL_MED = Rcpp::as<Index>(_list["nsubmodel"]);
 
-  if (_list.containsElementNamed("num.conditional"))
-    opt.N_CONDITIONAL_MED = Rcpp::as<Index>(_list["num.conditional"]);
+  if (_list.containsElementNamed("num.submodel"))
+    opt.N_SUBMODEL_MED = Rcpp::as<Index>(_list["num.submodel"]);
 
-  if (_list.containsElementNamed("conditional.size"))
-    opt.N_CONDITIONAL_SIZE = Rcpp::as<Index>(_list["conditional.size"]);
+  if (_list.containsElementNamed("submodel.size"))
+    opt.N_SUBMODEL_SIZE = Rcpp::as<Index>(_list["submodel.size"]);
 
   if (_list.containsElementNamed("print.interv"))
     opt.INTERV = Rcpp::as<Index>(_list["print.interv"]);
+
+  if (_list.containsElementNamed("print.interval"))
+    opt.INTERV = Rcpp::as<Index>(_list["print.interval"]);
 
   if (_list.containsElementNamed("nthread"))
     opt.NTHREAD = Rcpp::as<Index>(_list["nthread"]);
@@ -185,9 +188,6 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("do.hyper"))
     opt.DO_HYPER = Rcpp::as<bool>(_list["do.hyper"]);
 
-  if (_list.containsElementNamed("do.propensity"))
-    opt.DO_PROPENSITY_SAMPLING = Rcpp::as<bool>(_list["do.propensity"]);
-
   if (_list.containsElementNamed("do.finemap.unmed"))
     opt.DO_FINEMAP_UNMEDIATED = Rcpp::as<bool>(_list["do.finemap.unmed"]);
 
@@ -198,12 +198,20 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.DO_VAR_CALC = Rcpp::as<bool>(_list["do.var.calc"]);
 
   if (_list.containsElementNamed("do.direct.estimation"))
-    opt.DO_DIRECT_EFFECT_ESTIMATION =
-        Rcpp::as<bool>(_list["do.direct.estimation"]);
+    opt.DO_DIRECT_EFFECT = Rcpp::as<bool>(_list["do.direct.estimation"]);
 
-  if (_list.containsElementNamed("do.propensity.sampling"))
-    opt.DO_PROPENSITY_SAMPLING =
-        Rcpp::as<bool>(_list["do.propensity.sampling"]);
+  if (_list.containsElementNamed("do.med.two.step"))
+    opt.DO_MED_TWO_STEP = Rcpp::as<bool>(_list["do.med.two.step"]);
+
+  if (_list.containsElementNamed("de.propensity")) {
+    opt.DO_DIRECT_EFFECT_PROPENSITY = Rcpp::as<bool>(_list["de.propensity"]);
+    opt.DO_DIRECT_EFFECT_MARGINAL = false;
+  }
+
+  if (_list.containsElementNamed("de.marginal")) {
+    opt.DO_DIRECT_EFFECT_MARGINAL = Rcpp::as<bool>(_list["de.marginal"]);
+    opt.DO_DIRECT_EFFECT_PROPENSITY = false;
+  }
 
   if (_list.containsElementNamed("out.resid"))
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.resid"]);

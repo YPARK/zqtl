@@ -33,13 +33,17 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 
-\item{do.finemap.direct}{Fine-map direct effect SNPs (default: TRUE)}
+\item{do.med.two.step}{Estimate mediation in two steps (default: FALSE)}
+
+\item{de.marginal}{Estimate direct effect by marignal effects (default: FALSE)}
+
+\item{de.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
+
+\item{do.finemap.direct}{Fine-map direct effect SNPs (default: FALSE)}
 
 \item{num.conditional}{number of conditional models}
 
-\item{conditional.size}{size of each conditional model}
-
-\item{do.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
+\item{submodel.size}{size of each conditional model}
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 
@@ -191,7 +195,7 @@ plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
 ################################################################
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
                gammax = 1e4, do.stdize = TRUE,
-               pi = -0, tau = -4, conditional.size = 3, 
+               pi = -0, tau = -4, submodel.size = 3,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
                print.interv = 200,
