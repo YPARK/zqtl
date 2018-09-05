@@ -45,6 +45,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{num.strat.size}{Size of stratified sampling (default: 2)}
 
+\item{num.duplicate.sample}{Duplicate number of independent components (default: 1)}
+
 \item{do.hyper}{Hyper parameter tuning (default: FALSE)}
 
 \item{do.rescale}{Rescale z-scores by standard deviation (default: FALSE)}

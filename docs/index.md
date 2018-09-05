@@ -3,8 +3,9 @@
 ## Notes on Mac OS X users
 
 For some unknown reason, compiled Eigen library does not work as
-expected with `clang` compiler.  We recommend using `gcc` after
-version 5.
+expected with `clang` compiler, e.g., producing lots of `nan` results.
+We recommend using `gcc` after version 5 that fully support
+`std=c++14` flag.
 
 ## Installation (a simple version)
 
@@ -46,6 +47,10 @@ options.
 Enjoy!
 
 ## Release notes
+
+### v.1.3.2
+
+- Boost sample size by resampling eigen vectors
 
 ### v.1.3.1
 

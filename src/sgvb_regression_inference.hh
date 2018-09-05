@@ -103,7 +103,8 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
   Mat delta_sampled(model.nobs(), model.ntraits());
 
   // Must keep this progress obj; otherwise segfault will occur
-  Progress prog(2 * opt.vbiter(), !opt.verbose());
+  const Index prog_iter = opt.do_hyper() ? (2 * opt.vbiter()) : opt.vbiter();
+  Progress prog(prog_iter, !opt.verbose());
 
   // model fitting
   Scalar rate = opt.rate0();
@@ -230,7 +231,8 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
   Mat zeta_sampled(model.nobs(), model.ntraits());
 
   // Must keep this progress obj; otherwise segfault will occur
-  Progress prog(2 * opt.vbiter(), !opt.verbose());
+  const Index prog_iter = opt.do_hyper() ? (2 * opt.vbiter()) : opt.vbiter();
+  Progress prog(prog_iter, !opt.verbose());
 
   // model fitting
   Scalar rate = opt.rate0();
@@ -352,12 +354,13 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
 
   Mat mean_sampled(model.nobs(), model.ntraits());
 
-  // Must keep this progress obj; otherwise segfault will occur
-  Progress prog(2 * opt.vbiter(), !opt.verbose());
-
   // model fitting
   Scalar rate = opt.rate0();
   bool do_hyper = false;
+
+  // Must keep this progress obj; otherwise segfault will occur
+  const Index prog_iter = opt.do_hyper() ? (2 * opt.vbiter()) : opt.vbiter();
+  Progress prog(prog_iter, !opt.verbose());
 
   auto func_resolve = [&](auto &&eta) { eta.resolve(); };
 

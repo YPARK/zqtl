@@ -463,6 +463,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param do.propensity Propensity sampling to estimate direct effect (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
 #' @param num.strat.size Size of stratified sampling (default: 2)
+#' @param num.duplicate.sample Duplicate number of independent components (default: 1)
 #' 
 #' @param do.hyper Hyper parameter tuning (default: FALSE)
 #' @param do.rescale Rescale z-scores by standard deviation (default: FALSE)
@@ -626,7 +627,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          do.finemap.direct = TRUE,
                          do.var.calc = FALSE,
                          med.lodds.cutoff = 0,
-                         num.strat.sample = 5,
+                         num.duplicate.sample = 1,
                          num.conditional = 0,
                          conditional.size = 1,
                          do.hyper = FALSE,
@@ -681,7 +682,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
                   'rseed', 'do.var.calc',
                   'multivar.mediator', 'do.propensity', 'do.direct.estimation', 'do.finemap.direct',
-                  'med.lodds.cutoff', 'num.strat.sample', 'num.conditional', 'conditional.size')
+                  'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional', 'conditional.size')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {

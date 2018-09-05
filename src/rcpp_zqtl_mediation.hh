@@ -594,11 +594,9 @@ Mat _direct_effect_conditional(Mat mm, const Mat yy, const Mat Vt, const Mat D2,
 
     auto theta = make_dense_slab<Scalar>(Vt.cols(), yy.cols(), opt);
     auto eta = make_regression_eta(Vt, yy, theta);
-    eta.init_by_dot(yy, opt.jitter());
 
     auto theta_intercept = make_dense_slab<Scalar>(VtI.cols(), yy.cols(), opt);
     auto eta_intercept = make_regression_eta(VtI, yy, theta_intercept);
-    eta_intercept.init_by_dot(yy, opt.jitter());
 
     auto _llik = impl_fit_eta_delta(y_model, opt, rng,
                                     std::make_tuple(eta, eta_intercept),
@@ -812,6 +810,19 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
   Mat VtI = Vt * Mat::Ones(Vt.cols(), static_cast<Index>(1)) /
             static_cast<Scalar>(Vt.cols());
   Mat VtC = Vt * conf.val;
+
+  if (opt.n_duplicate_sample() >= 2) {
+    // duplicate samples to improve optimization
+    const Index dup = opt.n_duplicate_sample();
+    const Index one_time = 1;
+    Y = Y.replicate(dup, one_time);
+    M = M.replicate(dup, one_time);
+    U = U.replicate(dup, one_time);
+    Vt = Vt.replicate(dup, one_time);
+    D2 = D2.replicate(dup, one_time);
+    VtI = VtI.replicate(dup, one_time);
+    VtC = VtC.replicate(dup, one_time);
+  }
 
   return std::make_tuple(Y, M, U, Vt, D2, VtI, VtC);
 }

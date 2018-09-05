@@ -119,11 +119,8 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("nboot"))
     opt.NBOOT = Rcpp::as<Index>(_list["nboot"]);
 
-  if (_list.containsElementNamed("direct.model"))
-    opt.DIRECT_MODEL = Rcpp::as<Index>(_list["direct.model"]);
-
-  if (_list.containsElementNamed("num.strat.sample"))
-    opt.N_STRAT_SAMPLE = Rcpp::as<Index>(_list["num.strat.sample"]);
+  if (_list.containsElementNamed("num.duplicate.sample"))
+    opt.N_DUPLICATE_SAMPLE = Rcpp::as<Index>(_list["num.duplicate.sample"]);
 
   if (_list.containsElementNamed("num.strat.size"))
     opt.N_STRAT_SIZE = Rcpp::as<Index>(_list["num.strat.size"]);

@@ -50,11 +50,9 @@ struct options_t {
     DO_FINEMAP_UNMEDIATED = true;
     DO_VAR_CALC = false;
 
-    // BOOTSTRAP_METHOD = 1;
-    DIRECT_MODEL = 1;
     N_CONDITIONAL_MED = 0;
     N_CONDITIONAL_SIZE = 1;
-    N_STRAT_SAMPLE = 3;
+    N_DUPLICATE_SAMPLE = 1;
     N_STRAT_SIZE = 2;
   }
 
@@ -95,9 +93,6 @@ struct options_t {
     return DO_DIRECT_EFFECT_ESTIMATION;
   }
 
-  // const bool weight_m() const { return WEIGHT_M; }
-  // const bool weight_y() const { return WEIGHT_Y; }
-  // const bool pretrain() const { return PRETRAIN; }
   const bool do_hyper() const { return DO_HYPER; }
   void off_hyper() { DO_HYPER = false; }
   void on_hyper() { DO_HYPER = true; }
@@ -108,11 +103,9 @@ struct options_t {
   const bool do_finemap_unmediated() const { return DO_FINEMAP_UNMEDIATED; }
   const bool do_var_calc() const { return DO_VAR_CALC; }
 
-  // const int bootstrap_method() const { return BOOTSTRAP_METHOD; }
-
   const int n_conditional_model() const { return N_CONDITIONAL_MED; }
   const int n_conditional_size() const { return N_CONDITIONAL_SIZE; }
-  const int n_strat_sample() const { return N_STRAT_SAMPLE; }
+  const int n_duplicate_sample() const { return N_DUPLICATE_SAMPLE; }
   const int n_strat_size() const { return N_STRAT_SIZE; }
 
   int VBITER;
@@ -154,9 +147,6 @@ struct options_t {
   float MED_LODDS_CUTOFF;
   bool DO_DIRECT_EFFECT_ESTIMATION;
 
-  // bool WEIGHT_M;
-  // bool WEIGHT_Y;
-  // bool PRETRAIN;
   bool DO_HYPER;
   bool OUT_RESID;
   bool MULTI_MED_EFFECT;
@@ -164,11 +154,9 @@ struct options_t {
   bool DO_FINEMAP_UNMEDIATED;
   bool DO_VAR_CALC;
 
-  // int BOOTSTRAP_METHOD;
-  int DIRECT_MODEL;
   int N_CONDITIONAL_MED;
   int N_CONDITIONAL_SIZE;
-  int N_STRAT_SAMPLE;
+  int N_DUPLICATE_SAMPLE;
   int N_STRAT_SIZE;
 };
 
