@@ -31,10 +31,10 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   Mat Xsafe = X;
   if (opt.std_ld()) {
     standardize(Xsafe);
-    TLOG("Standardized matrix");
+    if (opt.verbose()) TLOG("Standardized matrix");
   } else {
     center(Xsafe);
-    TLOG("Centered matrix");
+    if (opt.verbose()) TLOG("Centered matrix");
   }
 
   is_obs_op<Mat> obs_op;
@@ -49,11 +49,11 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   Xsafe *= n;  // prevent underflow
   const Scalar TOL = opt.eigen_tol();
 
-  TLOG("Start SVD ... ");
+  if (opt.verbose()) TLOG("Start SVD ... ");
   Eigen::JacobiSVD<Mat> svd;
   svd.setThreshold(TOL);
   svd.compute(Xsafe, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  TLOG("Done SVD");
+  if (opt.verbose()) TLOG("Done SVD");
 
   // Walk through eigen spectrum and pick components
   Index num_comp = 0;
@@ -63,7 +63,7 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
     if (d2vec(num_comp) < TOL) break;
   }
 
-  TLOG("Included number of components : " << num_comp);
+  if (opt.verbose()) TLOG("Included number of components : " << num_comp);
 
   if (num_comp < 1) {
     ELOG("0 Number of SVD component!");
@@ -289,8 +289,8 @@ Mat standardize_zscore(const Eigen::MatrixBase<Derived>& _zscore,
     rr = Y.col(k) - xx * mu;
     Scalar tau = rr.cwiseProduct(rr).sum() / denom + 1e-8;
 
-    TLOG("Standardize mu : " << mu << " xy : " << xy << " tau : " << tau
-                             << " denom : " << denom);
+    // TLOG("Standardize mu : " << mu << " xy : " << xy << " tau : " << tau
+    //                          << " denom : " << denom);
 
     Z.col(k) = Vt.transpose() * D.asDiagonal() * rr / std::sqrt(tau);
   }
@@ -311,7 +311,7 @@ Mat center_zscore(const Eigen::MatrixBase<Derived>& _zscore,
   for (Index k = 0; k < Z.cols(); ++k) {
     Scalar xy = Y.col(k).cwiseProduct(xx).sum();
     Scalar mu = xy / xx_sum;
-    TLOG("Center mu : " << mu << " xy : " << xy);
+    // TLOG("Center mu : " << mu << " xy : " << xy);
     Z.col(k) = Vt.transpose() * D.asDiagonal() * (Y.col(k) - xx * mu);
   }
 
