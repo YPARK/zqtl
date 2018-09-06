@@ -98,7 +98,9 @@ struct options_t {
   const bool do_direct_effect() const { return DO_DIRECT_EFFECT; }
 
   const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
-  const bool do_de_factorization() const { return DO_DIRECT_EFFECT_FACTORIZATION; }
+  const bool do_de_factorization() const {
+    return DO_DIRECT_EFFECT_FACTORIZATION;
+  }
   const bool do_de_conditional() const { return DO_DIRECT_EFFECT_CONDITIONAL; }
   const bool do_med_two_step() const { return DO_MED_TWO_STEP; }
 

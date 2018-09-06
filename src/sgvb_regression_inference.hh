@@ -88,7 +88,7 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
   using Mat = typename Model::Data;
 
   Eigen::setNbThreads(opt.nthread());
-  TLOG("Number of threads = " << opt.nthread());
+  if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
 
   using conv_t = convergence_t<Scalar>;
   Mat onesN = Mat::Ones(model.nobs(), 1) / static_cast<Scalar>(model.nobs());

@@ -58,8 +58,8 @@ struct convergence_t {
 
   void print(std::ostream& out) {
     if ((t % interv == 1) || interv < 2) {
-      out << "[" << std::setw(20) << t << "]";
-      out << " [" << std::setw(20) << nrec << "]";
+      out << "[" << std::setw(10) << t << "]";
+      out << " [" << std::setw(10) << nrec << "]";
       out << " [" << std::setw(20) << curr_score.sum() << "]";
       out << std::endl;
     }

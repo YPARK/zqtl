@@ -151,8 +151,9 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Rcpp::List param_unmediated_finemap = Rcpp::List::create();
   Rcpp::List param_unmed = Rcpp::List::create();
 
+  Mat M0;
   if (opt.do_direct_effect()) {
-    Mat M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
+    M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
     TLOG("Finished direct model estimation");
 
     // the unmediated component
@@ -231,7 +232,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
-      Rcpp::_["D2"] = D2, Rcpp::_["M"] = M,
+      Rcpp::_["D2"] = D2, Rcpp::_["M"] = M, Rcpp::_["M0"] = M0,
       Rcpp::_["param.mediated"] = param_rcpp_list(theta_med),
       Rcpp::_["param.unmediated"] = param_unmed,
       Rcpp::_["param.finemap.direct"] = param_unmediated_finemap,
@@ -304,11 +305,12 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
   Rcpp::List out_unmed_param = Rcpp::List::create();
 
   Mat llik;
+  Mat M0;
   if (opt.do_direct_effect()) {
-    Mat M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
+    M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
     TLOG("Finished direct model estimation\n\n");
 
-    auto theta_unmed = make_dense_slab<Scalar>(M0.cols(), Y.cols(), opt);
+    auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
     auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
     delta_unmed.init_by_dot(Y, opt.jitter());
 
@@ -349,7 +351,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
-      Rcpp::_["D2"] = D2, Rcpp::_["M"] = M,
+      Rcpp::_["D2"] = D2, Rcpp::_["M"] = M, Rcpp::_["M0"] = M0,
       Rcpp::_["param.mediated.left"] = out_left_param,
       Rcpp::_["param.mediated.right"] = out_right_param,
       Rcpp::_["param.unmediated"] = out_unmed_param,
@@ -662,6 +664,12 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   Mat YM(mm.rows(), mm.cols() + yy.cols());
   YM << yy, mm;
 
+  // standardize [Y, M] z-scores
+  Mat z_ym = Vt.transpose() * YM;
+  Mat z_ym_std = z_ym;
+  z_ym_std = standardize_zscore(z_ym, Vt, D2.cwiseSqrt());
+  YM = Vt * z_ym_std;
+
   Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
 
   TLOG("Fit the factorization model");
@@ -671,7 +679,7 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   eta_c.init_by_dot(YM, opt.jitter());
 
   const Index K = std::min(std::min(YM.cols(), YM.rows()), DUt.cols());
-  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), K, opt);
+  auto epsilon_indiv = make_dense_slab<Scalar>(DUt.cols(), K, opt);
   auto epsilon_trait = make_dense_spike_slab<Scalar>(YM.cols(), K, opt);
 
   auto delta_random =
@@ -688,7 +696,7 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   TLOG("Finished the factorization");
 
   delta_random.resolve();
-  Mat M0(Vt.cols(), 0);
+  Mat Z0(Vt.cols(), 0);
 
   // Figure out Y only or M only components
   Mat mean_indiv = mean_param(epsilon_indiv);
@@ -713,23 +721,28 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
       }
     }
     if (trait_on && mediator_on) {
-      TLOG("Found a common factor : " << (k + 1) << "possibly mediating");
+      TLOG("Found a common factor : [" << std::setw(10) << (k + 1)
+                                       << "] (possibly mediating)");
     } else if ((!trait_on) && (!mediator_on)) {
-      TLOG("Ignore this factor : " << (k + 1));
+      // TLOG("Ignore this factor : " << (k + 1));
     } else {
-      if (trait_on) TLOG("Found a factor only on Y : " << (k + 1));
-      if (mediator_on) TLOG("Found a factor only on M : " << (k + 1));
-      Mat temp = M0;
-      M0.resize(temp.rows(), temp.cols() + 1);
-      M0 << temp, (Vt.transpose() * DUt * mean_indiv.col(k));
+      if (trait_on)
+        TLOG("Found a factor on Y   : [" << std::setw(10) << (k + 1) << "]");
+      if (mediator_on)
+        TLOG("Found a factor on M   : [" << std::setw(10) << (k + 1) << "]");
+      Mat temp = Z0;
+      Z0.resize(temp.rows(), temp.cols() + 1);
+      Z0 << temp, (Vt.transpose() * DUt * mean_indiv.col(k));
     }
   }
 
-  if (M0.cols() < 1) {
-    M0 = Mat::Zero(M0.rows(), 1);
+  if (Z0.cols() < 1) {
+    Z0 = Mat::Zero(Z0.rows(), 1);
   }
 
-  return M0;
+  Mat z_std = Z0;
+  z_std = standardize_zscore(Z0, Vt, D2.cwiseSqrt());
+  return Vt * z_std;
 }
 
 template <typename RNG>
