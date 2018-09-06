@@ -158,7 +158,7 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
     bool converged = conv.converged(opt.vbtol(), opt.miniter());
     if (opt.verbose()) conv.print(Rcpp::Rcerr);
     if (converged) {
-      TLOG("Converged initial log-likelihood");
+      if (opt.verbose()) TLOG("Converged initial log-likelihood");
       break;
     }
   }
@@ -179,13 +179,13 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
       bool converged = conv.converged(opt.vbtol(), opt.miniter());
       if (opt.verbose()) conv.print(Rcpp::Rcerr);
       if (converged) {
-        TLOG("Converged hyperparameter log-likelihood");
+        if (opt.verbose()) TLOG("Converged hyperparameter log-likelihood");
         break;
       }
     }
   }
 
-  TLOG("Finished SGVB inference");
+  if (opt.verbose()) TLOG("Finished SGVB inference");
   return conv.summarize();
 }
 
@@ -215,7 +215,7 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
   using Mat = typename Model::Data;
 
   Eigen::setNbThreads(opt.nthread());
-  TLOG("Number of threads = " << opt.nthread());
+  if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
 
   using conv_t = convergence_t<Scalar>;
   Mat onesN = Mat::Ones(model.nobs(), 1) / static_cast<Scalar>(model.nobs());
@@ -287,7 +287,7 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
     bool converged = conv.converged(opt.vbtol(), opt.miniter());
     if (opt.verbose()) conv.print(Rcpp::Rcerr);
     if (converged) {
-      TLOG("Converged initial log-likelihood");
+      if (opt.verbose()) TLOG("Converged initial log-likelihood");
       break;
     }
   }
@@ -309,13 +309,13 @@ auto impl_fit_eta_delta_zeta(Model &model, const Opt &opt, RNG &rng,
       bool converged = conv.converged(opt.vbtol(), opt.miniter());
       if (opt.verbose()) conv.print(Rcpp::Rcerr);
       if (converged) {
-        TLOG("Converged hyperparameter log-likelihood");
+        if (opt.verbose()) TLOG("Converged hyperparameter log-likelihood");
         break;
       }
     }
   }
 
-  TLOG("Finished SGVB inference");
+  if (opt.verbose()) TLOG("Finished SGVB inference");
   return conv.summarize();
 }
 
@@ -341,7 +341,7 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
   using Mat = typename Model::Data;
 
   Eigen::setNbThreads(opt.nthread());
-  TLOG("Number of threads = " << opt.nthread());
+  if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
 
   using conv_t = convergence_t<Scalar>;
   Mat onesN = Mat::Ones(model.nobs(), 1) / static_cast<Scalar>(model.nobs());
@@ -403,7 +403,7 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
     bool converged = conv.converged(opt.vbtol(), opt.miniter());
     if (opt.verbose()) conv.print(Rcpp::Rcerr);
     if (converged) {
-      TLOG("Converged initial log-likelihood");
+      if (opt.verbose()) TLOG("Converged initial log-likelihood");
       break;
     }
   }
@@ -423,13 +423,13 @@ auto impl_fit_eta(Model &model, const Opt &opt, RNG &rng,
       bool converged = conv.converged(opt.vbtol(), opt.miniter());
       if (opt.verbose()) conv.print(Rcpp::Rcerr);
       if (converged) {
-        TLOG("Converged hyperparameter log-likelihood");
+        if (opt.verbose()) TLOG("Converged hyperparameter log-likelihood");
         break;
       }
     }
   }
 
-  TLOG("Finished SGVB inference");
+  if (opt.verbose()) TLOG("Finished SGVB inference");
   return conv.summarize();
 }
 

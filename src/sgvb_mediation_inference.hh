@@ -30,7 +30,7 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
   using Mat = typename ModelY::Data;
 
   Eigen::setNbThreads(opt.nthread());
-  TLOG("Number of threads = " << opt.nthread());
+  if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
 
   using conv_t = convergence_t<Scalar>;
   Mat onesN = Mat::Ones(modelY.nobs(), 1) / static_cast<Scalar>(modelY.nobs());
@@ -206,7 +206,7 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
     bool converged = conv.converged(opt.vbtol(), opt.miniter());
     if (opt.verbose()) conv.print(Rcpp::Rcerr);
     if (converged) {
-      TLOG("Converged initial log-likelihood");
+      if (opt.verbose()) TLOG("Converged initial log-likelihood");
       break;
     }
   }
@@ -230,13 +230,13 @@ auto impl_fit_mediation(ModelY &modelY, ModelM &modelM, const Opt &opt,
       bool converged = conv.converged(opt.vbtol(), opt.miniter());
       if (opt.verbose()) conv.print(Rcpp::Rcerr);
       if (converged) {
-        TLOG("Converged hyperparameter log-likelihood");
+        if (opt.verbose()) TLOG("Converged hyperparameter log-likelihood");
         break;
       }
     }
   }
 
-  TLOG("Finished SGVB inference");
+  if (opt.verbose()) TLOG("Finished SGVB inference");
   return conv.summarize();
 }
 
