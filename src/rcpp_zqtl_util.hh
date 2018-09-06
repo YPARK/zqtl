@@ -205,11 +205,12 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
 
   if (_list.containsElementNamed("de.propensity")) {
     opt.DO_DIRECT_EFFECT_PROPENSITY = Rcpp::as<bool>(_list["de.propensity"]);
-    opt.DO_DIRECT_EFFECT_MARGINAL = false;
+    opt.DO_DIRECT_EFFECT_FACTORIZATION = false;
   }
 
-  if (_list.containsElementNamed("de.marginal")) {
-    opt.DO_DIRECT_EFFECT_MARGINAL = Rcpp::as<bool>(_list["de.marginal"]);
+  if (_list.containsElementNamed("de.factorization")) {
+    opt.DO_DIRECT_EFFECT_FACTORIZATION =
+        Rcpp::as<bool>(_list["de.factorization"]);
     opt.DO_DIRECT_EFFECT_PROPENSITY = false;
   }
 

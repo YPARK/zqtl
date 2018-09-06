@@ -39,7 +39,7 @@ struct options_t {
 
     DO_DIRECT_EFFECT = true;
     DO_DIRECT_EFFECT_PROPENSITY = false;
-    DO_DIRECT_EFFECT_MARGINAL = false;
+    DO_DIRECT_EFFECT_FACTORIZATION = false;
     DO_DIRECT_EFFECT_CONDITIONAL = false;
 
     MF_SVD_INIT = true;
@@ -98,7 +98,7 @@ struct options_t {
   const bool do_direct_effect() const { return DO_DIRECT_EFFECT; }
 
   const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
-  const bool do_de_marginal() const { return DO_DIRECT_EFFECT_MARGINAL; }
+  const bool do_de_factorization() const { return DO_DIRECT_EFFECT_FACTORIZATION; }
   const bool do_de_conditional() const { return DO_DIRECT_EFFECT_CONDITIONAL; }
   const bool do_med_two_step() const { return DO_MED_TWO_STEP; }
 
@@ -156,7 +156,7 @@ struct options_t {
 
   bool DO_DIRECT_EFFECT;
   bool DO_DIRECT_EFFECT_PROPENSITY;
-  bool DO_DIRECT_EFFECT_MARGINAL;
+  bool DO_DIRECT_EFFECT_FACTORIZATION;
   bool DO_DIRECT_EFFECT_CONDITIONAL;
 
   bool DO_HYPER;

@@ -457,7 +457,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
 #' @param do.med.two.step Estimate mediation in two steps (default: FALSE)
-#' @param de.marginal Estimate direct effect by marignal effects (default: FALSE)
+#' @param de.factorization Estimate direct effect by marignal effects (default: FALSE)
 #' @param de.propensity Propensity sampling to estimate direct effect (default: FALSE)
 #'
 #' @param do.finemap.direct Fine-map direct effect SNPs (default: FALSE)
@@ -627,7 +627,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          options = list(),
                          multivar.mediator = FALSE,
                          de.propensity = FALSE,
-                         de.marginal = FALSE,
+                         de.factorization = FALSE,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,
                          do.med.two.step = FALSE,
@@ -688,7 +688,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
                   'rseed', 'do.var.calc', 'num.strat.size',
-                  'multivar.mediator', 'de.propensity', 'de.marginal',
+                  'multivar.mediator', 'de.propensity', 'de.factorization',
                   'do.direct.estimation', 'do.med.two.step', 'do.finemap.direct',
                   'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',
                   'submodel.size')

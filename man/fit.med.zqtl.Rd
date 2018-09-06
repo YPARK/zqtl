@@ -35,7 +35,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{do.med.two.step}{Estimate mediation in two steps (default: FALSE)}
 
-\item{de.marginal}{Estimate direct effect by marignal effects (default: FALSE)}
+\item{de.factorization}{Estimate direct effect by marignal effects (default: FALSE)}
 
 \item{de.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
 

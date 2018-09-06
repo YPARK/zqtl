@@ -50,7 +50,7 @@ Enjoy!
 
 ### v.1.3.2
 
-- Estimate an unmediated factor by average marginal effects
+- Estimate unmediated factors by factorization
 - Boost sample size by resampling eigen vectors
 - Allow two step optimization
 
