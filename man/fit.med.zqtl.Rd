@@ -41,6 +41,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{do.finemap.direct}{Fine-map direct effect SNPs (default: FALSE)}
 
+\item{nboot}{Number of bootstraps followed by finemapping (default: 0 )}
+
 \item{num.conditional}{number of conditional models}
 
 \item{submodel.size}{size of each conditional model}

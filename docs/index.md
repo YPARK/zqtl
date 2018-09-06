@@ -53,6 +53,7 @@ Enjoy!
 - Estimate unmediated factors by factorization
 - Boost sample size by resampling eigen vectors
 - Allow two step optimization
+- Parametric bootstrap for sensitivity analysis
 
 ### v.1.3.1
 
