@@ -704,7 +704,7 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   eta_c.init_by_dot(YM, opt.jitter());
 
   const Index K = std::min(std::min(YM.cols(), YM.rows()), DUt.cols());
-  auto epsilon_indiv = make_dense_col_spike_slab<Scalar>(DUt.cols(), K, opt);
+  auto epsilon_indiv = make_dense_col_slab<Scalar>(DUt.cols(), K, opt);
   auto epsilon_trait = make_dense_spike_slab<Scalar>(YM.cols(), K, opt);
 
   auto delta_random =
