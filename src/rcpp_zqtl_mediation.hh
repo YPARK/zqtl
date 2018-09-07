@@ -704,14 +704,15 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   eta_c.init_by_dot(YM, opt.jitter());
 
   const Index K = std::min(std::min(YM.cols(), YM.rows()), DUt.cols());
-  auto epsilon_indiv = make_dense_slab<Scalar>(DUt.cols(), K, opt);
+  auto epsilon_indiv = make_dense_col_spike_slab<Scalar>(DUt.cols(), K, opt);
   auto epsilon_trait = make_dense_spike_slab<Scalar>(YM.cols(), K, opt);
 
   auto delta_random =
       make_factored_regression_eta(DUt, YM, epsilon_indiv, epsilon_trait);
 
   if (opt.mf_svd_init()) {
-    delta_random.init_by_svd(YM, opt.jitter());
+    Mat Dinv = D2.cwiseSqrt().cwiseInverse();
+    delta_random.init_by_svd(Dinv.asDiagonal() * YM, opt.jitter());
   } else {
     std::mt19937 _rng(opt.rseed());
     delta_random.jitter(opt.jitter(), _rng);

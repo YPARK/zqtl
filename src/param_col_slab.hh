@@ -285,6 +285,22 @@ void impl_perturb_param(Parameter& P, const Scalar sd,
   resolve_param(P);
 }
 
+template <typename Parameter, typename Scalar, typename RNG>
+void impl_perturb_param(Parameter& P, const Scalar sd, RNG& rng,
+                        const tag_param_col_slab) {
+  std::normal_distribution<Scalar> Norm;
+  auto rnorm = [&rng, &Norm, &sd](const auto& x) { return sd * Norm(rng); };
+
+  P.beta = P.beta.unaryExpr(rnorm);
+
+  const auto gammax = P.resolve_prec_op.gammax;
+  // gam_aux > - ln(gammax) - 2 ln(sd)
+  const auto gam_aux_min = -std::log(gammax) - 2.0 * std::log(sd);
+  setConstant(P.gamma_aux, gam_aux_min);
+
+  resolve_param(P);
+}
+
 template <typename Parameter>
 const auto& impl_mean_param(Parameter& P, const tag_param_col_slab) {
   return P.beta;
