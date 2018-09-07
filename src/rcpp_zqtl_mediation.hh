@@ -158,7 +158,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     if (opt.verbose()) TLOG("Finished direct model estimation");
 
     // the unmediated component
-    auto theta_unmed = make_dense_slab<Scalar>(M0.cols(), Y.cols(), opt);
+    auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
     auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
     delta_unmed.init_by_dot(Y, opt.jitter());
 
@@ -189,7 +189,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
     }
     param_unmed = param_rcpp_list(theta_unmed);
   } else {
-    auto theta_unmed = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+    auto theta_unmed = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_unmed = make_regression_eta(Vt, Y, theta_unmed);
     eta_unmed.init_by_dot(Y, opt.jitter());
     llik = impl_fit_eta_delta(
@@ -343,7 +343,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
 
     out_unmed_param = param_rcpp_list(theta_unmed);
   } else {
-    auto theta_unmed = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+    auto theta_unmed = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_unmed = make_regression_eta(Vt, Y, theta_unmed);
     eta_unmed.init_by_dot(Y, opt.jitter());
 
