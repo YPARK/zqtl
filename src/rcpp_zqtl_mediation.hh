@@ -333,7 +333,7 @@ Rcpp::List impl_fit_fac_med_zqtl(const effect_y_mat_t& yy,        // z_y
     M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
     if (opt.verbose()) TLOG("Finished direct model estimation\n\n");
 
-    auto theta_unmed = make_dense_slab<Scalar>(M0.cols(), Y.cols(), opt);
+    auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
     auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
     delta_unmed.init_by_dot(Y, opt.jitter());
 
@@ -726,11 +726,12 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   if (opt.verbose()) TLOG("Finished the factorization");
 
   delta_random.resolve();
-  Mat Z0(Vt.cols(), 0);
 
   // Figure out Y only or M only components
   Mat mean_indiv = mean_param(epsilon_indiv);
   Mat lodds_mat = log_odds_param(epsilon_trait);  //
+  Mat Z0 = Vt.transpose() * DUt * mean_indiv;
+
   const Scalar cutoff = opt.med_lodds_cutoff();
 
   for (Index k = 0; k < K; ++k) {
@@ -754,23 +755,18 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
       if (opt.verbose())
         TLOG("Found a common factor : [" << std::setw(10) << (k + 1)
                                          << "] (possibly mediating)");
+
+      Z0.col(k) = Z0.col(k) * 0.0;
+
     } else {
       // unless this factor is present in both Y and M simultaneously
-
       if (trait_on)
         if (opt.verbose())
           TLOG("Found a factor on Y   : [" << std::setw(10) << (k + 1) << "]");
       if (mediator_on)
         if (opt.verbose())
           TLOG("Found a factor on M   : [" << std::setw(10) << (k + 1) << "]");
-      Mat temp = Z0;
-      Z0.resize(temp.rows(), temp.cols() + 1);
-      Z0 << temp, (Vt.transpose() * DUt * mean_indiv.col(k));
     }
-  }
-
-  if (Z0.cols() < 1) {
-    Z0 = Mat::Zero(Z0.rows(), 1);
   }
 
   Mat z_std = Z0;
