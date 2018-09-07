@@ -710,8 +710,12 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   auto delta_random =
       make_factored_regression_eta(DUt, YM, epsilon_indiv, epsilon_trait);
 
-  delta_random.init_by_svd(D2.cwiseSqrt().cwiseInverse().asDiagonal() * YM,
-                           opt.jitter());
+  if (opt.mf_svd_init()) {
+    delta_random.init_by_svd(YM, opt.jitter());
+  } else {
+    std::mt19937 _rng(opt.rseed());
+    delta_random.jitter(opt.jitter(), _rng);
+  }
 
   zqtl_model_t<Mat> y_model(YM, D2);
 
@@ -749,9 +753,9 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
       if (opt.verbose())
         TLOG("Found a common factor : [" << std::setw(10) << (k + 1)
                                          << "] (possibly mediating)");
-    } else if ((!trait_on) && (!mediator_on)) {
-      // if(opt.verbose()) TLOG("Ignore this factor : " << (k + 1));
     } else {
+      // unless this factor is present in both Y and M simultaneously
+
       if (trait_on)
         if (opt.verbose())
           TLOG("Found a factor on Y   : [" << std::setw(10) << (k + 1) << "]");
