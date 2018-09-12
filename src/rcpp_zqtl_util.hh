@@ -217,6 +217,11 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.DO_DIRECT_EFFECT_PROPENSITY = false;
   }
 
+  if (_list.containsElementNamed("factorization.model")) {
+    opt.DE_FACTORIZATION_MODEL =
+        Rcpp::as<int>(_list["factorization.model"]);
+  }
+
   if (_list.containsElementNamed("out.resid"))
     opt.OUT_RESID = Rcpp::as<bool>(_list["out.resid"]);
   if (_list.containsElementNamed("out.residual"))

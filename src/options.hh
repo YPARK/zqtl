@@ -43,6 +43,8 @@ struct options_t {
     DO_DIRECT_EFFECT_FACTORIZATION = false;
     DO_DIRECT_EFFECT_CONDITIONAL = false;
 
+    DE_FACTORIZATION_MODEL = 0;
+
     MF_SVD_INIT = true;
     MF_RIGHT_NN = true;
     MU_MIN = 1e-2;
@@ -103,6 +105,7 @@ struct options_t {
   const bool do_de_factorization() const {
     return DO_DIRECT_EFFECT_FACTORIZATION;
   }
+  const int de_factorization_model() const { return DE_FACTORIZATION_MODEL; }
   const bool do_de_conditional() const { return DO_DIRECT_EFFECT_CONDITIONAL; }
   const bool do_med_two_step() const { return DO_MED_TWO_STEP; }
 
@@ -163,6 +166,7 @@ struct options_t {
   bool DO_DIRECT_EFFECT_PROPENSITY;
   bool DO_DIRECT_EFFECT_FACTORIZATION;
   bool DO_DIRECT_EFFECT_CONDITIONAL;
+  int DE_FACTORIZATION_MODEL;
 
   bool DO_HYPER;
   bool OUT_RESID;

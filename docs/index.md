@@ -52,6 +52,7 @@ Enjoy!
 
 - Minor fix on smoothness of the unmediated effect
 - Add `do.control.backfire` to regress out `M0 -> M`.
+- Add experimental factorization model `factorization.model = 1`
 
 ### v.1.3.2
 

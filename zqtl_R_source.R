@@ -202,7 +202,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(C))
     stopifnot(dim(effect)[1] == dim(C)[1])
 
-    ################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
@@ -219,7 +218,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     }
     options[['sample.size']] <- n
 
-    ################################################################
     ## call R/C++ functions ##
     if(factored) {
         return(.Call('rcpp_fac_zqtl', effect, effect.se, X, C, C.delta, options, PACKAGE = 'zqtl'))
@@ -267,7 +265,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
-#'
+#' @param factorization.model Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)
 #'
 #' @return a list of variational inference results
 #'
@@ -403,6 +401,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
                                eigen.tol = 1e-2,
                                do.stdize = TRUE,
                                min.se = 1e-4,
+                               factorization.model = 0,
                                rseed = NULL) {
 
     stopifnot(is.matrix(effect))
@@ -411,13 +410,12 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
     stopifnot(nrow(effect) == ncol(X))
     stopifnot(is.matrix(X))
 
-    ################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
-                  'rseed')
+                  'rseed', 'factorization.model')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {
@@ -428,7 +426,6 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
     }
     options[['sample.size']] <- n
 
-    ################################################################
     ## call R/C++ functions ##
     return(.Call('rcpp_factorize', effect, effect.se, X, options, PACKAGE = 'zqtl'))
 }
@@ -458,7 +455,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
 #' @param do.control.backfire Estimate direct effect (default: FALSE)
 #' @param do.med.two.step Estimate mediation in two steps (default: FALSE)
-#' @param de.factorization Estimate direct effect by marignal effects (default: FALSE)
+#' @param de.factorization Estimate direct effect by joint factorization (default: FALSE)
+#' @param factorization.model Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)
 #' @param de.propensity Propensity sampling to estimate direct effect (default: FALSE)
 #'
 #' @param do.finemap.direct Fine-map direct effect SNPs (default: FALSE)
@@ -630,6 +628,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          multivar.mediator = FALSE,
                          de.propensity = FALSE,
                          de.factorization = FALSE,
+                         factorization.model = 0,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,
                          do.control.backfire = TRUE,
@@ -685,14 +684,14 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(C))
     stopifnot(dim(effect)[1] == dim(C)[1])
 
-    ################################################################
+################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
                   'rseed', 'do.var.calc', 'num.strat.size', 'nboot',
-                  'multivar.mediator', 'de.propensity', 'de.factorization',
+                  'multivar.mediator', 'de.propensity', 'de.factorization', 'factorization.model',
                   'do.direct.estimation', 'do.control.backfire', 'do.med.two.step', 'do.finemap.direct',
                   'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',
                   'submodel.size')
@@ -710,7 +709,6 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(dim(effect.m)[1] == dim(effect.m.se)[1])
     stopifnot(dim(effect.m)[2] == dim(effect.m.se)[2])
 
-    ################################################################
     ## call R/C++ functions ##
     if(factored) {
         ret <- .Call('rcpp_fac_med_zqtl', PACKAGE = 'zqtl',
