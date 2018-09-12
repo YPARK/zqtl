@@ -456,6 +456,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
 #'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
+#' @param do.control.backfire Estimate direct effect (default: FALSE)
 #' @param do.med.two.step Estimate mediation in two steps (default: FALSE)
 #' @param de.factorization Estimate direct effect by marignal effects (default: FALSE)
 #' @param de.propensity Propensity sampling to estimate direct effect (default: FALSE)
@@ -631,6 +632,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          de.factorization = FALSE,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,
+                         do.control.backfire = TRUE,
                          do.med.two.step = FALSE,
                          do.finemap.direct = FALSE,
                          nboot = 0,
@@ -691,7 +693,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
                   'rseed', 'do.var.calc', 'num.strat.size', 'nboot',
                   'multivar.mediator', 'de.propensity', 'de.factorization',
-                  'do.direct.estimation', 'do.med.two.step', 'do.finemap.direct',
+                  'do.direct.estimation', 'do.control.backfire', 'do.med.two.step', 'do.finemap.direct',
                   'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',
                   'submodel.size')
 

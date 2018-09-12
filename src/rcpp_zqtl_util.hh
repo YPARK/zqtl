@@ -200,6 +200,9 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("do.direct.estimation"))
     opt.DO_DIRECT_EFFECT = Rcpp::as<bool>(_list["do.direct.estimation"]);
 
+  if (_list.containsElementNamed("do.control.backfire"))
+    opt.DO_CONTROL_BACKFIRE = Rcpp::as<bool>(_list["do.control.backfire"]);
+
   if (_list.containsElementNamed("do.med.two.step"))
     opt.DO_MED_TWO_STEP = Rcpp::as<bool>(_list["do.med.two.step"]);
 

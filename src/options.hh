@@ -38,6 +38,7 @@ struct options_t {
     MED_LODDS_CUTOFF = 0.0;
 
     DO_DIRECT_EFFECT = true;
+    DO_CONTROL_BACKFIRE = false;
     DO_DIRECT_EFFECT_PROPENSITY = false;
     DO_DIRECT_EFFECT_FACTORIZATION = false;
     DO_DIRECT_EFFECT_CONDITIONAL = false;
@@ -96,6 +97,7 @@ struct options_t {
   const float med_lodds_cutoff() const { return MED_LODDS_CUTOFF; }
 
   const bool do_direct_effect() const { return DO_DIRECT_EFFECT; }
+  const bool do_control_backfire() const { return DO_CONTROL_BACKFIRE; }
 
   const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
   const bool do_de_factorization() const {
@@ -157,6 +159,7 @@ struct options_t {
   float MED_LODDS_CUTOFF;
 
   bool DO_DIRECT_EFFECT;
+  bool DO_CONTROL_BACKFIRE;
   bool DO_DIRECT_EFFECT_PROPENSITY;
   bool DO_DIRECT_EFFECT_FACTORIZATION;
   bool DO_DIRECT_EFFECT_CONDITIONAL;

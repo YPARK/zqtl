@@ -48,6 +48,11 @@ Enjoy!
 
 ## Release notes
 
+### v.1.3.3
+
+- Minor fix on smoothness of the unmediated effect
+- Add `do.control.backfire` to regress out `M0 -> M`.
+
 ### v.1.3.2
 
 - Estimate unmediated factors by factorization

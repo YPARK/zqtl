@@ -142,76 +142,20 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
   auto eta_conf_y = make_regression_eta(VtC, Y, theta_conf_y);
   eta_conf_y.init_by_dot(Y, opt.jitter());
 
-  // mediated
-  auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
-  auto delta_med = make_regression_eta(M, Y, theta_med);
-  delta_med.init_by_dot(Y, opt.jitter());
-
   Mat llik0, llik, llik_fm;
   Rcpp::List param_unmediated_finemap = Rcpp::List::create();
   Rcpp::List param_unmed = Rcpp::List::create();
+  Rcpp::List param_med = Rcpp::List::create();
   Rcpp::List bootstrap(opt.nboot());
+  Rcpp::List var_decomp = Rcpp::List::create();
+  Rcpp::List backfire = Rcpp::List::create();
 
   Mat M0;
-  if (opt.do_direct_effect()) {
-    M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
-    if (opt.verbose()) TLOG("Finished direct model estimation");
-
-    // the unmediated component
-    auto theta_unmed = make_dense_spike_slab<Scalar>(M0.cols(), Y.cols(), opt);
-    auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
-    delta_unmed.init_by_dot(Y, opt.jitter());
-
-    if (opt.do_med_two_step()) {
-      // Just include the unmediated compnent
-      llik0 = impl_fit_eta_delta(model_y, opt, rng,
-                                 std::make_tuple(eta_intercept, eta_conf_y),
-                                 std::make_tuple(delta_unmed));
-
-      if (opt.verbose()) TLOG("Finished the null model estimation\n\n");
-
-      dummy_eta_t dummy;
-      delta_unmed.resolve();
-      eta_intercept.resolve();
-      eta_conf_y.resolve();
-
-      // Clamping the unmediated effect...
-      llik = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(dummy),
-                                std::make_tuple(delta_med),
-                                std::make_tuple(eta_intercept, eta_conf_y),
-                                std::make_tuple(delta_unmed));
-      if (opt.verbose()) TLOG("Finished two-step estimation\n\n");
-    } else {
-      llik = impl_fit_eta_delta(model_y, opt, rng,
-                                std::make_tuple(eta_intercept, eta_conf_y),
-                                std::make_tuple(delta_med, delta_unmed));
-      if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
-    }
-    param_unmed = param_rcpp_list(theta_unmed);
-  } else {
-
-    /////////////////////////
-    // this must be smooth //
-    /////////////////////////
-
-    auto theta_unmed = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
-    auto eta_unmed = make_regression_eta(Vt, Y, theta_unmed);
-    eta_unmed.init_by_dot(Y, opt.jitter());
-    llik = impl_fit_eta_delta(
-        model_y, opt, rng,
-        std::make_tuple(eta_intercept, eta_conf_y, eta_unmed),
-        std::make_tuple(delta_med));
-
-    param_unmed = param_rcpp_list(theta_unmed);
-    if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
-  }
-
-  // This is fitted med w/o bootstrapping
-  Rcpp::List param_med = param_rcpp_list(theta_med);
+  dummy_eta_t dummy;
 
   // Fine-map residual unmediated effect
-  if (opt.do_finemap_unmediated()) {
-    dummy_eta_t dummy;
+  // This is fitted med w/o bootstrapping
+  auto do_finemap_unmediated = [&](auto& theta_med, auto& delta_med) {
     auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
     eta_direct.init_by_dot(Y, opt.jitter());
@@ -243,14 +187,134 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
         TLOG("Finished bootstrap [" << std::setw(10) << (b + 1) << " / "
                                     << std::setw(10) << opt.nboot() << "]");
     }
-  }
+  };
 
-  Rcpp::List var_decomp = Rcpp::List::create();
+  if (opt.do_direct_effect()) {
+    M0 = estimate_direct_effect(Y, M, Vt, U, VtI, VtC, D2, rng, opt);
+    if (opt.verbose()) TLOG("Finished direct model estimation\n\n");
 
-  if (opt.do_var_calc()) {
-    var_decomp = _variance_calculation(eta_intercept, delta_med, theta_med, opt,
-                                       std::make_tuple(Y, M, U, D2));
-    if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
+    // Adjust M ~ M0 to avoid the backfire
+    if (opt.do_control_backfire()) {
+      auto theta_adj = make_dense_spike_slab<Scalar>(M0.cols(), M.cols(), opt);
+      auto delta_adj = make_regression_eta(M0, M, theta_adj);
+      delta_adj.init_by_dot(M, opt.jitter());
+
+      zqtl_model_t<Mat> model_adj(M, D2);
+
+      if (opt.verbose()) TLOG("Adjust the backfire : M0 -> M\n\n");
+
+      Mat llik_adj =
+          impl_fit_eta_delta(model_adj, opt, rng, std::make_tuple(dummy),
+                             std::make_tuple(delta_adj));
+
+      if (opt.verbose()) TLOG("Finished adjusting the backfire\n\n");
+
+      backfire = Rcpp::List::create(
+          Rcpp::_["param"] = param_rcpp_list(theta_adj), Rcpp::_["M0"] = M0);
+
+      delta_adj.resolve();
+
+      auto theta_resid = make_dense_slab<Scalar>(M.rows(), M.cols(), opt);
+      auto delta_resid = make_residual_eta(M, theta_resid);
+
+      Mat llik_adj_resid = impl_fit_eta_delta(
+          model_adj, opt, rng, std::make_tuple(dummy),
+          std::make_tuple(delta_resid), std::make_tuple(dummy),
+          std::make_tuple(delta_adj));
+
+      if (opt.verbose()) TLOG("Finished the reconstruction of unbiased M\n\n");
+
+      delta_resid.resolve();
+      Mat mzhat = Vt.transpose() * delta_resid.repr_mean();
+
+      if (opt.do_rescale()) {
+        Mat mzhat_std = standardize_zscore(mzhat, Vt, D2.cwiseSqrt());
+        M = Vt * mzhat_std;
+      } else {
+        Mat mzhat_std = center_zscore(mzhat, Vt, D2.cwiseSqrt());
+        M = Vt * mzhat_std;
+      }
+      M0.resize(M0.rows(), 1);
+      M0 = Mat::Ones(M0.rows(), 1) / static_cast<Scalar>(M0.rows());
+    }
+
+    // mediated
+    auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
+    auto delta_med = make_regression_eta(M, Y, theta_med);
+    delta_med.init_by_dot(Y, opt.jitter());
+
+    // the unmediated component -- smooth
+    auto theta_unmed = make_dense_slab<Scalar>(M0.cols(), Y.cols(), opt);
+    auto delta_unmed = make_regression_eta(M0, Y, theta_unmed);
+    delta_unmed.init_by_dot(Y, opt.jitter());
+
+    if (opt.do_med_two_step()) {
+      // Just include the unmediated compnent
+      llik0 = impl_fit_eta_delta(model_y, opt, rng,
+                                 std::make_tuple(eta_intercept, eta_conf_y),
+                                 std::make_tuple(delta_unmed));
+
+      if (opt.verbose()) TLOG("Finished the null model estimation\n\n");
+
+      delta_unmed.resolve();
+      eta_intercept.resolve();
+      eta_conf_y.resolve();
+
+      // Clamping the unmediated effect...
+      llik = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(dummy),
+                                std::make_tuple(delta_med),
+                                std::make_tuple(eta_intercept, eta_conf_y),
+                                std::make_tuple(delta_unmed));
+      if (opt.verbose()) TLOG("Finished two-step estimation\n\n");
+    } else {
+      llik = impl_fit_eta_delta(model_y, opt, rng,
+                                std::make_tuple(eta_intercept, eta_conf_y),
+                                std::make_tuple(delta_med, delta_unmed));
+      if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
+    }
+    param_unmed = param_rcpp_list(theta_unmed);
+    param_med = param_rcpp_list(theta_med);
+
+    if (opt.do_finemap_unmediated()) {
+      do_finemap_unmediated(theta_med, delta_med);
+    }
+
+    if (opt.do_var_calc()) {
+      var_decomp = _variance_calculation(eta_intercept, delta_med, theta_med,
+                                         opt, std::make_tuple(Y, M, U, D2));
+      if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
+    }
+  } else {
+    /////////////////////////
+    // this must be smooth //
+    /////////////////////////
+
+    auto theta_unmed = make_dense_slab<Scalar>(Vt.cols(), Y.cols(), opt);
+    auto eta_unmed = make_regression_eta(Vt, Y, theta_unmed);
+    eta_unmed.init_by_dot(Y, opt.jitter());
+
+    // mediated
+    auto theta_med = make_dense_spike_slab<Scalar>(M.cols(), Y.cols(), opt);
+    auto delta_med = make_regression_eta(M, Y, theta_med);
+
+    llik = impl_fit_eta_delta(
+        model_y, opt, rng,
+        std::make_tuple(eta_intercept, eta_conf_y, eta_unmed),
+        std::make_tuple(delta_med));
+
+    param_unmed = param_rcpp_list(theta_unmed);
+    param_med = param_rcpp_list(theta_med);
+    if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
+
+    if (opt.do_finemap_unmediated()) {
+      do_finemap_unmediated(theta_med, delta_med);
+    }
+
+    if (opt.do_var_calc()) {
+      var_decomp = _variance_calculation(eta_intercept, delta_med, theta_med,
+                                         opt, std::make_tuple(Y, M, U, D2));
+      if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
+    }
   }
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -267,7 +331,7 @@ Rcpp::List impl_fit_med_zqtl(const effect_y_mat_t& yy,        // z_y
       Rcpp::_["param.covariate"] = param_rcpp_list(theta_conf_y),
       Rcpp::_["llik"] = llik, Rcpp::_["llik.fm"] = llik_fm,
       Rcpp::_["llik.null"] = llik0, Rcpp::_["var.decomp"] = var_decomp,
-      Rcpp::_["bootstrap"] = bootstrap);
+      Rcpp::_["bootstrap"] = bootstrap, Rcpp::_["backfire"] = backfire);
 }
 
 //////////////////////////////////
@@ -697,10 +761,17 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   // standardize [Y, M] z-scores
   Mat z_ym = Vt.transpose() * YM;
   Mat z_ym_std = z_ym;
-  z_ym_std = standardize_zscore(z_ym, Vt, D2.cwiseSqrt());
+  Mat D = D2.cwiseSqrt();
+
+  if (opt.do_rescale()) {
+    z_ym_std = standardize_zscore(z_ym, Vt, D);
+  } else {
+    z_ym_std = center_zscore(z_ym, Vt, D);
+  }
+
   YM = Vt * z_ym_std;
 
-  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  Mat DUt = D.asDiagonal() * U.transpose();
 
   if (opt.verbose()) TLOG("Fit the factorization model");
 
@@ -716,7 +787,7 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
       make_factored_regression_eta(DUt, YM, epsilon_indiv, epsilon_trait);
 
   if (opt.mf_svd_init()) {
-    Mat Dinv = D2.cwiseSqrt().cwiseInverse();
+    Mat Dinv = D.cwiseInverse();
     delta_random.init_by_svd(Dinv.asDiagonal() * YM, opt.jitter());
   } else {
     std::mt19937 _rng(opt.rseed());
@@ -728,55 +799,57 @@ Mat _direct_effect_factorization(Mat mm, const Mat yy, const Mat Vt,
   Mat llik = impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta_c),
                                 std::make_tuple(delta_random));
 
-  if (opt.verbose()) TLOG("Finished the factorization");
+  if (opt.verbose()) TLOG("Finished the factorization\n\n");
 
   delta_random.resolve();
 
   // Figure out Y only or M only components
   Mat mean_indiv = mean_param(epsilon_indiv);
   Mat lodds_mat = log_odds_param(epsilon_trait);  //
+  Mat loading_mat = mean_param(epsilon_trait);    //
   Mat Z0 = Vt.transpose() * DUt * mean_indiv;
 
   const Scalar cutoff = opt.med_lodds_cutoff();
+
+  Scalar denom = 0.0;
 
   for (Index k = 0; k < K; ++k) {
     bool trait_on = false;
     bool mediator_on = false;
     Vec lodds = lodds_mat.col(k);
+    Vec loading = loading_mat.col(k);
     for (Index t = 0; t < n_traits; ++t) {
       if (lodds(t) > cutoff) {
+        if (opt.verbose())
+          TLOG("On trait    [" << std::setw(10) << (t + 1) << "]"
+                               << " @ [" << std::setw(10) << (k + 1) << "]");
         trait_on = true;
-        break;
       }
     }
 
     for (Index t = n_traits; t < YM.cols(); ++t) {
       if (lodds(t) > cutoff) {
+        if (opt.verbose())
+          TLOG("On mediator [" << std::setw(10) << (t - n_traits + 1) << "]"
+                               << " @ [" << std::setw(10) << (k + 1) << "]");
+
         mediator_on = true;
-        break;
       }
     }
+
+    Mat z_k = Z0.col(k);
+    Mat z_k_std = opt.do_rescale() ? standardize_zscore(z_k, Vt, D)
+                                   : center_zscore(z_k, Vt, D);
+    Z0.col(k) = z_k_std * loading(k);
+
     if (trait_on && mediator_on) {
       if (opt.verbose())
-        TLOG("Found a common factor : [" << std::setw(10) << (k + 1)
-                                         << "] (possibly mediating)");
-
+        TLOG("CommonFactor[" << std::setw(10) << (k + 1) << "]");
       Z0.col(k) = Z0.col(k) * 0.0;
-
-    } else {
-      // unless this factor is present in both Y and M simultaneously
-      if (trait_on)
-        if (opt.verbose())
-          TLOG("Found a factor on Y   : [" << std::setw(10) << (k + 1) << "]");
-      if (mediator_on)
-        if (opt.verbose())
-          TLOG("Found a factor on M   : [" << std::setw(10) << (k + 1) << "]");
     }
   }
 
-  Mat z_std = Z0;
-  z_std = standardize_zscore(Z0, Vt, D2.cwiseSqrt());
-  return Vt * z_std;
+  return Vt * Z0;
 }
 
 template <typename RNG>
