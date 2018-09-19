@@ -631,7 +631,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          factorization.model = 0,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,
-                         do.control.backfire = TRUE,
+                         do.control.backfire = FALSE,
                          do.med.two.step = FALSE,
                          do.finemap.direct = FALSE,
                          nboot = 0,
