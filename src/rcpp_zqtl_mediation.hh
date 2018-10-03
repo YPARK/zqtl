@@ -172,23 +172,25 @@ Rcpp::List impl_fit_med_zqtl(
 
     param_unmediated_finemap = param_rcpp_list(theta_direct);
 
-    // Perform parametric bootstrap to estimate CIs.
-    // This time we clamp direct effects.
+  };
 
+  auto do_bootstrap = [&](auto& theta_med, auto& delta_med, auto& delta_unmed) {
+
+    // Perform parametric bootstrap to estimate CIs.
     for (Index b = 0; b < opt.nboot(); ++b) {
       delta_med.init_by_dot(Y, opt.jitter());
 
-      eta_direct.resolve();
       eta_intercept.resolve();
       eta_conf_mult_y.resolve();
+      delta_unmed.resolve();
       delta_conf_univ_y.resolve();
 
       impl_fit_eta_delta(model_y, opt, rng,           // default stuff
                          std::make_tuple(dummy),      // nothing
                          std::make_tuple(delta_med),  // estimate again
-                         std::make_tuple(eta_direct, eta_intercept,
+                         std::make_tuple(eta_intercept,
                                          eta_conf_mult_y),  // clamped
-                         std::make_tuple(delta_conf_univ_y));
+                         std::make_tuple(delta_unmed, delta_conf_univ_y));
 
       bootstrap[b] = param_rcpp_list(theta_med);
       if (opt.verbose())
@@ -322,6 +324,10 @@ Rcpp::List impl_fit_med_zqtl(
 
     if (opt.do_finemap_unmediated()) {
       do_finemap_unmediated(theta_med, delta_med);
+    }
+
+    if (opt.nboot() > 0) {
+      do_bootstrap(theta_med, delta_med, delta_unmed);
     }
 
     /////////////////////////////////////////
