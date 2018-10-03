@@ -158,16 +158,17 @@ Rcpp::List impl_fit_med_zqtl(
     auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
 
     eta_direct.init_by_dot(Y, opt.jitter());
+
     eta_intercept.resolve();
     eta_conf_mult_y.resolve();
     delta_conf_univ_y.resolve();
     delta_med.resolve();
 
     llik_fm = impl_fit_eta_delta(
-        model_y, opt, rng,
-        std::make_tuple(eta_direct, eta_intercept, eta_conf_mult_y),
-        std::make_tuple(delta_conf_univ_y), std::make_tuple(dummy),
-        std::make_tuple(delta_med));
+        model_y, opt, rng, std::make_tuple(eta_direct),   // only estimate this
+        std::make_tuple(dummy),                           // no mediation
+        std::make_tuple(eta_intercept, eta_conf_mult_y),  // clamping others
+        std::make_tuple(delta_conf_univ_y, delta_med));
 
     param_unmediated_finemap = param_rcpp_list(theta_direct);
 
@@ -175,17 +176,18 @@ Rcpp::List impl_fit_med_zqtl(
     // This time we clamp direct effects.
 
     for (Index b = 0; b < opt.nboot(); ++b) {
-      eta_direct.resolve();
-      eta_conf_mult_y.init_by_dot(Y, opt.jitter());
-      delta_conf_univ_y.init_by_dot(Y, opt.jitter());
-      eta_intercept.init_by_dot(Y, opt.jitter());
-
       delta_med.init_by_dot(Y, opt.jitter());
 
-      impl_fit_eta_delta(model_y, opt, rng,  // default stuff
-                         std::make_tuple(eta_intercept, eta_conf_mult_y),
-                         std::make_tuple(delta_med),   // estimate again
-                         std::make_tuple(eta_direct),  // clamped
+      eta_direct.resolve();
+      eta_intercept.resolve();
+      eta_conf_mult_y.resolve();
+      delta_conf_univ_y.resolve();
+
+      impl_fit_eta_delta(model_y, opt, rng,           // default stuff
+                         std::make_tuple(dummy),      // nothing
+                         std::make_tuple(delta_med),  // estimate again
+                         std::make_tuple(eta_direct, eta_intercept,
+                                         eta_conf_mult_y),  // clamped
                          std::make_tuple(delta_conf_univ_y));
 
       bootstrap[b] = param_rcpp_list(theta_med);

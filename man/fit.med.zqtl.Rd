@@ -15,13 +15,13 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{effect.m.se}{SE of the marginal genetic effects (SNP x mediator)}
 
-\item{X.gwas}{Design matrix (reference Ind.GWAS x SNP)}
-
-\item{X.med}{Design matrix (reference Ind.MED x SNP)}
-
 \item{n}{sample size of GWAS data (will ignore if n = 0)}
 
 \item{n.med}{sample size of mediation data (will ignore if n.med = 0)}
+
+\item{X.gwas}{Design matrix (reference Ind.GWAS x SNP)}
+
+\item{X.med}{Design matrix (reference Ind.MED x SNP)}
 
 \item{multi.C}{SNP confounding factors (SNP x confounder; default: NULL)#'}
 
@@ -31,15 +31,13 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
-\item{de.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
+\item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
 
 \item{de.factorization}{Estimate direct effect by joint factorization (default: TRUE)}
 
 \item{factorization.model}{Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)}
 
-\item{num.strat.size}{Size of stratified sampling (default: 2)}
-
-\item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
+\item{de.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
 
 \item{do.finemap.direct}{Fine-map direct effect SNPs (default: FALSE)}
 
@@ -47,13 +45,17 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
 
-\item{do.var.calc}{variance calculation (default: FALSE)}
-
-\item{num.duplicate.sample}{Duplicate number of independent components (default: 1)}
-
 \item{num.conditional}{number of conditional models}
 
 \item{submodel.size}{size of each conditional model}
+
+\item{out.residual}{estimate residual z-scores (default: FALSE)}
+
+\item{do.var.calc}{variance calculation (default: FALSE)}
+
+\item{num.strat.size}{Size of stratified sampling (default: 2)}
+
+\item{num.duplicate.sample}{Duplicate number of independent components (default: 1)}
 
 \item{do.hyper}{Hyper parameter tuning (default: FALSE)}
 
@@ -98,8 +100,6 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 \item{eigen.tol}{Error tolerance in Eigen decomposition (default: 0.01)}
 
 \item{do.stdize}{Standardize (default: TRUE)}
-
-\item{out.residual}{estimate residual z-scores (default: FALSE)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
