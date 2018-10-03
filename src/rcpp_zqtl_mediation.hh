@@ -237,7 +237,7 @@ Rcpp::List impl_fit_med_zqtl(
   // sqrt(n) U D eta        //
   ////////////////////////////
 
-  const Index var_nsample = 500;  // sufficiently large
+  // const Index nboot_var = opt.nboot_var();
 
   auto take_eta_var = [&](auto& eta) {
 
@@ -250,7 +250,7 @@ Rcpp::List impl_fit_med_zqtl(
     running_stat_t<Mat> _stat(1, _T);
     Mat temp(1, _T);
 
-    for (Index b = 0; b < var_nsample; ++b) {
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
       _ind = snUD * eta.sample(rng);
       column_var(_ind, temp);
       _stat(temp);
@@ -277,7 +277,7 @@ Rcpp::List impl_fit_med_zqtl(
     running_stat_t<Mat> _stat(1, _T);
     Mat temp(1, _T);
 
-    for (Index b = 0; b < var_nsample; ++b) {
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
       _ind = snUinvD * delta.sample(rng);
       column_var(_ind, temp);
       _stat(temp);
@@ -336,13 +336,19 @@ Rcpp::List impl_fit_med_zqtl(
         take_residual(delta_med, delta_unmed);
       }
 
-      var_decomp = Rcpp::List::create(
-          Rcpp::_["intercept"] = take_eta_var(eta_intercept),
-          Rcpp::_["conf.mult"] = take_eta_var(eta_conf_mult_y),
-          Rcpp::_["mediated"] = take_delta_var(delta_med),
-          Rcpp::_["unmediated"] = take_delta_var(delta_unmed),
-          Rcpp::_["conf.uni"] = take_delta_var(delta_conf_univ_y),
-          Rcpp::_["residual"] = take_delta_var(delta_resid));
+      auto _var_inter = take_eta_var(eta_intercept);
+      auto _var_conf_mult = take_eta_var(eta_conf_mult_y);
+      auto _var_med = take_delta_var(delta_med);
+      auto _var_unmed = take_delta_var(delta_unmed);
+      auto _var_conf_uni = take_delta_var(delta_conf_univ_y);
+      auto _var_resid = take_delta_var(delta_resid);
+
+      var_decomp = Rcpp::List::create(Rcpp::_["intercept"] = _var_inter,
+                                      Rcpp::_["conf.mult"] = _var_conf_mult,
+                                      Rcpp::_["mediated"] = _var_med,
+                                      Rcpp::_["unmediated"] = _var_unmed,
+                                      Rcpp::_["conf.uni"] = _var_conf_uni,
+                                      Rcpp::_["residual"] = _var_resid);
 
       if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
     }

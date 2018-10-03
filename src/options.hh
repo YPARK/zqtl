@@ -13,6 +13,7 @@ struct options_t {
     VBTOL = 1e-6;
     NSAMPLE = 10;
     NBOOT = 0;
+    NBOOT_VAR = 1;
     NTHREAD = 1;
     JITTER = 1e-1;
     RSEED = 13;
@@ -68,6 +69,7 @@ struct options_t {
   const int miniter() const { return MINITER; };
   const int nsample() const { return NSAMPLE; };
   const int nboot() const { return NBOOT; };
+  const int nboot_var() const { return NBOOT_VAR; };
   const int nthread() const { return NTHREAD; };
   const int k() const { return K; };
   const int re_k() const { return RE_K; };
@@ -127,6 +129,7 @@ struct options_t {
   int MINITER;
   int NSAMPLE;
   int NBOOT;
+  int NBOOT_VAR;
   int NBOOT_CUTOFF;
   int NTHREAD;
   int K;

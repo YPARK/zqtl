@@ -119,6 +119,9 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("nboot"))
     opt.NBOOT = Rcpp::as<Index>(_list["nboot"]);
 
+  if (_list.containsElementNamed("nboot.var"))
+    opt.NBOOT_VAR = Rcpp::as<Index>(_list["nboot.var"]);
+
   if (_list.containsElementNamed("num.duplicate.sample"))
     opt.N_DUPLICATE_SAMPLE = Rcpp::as<Index>(_list["num.duplicate.sample"]);
 

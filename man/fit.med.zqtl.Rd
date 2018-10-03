@@ -33,7 +33,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{de.propensity}{Propensity sampling to estimate direct effect (default: FALSE)}
 
-\item{de.factorization}{Estimate direct effect by joint factorization (default: FALSE)}
+\item{de.factorization}{Estimate direct effect by joint factorization (default: TRUE)}
 
 \item{factorization.model}{Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)}
 
@@ -43,7 +43,9 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{do.finemap.direct}{Fine-map direct effect SNPs (default: FALSE)}
 
-\item{nboot}{Number of bootstraps followed by finemapping (default: 0 )}
+\item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
+
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 
