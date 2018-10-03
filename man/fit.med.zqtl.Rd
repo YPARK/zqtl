@@ -23,7 +23,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{X.med}{Design matrix (reference Ind.MED x SNP)}
 
-\item{C}{SNP confounding factors (SNP x confounder; default: NULL)#'}
+\item{multi.C}{SNP confounding factors (SNP x confounder; default: NULL)#'}
 
 \item{factored}{Fit factored model (default: FALSE)}
 
@@ -32,10 +32,6 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 \item{multivar.mediator}{Multivariate mediator QTL effect (default: FALSE)}
 
 \item{do.direct.estimation}{Estimate direct effect (default: TRUE)}
-
-\item{do.control.backfire}{Estimate direct effect (default: FALSE)}
-
-\item{do.med.two.step}{Estimate mediation in two steps (default: FALSE)}
 
 \item{de.factorization}{Estimate direct effect by joint factorization (default: FALSE)}
 
@@ -50,6 +46,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 \item{num.conditional}{number of conditional models}
 
 \item{submodel.size}{size of each conditional model}
+
+\item{out.residual}{estimate residual z-scores (default: FALSE)}
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 

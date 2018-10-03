@@ -37,6 +37,7 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                               SEXP x_gwas_sexp,  // genotype for gwas
                               SEXP x_med_sexp,   // genotype for mediation
                               SEXP c_sexp,       // covariates
+                              SEXP cd_sexp,      // covariates
                               SEXP options_sexp) {
   BEGIN_RCPP
 
@@ -48,6 +49,7 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
   Rcpp::traits::input_parameter<const Mat>::type Xgwas(x_gwas_sexp);
   Rcpp::traits::input_parameter<const Mat>::type Xmed(x_med_sexp);
   Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Cd(cd_sexp);
   Rcpp::List options_list(options_sexp);
 
   options_t opt;
@@ -58,7 +60,8 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                                       effect_m_se_mat_t(qtl_se),     //
                                       geno_y_mat_t(Xgwas),           //
                                       geno_m_mat_t(Xmed),            //
-                                      conf_mat_t(C),                 //
+                                      mult_conf_t(C),                 //
+                                      univ_conf_t(Cd),                 //
                                       opt));
   END_RCPP
 }
@@ -69,6 +72,7 @@ RcppExport SEXP rcpp_fac_med_zqtl(SEXP effect_sexp,
                                   SEXP x_gwas_sexp,  // genotype for gwas
                                   SEXP x_med_sexp,   // genotype for mediation
                                   SEXP c_sexp,       // covariates
+                                  SEXP cd_sexp,       // covariates
                                   SEXP options_sexp) {
   BEGIN_RCPP
 
@@ -80,6 +84,7 @@ RcppExport SEXP rcpp_fac_med_zqtl(SEXP effect_sexp,
   Rcpp::traits::input_parameter<const Mat>::type Xgwas(x_gwas_sexp);
   Rcpp::traits::input_parameter<const Mat>::type Xmed(x_med_sexp);
   Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Cd(cd_sexp);
   Rcpp::List options_list(options_sexp);
 
   options_t opt;
@@ -90,7 +95,8 @@ RcppExport SEXP rcpp_fac_med_zqtl(SEXP effect_sexp,
                                           effect_m_se_mat_t(qtl_se),     //
                                           geno_y_mat_t(Xgwas),           //
                                           geno_m_mat_t(Xmed),            //
-                                          conf_mat_t(C),                 //
+                                          mult_conf_t(C),                 //
+                                          univ_conf_t(Cd),                 //
                                           opt));
   END_RCPP
 }

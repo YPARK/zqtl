@@ -15,9 +15,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{X}{Design matrix (reference Ind x SNP)}
 
-\item{C}{SNP confounding factors (SNP x confounder; default: NULL)}
+\item{multi.C}{multivariate SNP confounding factors (SNP x confounder; default: NULL)}
 
-\item{C.delta}{SNP confounding factors (SNP x confounder; default: NULL)}
+\item{univar.C}{univariate SNP confounding factors (SNP x confounder; default: NULL)}
 
 \item{factored}{Fit factored QTL model (default: FALSE)}
 
@@ -70,6 +70,8 @@ fit.zqtl(effect, effect.se, X)
 \item{eigen.tol}{Error tolerance in Eigen decomposition (default: 0.01)}
 
 \item{do.stdize}{Standardize (default: TRUE)}
+
+\item{out.residual}{estimate residual z-scores (default: FALSE)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 

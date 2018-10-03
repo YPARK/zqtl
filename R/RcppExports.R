@@ -10,8 +10,8 @@
 #' @param effect.se Marginal effect size standard error matrix (SNP x trait)
 #' @param n sample size of actual data (will ignore if n = 0)
 #' @param X Design matrix (reference Ind x SNP)
-#' @param C SNP confounding factors (SNP x confounder; default: NULL)
-#' @param C.delta SNP confounding factors (SNP x confounder; default: NULL)
+#' @param multi.C multivariate SNP confounding factors (SNP x confounder; default: NULL)
+#' @param univar.C univariate SNP confounding factors (SNP x confounder; default: NULL)
 #' @param factored Fit factored QTL model (default: FALSE)
 #' @param options A list of inference/optimization options.
 #' @param do.hyper Hyper parameter tuning (default: FALSE)
@@ -38,6 +38,7 @@
 #' @param nthread Number of threads during calculation (default: 1)
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
 #' @param do.stdize Standardize (default: TRUE)
+#' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
 #'
@@ -152,8 +153,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.se,           # marginal se : y ~ x
                      X,                   # X matrix
                      n = 0,               # sample size
-                     C = NULL,            # covariate matrix (before LD)
-                     C.delta = NULL,      # covariate matrix (already multified by LD)
+                     multi.C = NULL,            # covariate matrix (before LD)
+                     univar.C = NULL,      # covariate matrix (already multified by LD)
                      factored = FALSE,    # Factored multiple traits
                      options = list(),
                      do.hyper = FALSE,
@@ -180,6 +181,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      nthread = 1,
                      eigen.tol = 1e-2,
                      do.stdize = TRUE,
+                     out.residual = FALSE,
                      min.se = 1e-4,
                      rseed = NULL) {
 
@@ -189,24 +191,27 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(X))
 
     ## SNP confounding factors
-    if(is.null(C)) {
+    if(is.null(multi.C)) {
         p <- dim(effect)[1]
-        C <- matrix(1/p, p, 1)
+        multi.C <- matrix(1/p, p, 1)
     }
 
-    if(is.null(C.delta)) {
+    if(is.null(univar.C)) {
         p <- dim(effect)[1]
-        C.delta <- matrix(1/p, p, 1)
+        univar.C <- matrix(1/p, p, 1)
     }
 
-    stopifnot(is.matrix(C))
-    stopifnot(dim(effect)[1] == dim(C)[1])
+    stopifnot(is.matrix(multi.C))
+    stopifnot(dim(effect)[1] == dim(multi.C)[1])
+
+    stopifnot(is.matrix(univar.C))
+    stopifnot(dim(effect)[1] == dim(univar.C)[1])
 
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
-                  'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
+                  'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
                   'rseed')
 
     .eval <- function(txt) eval(parse(text = txt))
@@ -220,9 +225,9 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 
     ## call R/C++ functions ##
     if(factored) {
-        return(.Call('rcpp_fac_zqtl', effect, effect.se, X, C, C.delta, options, PACKAGE = 'zqtl'))
+        return(.Call('rcpp_fac_zqtl', effect, effect.se, X, multi.C, univar.C, options, PACKAGE = 'zqtl'))
     } else {
-        return(.Call('rcpp_zqtl', effect, effect.se, X, C, C.delta, options, PACKAGE = 'zqtl'))
+        return(.Call('rcpp_zqtl', effect, effect.se, X, multi.C, univar.C, options, PACKAGE = 'zqtl'))
     }
 }
 
@@ -447,14 +452,13 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param n.med sample size of mediation data (will ignore if n.med = 0)
 #' @param X.gwas Design matrix (reference Ind.GWAS x SNP)
 #' @param X.med Design matrix (reference Ind.MED x SNP)
-#' @param C SNP confounding factors (SNP x confounder; default: NULL)#'
+#' @param multi.C SNP confounding factors (SNP x confounder; default: NULL)#'
 #' @param factored Fit factored model (default: FALSE)
 #' @param options A list of inference/optimization options.
 #' @param multivar.mediator Multivariate mediator QTL effect (default: FALSE)
 #'
 #' @param do.direct.estimation Estimate direct effect (default: TRUE)
-#' @param do.control.backfire Estimate direct effect (default: FALSE)
-#' @param do.med.two.step Estimate mediation in two steps (default: FALSE)
+#' 
 #' @param de.factorization Estimate direct effect by joint factorization (default: FALSE)
 #' @param factorization.model Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)
 #' @param de.propensity Propensity sampling to estimate direct effect (default: FALSE)
@@ -463,8 +467,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param nboot Number of bootstraps followed by finemapping (default: 0 )
 #' @param num.conditional number of conditional models
 #' @param submodel.size size of each conditional model
-#'
-#'
+#' 
+#' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
 #' @param num.strat.size Size of stratified sampling (default: 2)
 #' @param num.duplicate.sample Duplicate number of independent components (default: 1)
@@ -622,7 +626,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          X.med = NULL,        # X matrix for mediation
                          n = 0,               # sample size of effect
                          n.med = 0,           # sample size of effect.m
-                         C = NULL,            # covariate matrix
+                         multi.C = NULL,      # multivariate covariate matrix
+                         univar.C = NULL,     # univariate covariate matrix
                          factored = FALSE,    # Factored model
                          options = list(),
                          multivar.mediator = FALSE,
@@ -631,8 +636,6 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          factorization.model = 0,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,
-                         do.control.backfire = TRUE,
-                         do.med.two.step = FALSE,
                          do.finemap.direct = FALSE,
                          nboot = 0,
                          do.var.calc = FALSE,
@@ -662,6 +665,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          nthread = 1,
                          eigen.tol = 1e-2,
                          do.stdize = TRUE,
+                         out.residual = FALSE,
                          min.se = 1e-4,
                          rseed = NULL) {
 
@@ -671,9 +675,9 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(X.gwas))
 
     ## SNP confounding factors
-    if(is.null(C)) {
+    if(is.null(multi.C)) {
         p <- dim(effect)[1]
-        C <- matrix(1/p, p, 1)
+        multi.C <- matrix(1/p, p, 1)
     }
 
     ## X.gwas == X.med
@@ -681,18 +685,21 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
         X.med <- X.gwas
     }
 
-    stopifnot(is.matrix(C))
-    stopifnot(dim(effect)[1] == dim(C)[1])
+    stopifnot(is.matrix(multi.C))
+    stopifnot(dim(effect)[1] == dim(multi.C)[1])
 
-################################################################
+    stopifnot(is.matrix(univar.C))
+    stopifnot(dim(effect)[1] == dim(univar.C)[1])
+
+    ################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
-                  'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
+                  'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
                   'rseed', 'do.var.calc', 'num.strat.size', 'nboot',
                   'multivar.mediator', 'de.propensity', 'de.factorization', 'factorization.model',
-                  'do.direct.estimation', 'do.control.backfire', 'do.med.two.step', 'do.finemap.direct',
+                  'do.direct.estimation', 'do.finemap.direct',
                   'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',
                   'submodel.size')
 
@@ -718,7 +725,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.m.se,
                      X.gwas,
                      X.med,
-                     C,
+                     multi.C,
+                     univar.C,
                      options)
     } else {
         ret <- .Call('rcpp_med_zqtl', PACKAGE = 'zqtl',
@@ -728,7 +736,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                      effect.m.se,
                      X.gwas,
                      X.med,
-                     C,
+                     multi.C,
+                     univar.C,
                      options)
     }
     return(ret)

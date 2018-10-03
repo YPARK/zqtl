@@ -48,6 +48,12 @@ Enjoy!
 
 ## Release notes
 
+### v.1.3.4
+
+- Remove "backfire control" and "two step optimization"
+- Revive variance calculation with residual estimation
+- Make a room for univariate confounding factors
+
 ### v.1.3.3
 
 - Minor fix on smoothness of the unmediated effect
