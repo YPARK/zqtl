@@ -178,7 +178,7 @@ Rcpp::List impl_fit_med_zqtl(
 
     // Perform parametric bootstrap to estimate CIs.
     for (Index b = 0; b < opt.nboot(); ++b) {
-      delta_med.init_by_dot(Y, opt.jitter());
+      delta_med.perturb(opt.jitter());
 
       eta_intercept.init_by_dot(Y, opt.jitter());
       eta_conf_mult_y.init_by_dot(Y, opt.jitter());
@@ -236,18 +236,27 @@ Rcpp::List impl_fit_med_zqtl(
   Mat D = D2.cwiseSqrt();
   Mat Dinv = D.cwiseInverse();
 
-  // xi = D * (Vt * theta)
-  // var = sum(xi * xi)
+  ////////////////////////////////
+  // Note : eta ~ Vt * theta    //
+  // z = V * D^2 * (Vt * theta) //
+  // xi = D^-1 * Vt * (z * se)  //
+  // var = sum(xi * xi)         //
+  ////////////////////////////////
 
   auto take_eta_var = [&](auto& eta) {
-    Mat temp(1, Y.cols());
-    Mat onesK(1, xi.rows());
-    running_stat_t<Mat> _stat(1, Y.cols());
+
+    const Index K = Vt.rows();
+    const Index m = gwas_se.cols();
+    const Index p = Vt.cols();
+
+    Mat temp(1, m);
+    running_stat_t<Mat> _stat(1, m);
+    Mat onesK = Mat::Ones(1, K);
+    Mat z(p, m);  // projected GWAS
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      xi = D.asDiagonal() * Vt *
-           ((Vt.transpose() * eta.sample(rng)).cwiseProduct(gwas_se));
-
+      z = Vt.transpose() * D2.asDiagonal() * (eta.sample(rng));
+      xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp);
     }
@@ -256,19 +265,27 @@ Rcpp::List impl_fit_med_zqtl(
                               Rcpp::_["var"] = _stat.var());
   };
 
-  // xi = D^-1 V' * ((V * delta) .* se)
-  // var = sum(xi * xi)
+  ////////////////////////////////
+  // delta ~ D^2 * Vt * theta   //
+  // z = V * (D^2 * Vt * theta) //
+  // xi = D^-1 * Vt * (z .* se) //
+  // var = sum(xi * xi)         //
+  ////////////////////////////////
 
   auto take_delta_var = [&](auto& delta) {
 
-    Mat temp(1, Y.cols());
-    Mat onesK(1, xi.rows());
-    running_stat_t<Mat> _stat(1, Y.cols());
+    const Index K = Vt.rows();
+    const Index m = gwas_se.cols();
+    const Index p = Vt.cols();
+
+    Mat temp(1, m);
+    running_stat_t<Mat> _stat(1, m);
+    Mat onesK = Mat::Ones(1, K);
+    Mat z(p, m);  // projected GWAS
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      xi = Dinv.asDiagonal() * Vt *
-           ((Vt.transpose() * delta.sample(rng)).cwiseProduct(gwas_se));
-
+      z = Vt.transpose() * delta.sample(rng);
+      xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp);
     }

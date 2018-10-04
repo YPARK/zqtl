@@ -202,6 +202,11 @@ struct regression_t {
     resolve();
   }
 
+  inline void perturb(const Scalar sd) {
+    perturb_param(Theta, sd);
+    resolve();
+  }
+
   void add_sgd(const ReprMatrix& llik) { update_repr(Eta, llik); }
 
   void eval_sgd() {
