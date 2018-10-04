@@ -26,6 +26,12 @@ struct log_op_t {
 };
 
 template <typename T>
+struct log10_op_t {
+  explicit log10_op_t() {}
+  const T operator()(const T& x) const { return std::log10(x); }
+};
+
+template <typename T>
 struct exp_op_t {
   explicit exp_op_t() {}
   const T operator()(const T& x) const { return std::exp(x); }

@@ -243,6 +243,8 @@ Rcpp::List impl_fit_med_zqtl(
   // var = sum(xi * xi)         //
   ////////////////////////////////
 
+  log10_op_t<Scalar> log10_op;
+
   auto take_eta_var = [&](auto& eta) {
 
     const Index K = Vt.rows();
@@ -258,7 +260,7 @@ Rcpp::List impl_fit_med_zqtl(
       z = Vt.transpose() * D2.asDiagonal() * (eta.sample(rng));
       xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
       temp = onesK * (xi.cwiseProduct(xi));
-      _stat(temp);
+      _stat(temp.unaryExpr(log10_op));
     }
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
@@ -287,7 +289,7 @@ Rcpp::List impl_fit_med_zqtl(
       z = Vt.transpose() * delta.sample(rng);
       xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
       temp = onesK * (xi.cwiseProduct(xi));
-      _stat(temp);
+      _stat(temp.unaryExpr(log10_op));
     }
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
