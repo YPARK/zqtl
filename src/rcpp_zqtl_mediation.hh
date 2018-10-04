@@ -180,17 +180,18 @@ Rcpp::List impl_fit_med_zqtl(
     for (Index b = 0; b < opt.nboot(); ++b) {
       delta_med.init_by_dot(Y, opt.jitter());
 
-      eta_intercept.resolve();
-      eta_conf_mult_y.resolve();
-      delta_unmed.resolve();
-      delta_conf_univ_y.resolve();
+      eta_intercept.init_by_dot(Y, opt.jitter());
+      eta_conf_mult_y.init_by_dot(Y, opt.jitter());
+      delta_conf_univ_y.init_by_dot(Y, opt.jitter());
 
-      impl_fit_eta_delta(model_y, opt, rng,           // default stuff
-                         std::make_tuple(dummy),      // nothing
-                         std::make_tuple(delta_med),  // estimate again
-                         std::make_tuple(eta_intercept,
-                                         eta_conf_mult_y),  // clamped
-                         std::make_tuple(delta_unmed, delta_conf_univ_y));
+      delta_unmed.resolve();
+
+      impl_fit_eta_delta(
+          model_y, opt, rng,                                // default stuff
+          std::make_tuple(eta_intercept, eta_conf_mult_y),  // estimate
+          std::make_tuple(delta_med, delta_conf_univ_y),    // estimate
+          std::make_tuple(dummy),                           // clamped
+          std::make_tuple(delta_unmed));
 
       bootstrap[b] = param_rcpp_list(theta_med);
       if (opt.verbose())
@@ -230,62 +231,48 @@ Rcpp::List impl_fit_med_zqtl(
                                Rcpp::_["Z.hat"] = Zhat);
   };
 
-  const Scalar n = static_cast<Scalar>(U.rows());
-  Mat snUD = std::sqrt(n) * U * D2.cwiseSqrt().asDiagonal();
-  Mat snUinvD = std::sqrt(n) * U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
-  Mat UinvD = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+  Mat gwas_se = yy_se.val;  // SNP x Trait
+  Mat xi(Vt.rows(), Y.cols());
+  Mat D = D2.cwiseSqrt();
+  Mat Dinv = D.cwiseInverse();
 
-  ////////////////////////////
-  // X * theta              //
-  // sqrt(n) U D Vt * theta //
-  // sqrt(n) U D eta        //
-  ////////////////////////////
-
-  // const Index nboot_var = opt.nboot_var();
+  // xi = D * (Vt * theta)
+  // var = sum(xi * xi)
 
   auto take_eta_var = [&](auto& eta) {
-
-    eta.resolve();
-
-    const Index _n = U.rows();
-    const Scalar n = static_cast<Scalar>(U.rows());
-    const Index _T = Y.cols();
-    Mat _ind(_n, _T);
-    running_stat_t<Mat> _stat(1, _T);
-    Mat temp(1, _T);
+    Mat temp(1, Y.cols());
+    Mat onesK(1, xi.rows());
+    running_stat_t<Mat> _stat(1, Y.cols());
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      _ind = snUD * eta.sample(rng);
-      column_var(_ind, temp);
+      xi = D.asDiagonal() * Vt *
+           ((Vt.transpose() * eta.sample(rng)).cwiseProduct(gwas_se));
+
+      temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp);
     }
+
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var());
   };
 
-  ////////////////////////////////////////////
-  // X * (inv(R) * mm) * theta_med          //
-  // X * V inv(D2) Vt * mm * theta_med      //
-  // sqrt(n) U inv(D) * Vt * mm * theta_med //
-  // sqrt(n) U inv(D) * delta_med           //
-  ////////////////////////////////////////////
+  // xi = D^-1 V' * ((V * delta) .* se)
+  // var = sum(xi * xi)
 
   auto take_delta_var = [&](auto& delta) {
 
-    delta.resolve();
-
-    const Index _n = U.rows();
-    const Scalar n = static_cast<Scalar>(U.rows());
-    const Index _T = Y.cols();
-    Mat _ind(_n, _T);
-    running_stat_t<Mat> _stat(1, _T);
-    Mat temp(1, _T);
+    Mat temp(1, Y.cols());
+    Mat onesK(1, xi.rows());
+    running_stat_t<Mat> _stat(1, Y.cols());
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      _ind = snUinvD * delta.sample(rng);
-      column_var(_ind, temp);
+      xi = Dinv.asDiagonal() * Vt *
+           ((Vt.transpose() * delta.sample(rng)).cwiseProduct(gwas_se));
+
+      temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp);
     }
+
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var());
   };
@@ -313,6 +300,7 @@ Rcpp::List impl_fit_med_zqtl(
     llik = impl_fit_eta_delta(
         model_y, opt, rng, std::make_tuple(eta_intercept, eta_conf_mult_y),
         std::make_tuple(delta_med, delta_unmed, delta_conf_univ_y));
+
     if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
 
     param_unmed = param_rcpp_list(theta_unmed);
@@ -680,13 +668,20 @@ template <typename RNG, typename Left, typename Right, typename... DATA>
 inline void _impl_de_factorization(Left& epsilon_left, Right& epsilon_right,
                                    const options_t& opt, RNG& rng,
                                    std::tuple<DATA...>&& data_tup) {
-  Mat Target, D2, Design, DesignC;
-  std::tie(Target, D2, Design, DesignC) = data_tup;
+  Mat Target, D2, Design, DesignC, DesignD;
+  std::tie(Target, D2, Design, DesignC, DesignD) = data_tup;
 
   auto theta_c =
       make_dense_spike_slab<Scalar>(DesignC.cols(), Target.cols(), opt);
+
   auto eta_c = make_regression_eta(DesignC, Target, theta_c);
   eta_c.init_by_dot(Target, opt.jitter());
+
+  auto theta_d =
+      make_dense_spike_slab<Scalar>(DesignD.cols(), Target.cols(), opt);
+
+  auto delta_d = make_regression_eta(DesignD, Target, theta_d);
+  delta_d.init_by_dot(Target, opt.jitter());
 
   auto delta_random =
       make_factored_regression_eta(Design, Target, epsilon_left, epsilon_right);
@@ -702,7 +697,7 @@ inline void _impl_de_factorization(Left& epsilon_left, Right& epsilon_right,
   zqtl_model_t<Mat> y_model(Target, D2);
 
   Mat llik = impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta_c),
-                                std::make_tuple(delta_random));
+                                std::make_tuple(delta_random, delta_d));
 
   delta_random.resolve();
 }
@@ -710,8 +705,8 @@ inline void _impl_de_factorization(Left& epsilon_left, Right& epsilon_right,
 template <typename RNG, typename... DATA>
 Mat _direct_effect_factorization(RNG& rng, const options_t& opt,
                                  std::tuple<DATA...>&& data_tup) {
-  Mat mm, yy, Vt, D2, VtC, U;
-  std::tie(mm, yy, Vt, D2, VtC, U) = data_tup;
+  Mat mm, yy, Vt, D2, VtC, VtCd, U;
+  std::tie(mm, yy, Vt, D2, VtC, VtCd, U) = data_tup;
 
   const Index n_traits = yy.cols();
   Mat YM(mm.rows(), mm.cols() + yy.cols());
@@ -745,7 +740,7 @@ Mat _direct_effect_factorization(RNG& rng, const options_t& opt,
     auto epsilon_trait = make_dense_spike_slab<Scalar>(YM.cols(), K, opt);
 
     _impl_de_factorization(epsilon_svd, epsilon_trait, opt, rng,
-                           std::make_tuple(YM, D2, Design, VtC));
+                           std::make_tuple(YM, D2, Design, VtC, VtCd));
 
     Z0 = Vt.transpose() * Design * mean_param(epsilon_svd);
     lodds_mat = log_odds_param(epsilon_trait);
@@ -762,7 +757,7 @@ Mat _direct_effect_factorization(RNG& rng, const options_t& opt,
     auto epsilon_trait = make_dense_spike_slab<Scalar>(YM.cols(), K, opt);
 
     _impl_de_factorization(epsilon_indiv, epsilon_trait, opt, rng,
-                           std::make_tuple(YM, D2, Design, VtC));
+                           std::make_tuple(YM, D2, Design, VtC, VtCd));
 
     Z0 = Vt.transpose() * Design * mean_param(epsilon_indiv);
     lodds_mat = log_odds_param(epsilon_trait);
@@ -828,11 +823,12 @@ Mat estimate_direct_effect(RNG& rng, options_t& opt,
 
   Index n_trait = Y.cols();
   Mat M0;
+
   if (opt.do_de_factorization()) {
     if (opt.verbose())
       TLOG("Estimation of direct effect from factorization effects");
-    M0 = _direct_effect_factorization(rng, opt,
-                                      std::make_tuple(M, Y, Vt, D2, VtIC, U));
+    M0 = _direct_effect_factorization(
+        rng, opt, std::make_tuple(M, Y, Vt, D2, VtIC, VtCd, U));
   } else if (opt.do_de_propensity()) {
     if (opt.verbose())
       TLOG("Estimation of direct effect by propensity sampling");
