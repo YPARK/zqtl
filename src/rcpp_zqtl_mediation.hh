@@ -243,7 +243,7 @@ Rcpp::List impl_fit_med_zqtl(
   // var = sum(xi * xi)         //
   ////////////////////////////////
 
-  log10_op_t<Scalar> log10_op;
+  log10_trunc_op_t<Scalar> log10_op(1e-10);
 
   auto take_eta_var = [&](auto& eta) {
 
@@ -258,7 +258,10 @@ Rcpp::List impl_fit_med_zqtl(
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       z = Vt.transpose() * D2.asDiagonal() * (eta.sample(rng));
-      xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
+
+      if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
+
+      xi = Dinv.asDiagonal() * Vt * z;
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
     }
@@ -287,7 +290,8 @@ Rcpp::List impl_fit_med_zqtl(
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       z = Vt.transpose() * delta.sample(rng);
-      xi = Dinv.asDiagonal() * Vt * (z.cwiseProduct(gwas_se));
+      if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
+      xi = Dinv.asDiagonal() * Vt * z;
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
     }

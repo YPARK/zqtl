@@ -466,6 +466,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param do.finemap.direct Fine-map direct effect SNPs (default: FALSE)
 #' @param nboot Number of bootstraps followed by finemapping (default: 0)
 #' @param nboot.var Number of bootstraps for variance estimation (default: 10)
+#' @param scale.var Scaled variance calculation (default: FALSE)
 #' @param num.conditional number of conditional models
 #' @param submodel.size size of each conditional model
 #' 
@@ -640,6 +641,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          do.finemap.direct = FALSE,
                          nboot = 0,
                          nboot.var = 10,
+                         scale.var = FALSE,
                          do.var.calc = FALSE,
                          med.lodds.cutoff = 0,
                          num.duplicate.sample = 1,
@@ -699,7 +701,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
-                  'rseed', 'do.var.calc', 'num.strat.size', 'nboot', 'nboot.var',
+                  'rseed', 'do.var.calc', 'num.strat.size', 'nboot', 'nboot.var', 'scale.var',
                   'multivar.mediator', 'de.propensity', 'de.factorization', 'factorization.model',
                   'do.direct.estimation', 'do.finemap.direct',
                   'med.lodds.cutoff', 'num.duplicate.sample', 'num.conditional',

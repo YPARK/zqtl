@@ -14,6 +14,8 @@ struct options_t {
     NSAMPLE = 10;
     NBOOT = 0;
     NBOOT_VAR = 1;
+    SCALE_VAR_CALC = false;
+
     NTHREAD = 1;
     JITTER = 1e-1;
     RSEED = 13;
@@ -70,6 +72,8 @@ struct options_t {
   const int nsample() const { return NSAMPLE; };
   const int nboot() const { return NBOOT; };
   const int nboot_var() const { return NBOOT_VAR; };
+  const bool scale_var_calc() const { return SCALE_VAR_CALC; }
+
   const int nthread() const { return NTHREAD; };
   const int k() const { return K; };
   const int re_k() const { return RE_K; };
@@ -131,6 +135,8 @@ struct options_t {
   int NBOOT;
   int NBOOT_VAR;
   int NBOOT_CUTOFF;
+  bool SCALE_VAR_CALC;
+
   int NTHREAD;
   int K;
   int RE_K;

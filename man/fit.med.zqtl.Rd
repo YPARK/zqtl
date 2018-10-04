@@ -45,6 +45,8 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
 
+\item{scale.var}{Scaled variance calculation (default: FALSE)}
+
 \item{num.conditional}{number of conditional models}
 
 \item{submodel.size}{size of each conditional model}

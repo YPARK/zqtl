@@ -32,6 +32,17 @@ struct log10_op_t {
 };
 
 template <typename T>
+struct log10_trunc_op_t {
+  explicit log10_trunc_op_t(const T _min_val)
+      : min_val(_min_val), min_ret_val(std::log10(_min_val)) {}
+  const T operator()(const T& x) const {
+    return x > min_val ? std::log10(x) : min_ret_val;
+  }
+  const T min_val;
+  const T min_ret_val;
+};
+
+template <typename T>
 struct exp_op_t {
   explicit exp_op_t() {}
   const T operator()(const T& x) const { return std::exp(x); }
