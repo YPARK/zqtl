@@ -244,10 +244,10 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["param"] = param_rcpp_list(theta),
-      Rcpp::_["conf"] = param_rcpp_list(theta_c),
-      Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
+      Rcpp::_["conf.multi"] = param_rcpp_list(theta_c),
+      Rcpp::_["conf.uni"] = param_rcpp_list(theta_c_delta),
       Rcpp::_["resid"] = resid, Rcpp::_["llik"] = llik,
-      Rcpp::_["gwas.clean"] = clean);
+      Rcpp::_["gwas.clean"] = clean, Rcpp::_["var"] = var_decomp);
 }
 
 ////////////////////////////////////////////////////////////////
