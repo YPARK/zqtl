@@ -11,9 +11,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{effect.se}{Marginal effect size standard error matrix (SNP x trait)}
 
-\item{n}{sample size of actual data (will ignore if n = 0)}
-
 \item{X}{Design matrix (reference Ind x SNP)}
+
+\item{n}{sample size of actual data (will ignore if n = 0)}
 
 \item{multi.C}{multivariate SNP confounding factors (SNP x confounder; default: NULL)}
 
@@ -74,6 +74,10 @@ fit.zqtl(effect, effect.se, X)
 \item{out.residual}{estimate residual z-scores (default: FALSE)}
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
+
+\item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
+
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
 
 \item{scale.var}{Scaled variance calculation (default: TRUE)}
 

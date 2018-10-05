@@ -40,6 +40,8 @@
 #' @param do.stdize Standardize (default: TRUE)
 #' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
+#' @param nboot Number of bootstraps followed by finemapping (default: 0)
+#' @param nboot.var Number of bootstraps for variance estimation (default: 10)
 #' @param scale.var Scaled variance calculation (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
@@ -185,6 +187,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      do.stdize = TRUE,
                      out.residual = FALSE,
                      do.var.calc = FALSE,
+                     nboot = 0,
+                     nboot.var = 10,
                      scale.var = TRUE,
                      min.se = 1e-4,
                      rseed = NULL) {
@@ -216,7 +220,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
-                  'rseed', 'do.var.calc', 'scale.var')
+                  'rseed', 'do.var.calc', 'scale.var', 'nboot', 'nboot.var')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {
