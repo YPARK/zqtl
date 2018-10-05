@@ -229,8 +229,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 
     var_decomp = Rcpp::List::create(
         Rcpp::_["param"] = _var_mult,           // multivariate
-        Rcpp::_["conf"] = _var_conf_mult,       // confounder multi
-        Rcpp::_["conf.delta"] = _var_conf_uni,  // confounder uni
+        Rcpp::_["conf.multi"] = _var_conf_mult, // confounder multi
+        Rcpp::_["conf.uni"] = _var_conf_uni,    // confounder uni
         Rcpp::_["resid"] = _var_resid);         // resid
   }
 

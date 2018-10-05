@@ -40,6 +40,7 @@
 #' @param do.stdize Standardize (default: TRUE)
 #' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
+#' @param scale.var Scaled variance calculation (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
 #'
@@ -184,6 +185,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      do.stdize = TRUE,
                      out.residual = FALSE,
                      do.var.calc = FALSE,
+                     scale.var = TRUE,
                      min.se = 1e-4,
                      rseed = NULL) {
 
@@ -214,7 +216,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                   'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
                   'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
-                  'rseed', 'do.var.calc')
+                  'rseed', 'do.var.calc', 'scale.var')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {

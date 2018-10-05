@@ -75,6 +75,8 @@ fit.zqtl(effect, effect.se, X)
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 
+\item{scale.var}{Scaled variance calculation (default: TRUE)}
+
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
 \item{rseed}{Random seed}
