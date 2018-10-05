@@ -53,6 +53,7 @@ Enjoy!
 - Remove "backfire control" and "two step optimization"
 - Revive variance calculation with residual estimation
 - Make a room for univariate confounding factors
+- Output "clean" version of GWAS effects
 
 ### v.1.3.3
 

@@ -73,6 +73,8 @@ fit.zqtl(effect, effect.se, X)
 
 \item{out.residual}{estimate residual z-scores (default: FALSE)}
 
+\item{do.var.calc}{variance calculation (default: FALSE)}
+
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
 \item{rseed}{Random seed}

@@ -82,16 +82,84 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   std::mt19937 rng(opt.rseed());
 #endif
 
-  auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
-                                 std::make_tuple(delta_c));
+  Mat xi(Vt.rows(), Y.cols());
+  Mat Dinv = D.cwiseInverse();
 
-  // take residuals
+  ////////////////////////////////
+  // Note : eta ~ Vt * theta    //
+  // z = V * D^2 * (Vt * theta) //
+  // xi = D^-1 * Vt * (z * se)  //
+  // var = sum(xi * xi)         //
+  ////////////////////////////////
+
+  log10_trunc_op_t<Scalar> log10_op(1e-10);
+
+  auto take_eta_var = [&](auto& _eta) {
+
+    const Index K = Vt.rows();
+    const Index m = effect_sqrt.cols();
+    const Index p = Vt.cols();
+
+    Mat temp(1, m);
+    running_stat_t<Mat> _stat(1, m);
+    Mat onesK = Mat::Ones(1, K);
+    Mat z(p, m);  // projected GWAS
+
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
+      z = Vt.transpose() * D2.asDiagonal() * (_eta.sample(rng));
+
+      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+
+      xi = Dinv.asDiagonal() * Vt * z;
+      temp = onesK * (xi.cwiseProduct(xi));
+      _stat(temp.unaryExpr(log10_op));
+    }
+
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var());
+  };
+
+  ////////////////////////////////
+  // delta ~ D^2 * Vt * theta   //
+  // z = V * (D^2 * Vt * theta) //
+  // xi = D^-1 * Vt * (z .* se) //
+  // var = sum(xi * xi)         //
+  ////////////////////////////////
+
+  auto take_delta_var = [&](auto& _delta) {
+
+    const Index K = Vt.rows();
+    const Index m = effect_sqrt.cols();
+    const Index p = Vt.cols();
+
+    Mat temp(1, m);
+    running_stat_t<Mat> _stat(1, m);
+    Mat onesK = Mat::Ones(1, K);
+    Mat z(p, m);  // projected GWAS
+
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
+      z = Vt.transpose() * _delta.sample(rng);
+      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+      xi = Dinv.asDiagonal() * Vt * z;
+      temp = onesK * (xi.cwiseProduct(xi));
+      _stat(temp.unaryExpr(log10_op));
+    }
+
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var());
+  };
+
+  /////////////////////////////////
+  // calculate residual z-scores //
+  /////////////////////////////////
+
   Rcpp::List resid = Rcpp::List::create();
-  if (opt.out_resid()) {
-    TLOG("Estimate the residuals");
+  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
+  auto delta_resid = make_residual_eta(Y, theta_resid);
 
-    auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-    auto delta_resid = make_residual_eta(Y, theta_resid);
+  auto take_residual = [&]() {
+
+    TLOG("Estimate the residuals");
 
     eta.resolve();
     eta_c.resolve();
@@ -110,6 +178,60 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
                                Rcpp::_["param"] = param_rcpp_list(theta_resid),
                                Rcpp::_["Z.hat"] = Zhat,
                                Rcpp::_["effect.hat"] = effect_hat);
+
+  };
+
+  ///////////////////////////
+  // report clean z-scores //
+  ///////////////////////////
+
+  // Just remove contributions from eta_c and delta_c
+  // z_c = V * D^2 * (Vt * theta_c)
+  // z_d = V * (Vt * d * theta_d)
+
+  Mat z_clean = effect_z;
+  Rcpp::List clean(opt.nboot());
+
+  for (Index b = 0; b < opt.nboot(); ++b) {
+    eta_c.resolve();
+    delta_c.resolve();
+
+    z_clean = effect_z;
+    z_clean -= Vt.transpose() * D2.asDiagonal() * eta_c.sample(rng);
+    z_clean -= Vt.transpose() * delta_c.sample(rng);
+
+    clean[b] = z_clean.cwiseProduct(effect_sqrt);
+  }
+
+  //////////////////////////
+  // Fit regression model //
+  //////////////////////////
+
+  auto llik = impl_fit_eta_delta(model, opt, rng, std::make_tuple(eta, eta_c),
+                                 std::make_tuple(delta_c));
+
+  if (opt.out_resid()) {
+    take_residual();
+  }
+
+  Rcpp::List var_decomp = Rcpp::List::create();
+
+  if (opt.do_var_calc()) {
+    if (!opt.out_resid()) {  // we need residuals
+      TLOG("We need to calibrate the residuals");
+      take_residual();
+    }
+
+    auto _var_mult = take_eta_var(eta);
+    auto _var_conf_mult = take_eta_var(eta_c);
+    auto _var_conf_uni = take_delta_var(delta_c);
+    auto _var_resid = take_delta_var(delta_resid);
+
+    var_decomp = Rcpp::List::create(
+        Rcpp::_["param"] = _var_mult,           // multivariate
+        Rcpp::_["conf"] = _var_conf_mult,       // confounder multi
+        Rcpp::_["conf.delta"] = _var_conf_uni,  // confounder uni
+        Rcpp::_["resid"] = _var_resid);         // resid
   }
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -124,7 +246,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       Rcpp::_["param"] = param_rcpp_list(theta),
       Rcpp::_["conf"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.delta"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["resid"] = resid, Rcpp::_["llik"] = llik);
+      Rcpp::_["resid"] = resid, Rcpp::_["llik"] = llik,
+      Rcpp::_["gwas.clean"] = clean);
 }
 
 ////////////////////////////////////////////////////////////////
