@@ -32,7 +32,7 @@
 #' @param verbose Verbosity (default: TRUE)
 #' @param k Rank of the factored model (default: 1)
 #' @param svd.init initialize by SVD (default: TRUE)
-#' @param right.nn non-negativity in factored effect (default: TRUE)
+#' @param right.nn non-negativity in factored effect (default: FALSE)
 #' @param mu.min mininum non-negativity weight (default: 0.01)
 #' @param print.interv Printing interval (default: 10)
 #' @param nthread Number of threads during calculation (default: 1)

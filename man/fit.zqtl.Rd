@@ -59,7 +59,7 @@ fit.zqtl(effect, effect.se, X)
 
 \item{svd.init}{initialize by SVD (default: TRUE)}
 
-\item{right.nn}{non-negativity in factored effect (default: TRUE)}
+\item{right.nn}{non-negativity in factored effect (default: FALSE)}
 
 \item{mu.min}{mininum non-negativity weight (default: 0.01)}
 
