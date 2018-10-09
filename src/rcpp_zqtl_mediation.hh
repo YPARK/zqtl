@@ -175,14 +175,16 @@ Rcpp::List impl_fit_med_zqtl(
   };
 
   auto do_bootstrap = [&](auto& theta_med, auto& delta_med, auto& delta_unmed) {
+    const bool _do_hyper = opt.do_hyper();
+    opt.off_hyper();
+    TLOG("Switch off the hyperparameter tuning for bootstrapping");
 
     // Perform parametric bootstrap to estimate CIs.
     for (Index b = 0; b < opt.nboot(); ++b) {
       delta_med.perturb(opt.jitter());
-
-      eta_intercept.init_by_dot(Y, opt.jitter());
-      eta_conf_mult_y.init_by_dot(Y, opt.jitter());
-      delta_conf_univ_y.init_by_dot(Y, opt.jitter());
+      eta_intercept.perturb(opt.jitter());
+      eta_conf_mult_y.perturb(opt.jitter());
+      delta_conf_univ_y.perturb(opt.jitter());
 
       delta_unmed.resolve();
 
@@ -198,6 +200,7 @@ Rcpp::List impl_fit_med_zqtl(
         TLOG("Bootstrap [" << std::setw(10) << (b + 1) << " / "      //
                            << std::setw(10) << opt.nboot() << "]");  //
     }
+    if (_do_hyper) opt.on_hyper();
   };
 
   auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
@@ -329,18 +332,6 @@ Rcpp::List impl_fit_med_zqtl(
     param_unmed = param_rcpp_list(theta_unmed);
     param_med = param_rcpp_list(theta_med);
 
-    ///////////////////////////////////////
-    // fine-mapping of unmediated effect //
-    ///////////////////////////////////////
-
-    if (opt.do_finemap_unmediated()) {
-      do_finemap_unmediated(theta_med, delta_med);
-    }
-
-    if (opt.nboot() > 0) {
-      do_bootstrap(theta_med, delta_med, delta_unmed);
-    }
-
     /////////////////////////////////////////
     // dissect genetic variance components //
     /////////////////////////////////////////
@@ -370,6 +361,22 @@ Rcpp::List impl_fit_med_zqtl(
                                       Rcpp::_["residual"] = _var_resid);
 
       if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
+
+      ///////////////////////////////////////
+      // fine-mapping of unmediated effect //
+      ///////////////////////////////////////
+
+      if (opt.do_finemap_unmediated()) {
+        do_finemap_unmediated(theta_med, delta_med);
+      }
+
+      /////////////////////////////////////
+      // bootstrapping mediation effects //
+      /////////////////////////////////////
+
+      if (opt.nboot() > 0) {
+        do_bootstrap(theta_med, delta_med, delta_unmed);
+      }
     }
   } else {
     /////////////////////////
