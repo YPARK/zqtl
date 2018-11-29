@@ -83,7 +83,6 @@
 #'
 #' @examples
 #'
-#' library(zqtl)
 #' library(Matrix)
 #'
 #' n <- 500
@@ -145,7 +144,7 @@
 #'                pi = -1, tau = -8, rate = 0.01, gammax = 1e2,
 #'                eigen.tol = 1e-2, k = m, svd.init = TRUE)
 #'
-#' out <- fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
+#' out <- zqtl::fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
 #'
 #' ## show associations
 #' .rnd <- c(c.snps, setdiff(sample(p, 20), c.snps))
@@ -292,7 +291,6 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #'
 #' @examples
 #'
-#' library(zqtl)
 #' library(Matrix)
 #'
 #' n <- 500
@@ -354,7 +352,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #'                pi = -1, rate = 0.01, gammax = 1e3,
 #'                eigen.tol = 1e-1, k = m, right.nn = FALSE)
 #'
-#' out <- fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
+#' out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
 #'
 #' image(Matrix(head(out$param.indiv$theta, 20)))
 #' image(Matrix(out$param.trait$theta))
@@ -371,7 +369,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' z.xy <- fast.z.cov(X0, scale(Y0))
 #' xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
 #'
-#' out <- fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
+#' out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
 #'
 #' image(Matrix(head(out$param.indiv$theta, 20)))
 #' image(Matrix(out$param.trait$theta))
@@ -519,8 +517,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' Mediation analysis
 #'
 #' @examples
-#'
-#' library(zqtl)
+#' 
 #' n <- 500
 #' p <- 1000
 #' n.genes <- 10
@@ -593,7 +590,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'     eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
 #' }
 #'
-#' med.out <- fit.med.zqtl(effect = xy.beta,
+#' med.out <- zqtl::fit.med.zqtl(effect = xy.beta,
 #'                         effect.se = xy.beta.se,
 #'                         effect.m = eqtl.true,
 #'                         effect.m.se = eqtl.se.true,
@@ -618,7 +615,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'     eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
 #' }
 #'
-#' med.out <- fit.med.zqtl(effect = xy.beta,
+#' med.out <- zqtl::fit.med.zqtl(effect = xy.beta,
 #'                         effect.se = xy.beta.se,
 #'                         effect.m = eqtl.true,
 #'                         effect.m.se = eqtl.se.true,
@@ -703,7 +700,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(univar.C))
     stopifnot(dim(effect)[1] == dim(univar.C)[1])
 
-    ################################################################
+################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
