@@ -47,8 +47,17 @@
 #' @param rseed Random seed
 #'
 #'
-#' @return a list of variational inference results
-#'
+#' @return a list of variational inference results.
+#' \itemize{
+#' \item{param: }{ sparse genetic effect size (theta, theta.var, lodds)}
+#' \item{conf.multi: }{ association with multivariate confounding variables}
+#' \item{conf.uni: }{ association with univariate confounding variables}
+#' \item{resid: }{ residuals}
+#' \item{gwas.clean: }{ cleansed version of univariate GWAS effects}
+#' \item{var: }{ variance decomposition results}
+#' \item{llik: }{ log-likelihood trace over the optimization}
+#' }
+#' 
 #' @author Yongjin Park, \email{ypp@@csail.mit.edu}, \email{yongjin.peter.park@@gmail.com}
 #'
 #' @details
@@ -106,9 +115,9 @@
 #' ## shared genetic variants
 #' theta.left <- .rnorm(3, 1)
 #' theta.right <- .rnorm(1, 3)
-#' theta.shared <- theta.left \%*\% theta.right
+#' theta.shared <- theta.left %*% theta.right
 #'
-#' Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
+#' Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] %*% theta.shared
 #'
 #' v0 <- var(as.numeric(Y1[, 1:3]))
 #' Y1[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
@@ -118,7 +127,7 @@
 #' ## introduce confounding factors
 #' uu <- .rnorm(n, 5)
 #' vv <- .rnorm(m, 5)
-#' Y0 <- uu \%*\% t(vv)
+#' Y0 <- uu %*% t(vv)
 #' Y <- Y1 + Y0
 #'
 #' ## just caculate univariate z-scores
@@ -279,8 +288,13 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' @param rseed Random seed
 #' @param factorization.model Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)
 #'
-#' @return a list of variational inference results
-#'
+#' @return a list of variational inference results.
+#' \itemize{
+#' \item{param.left: }{ parameters for the left factors}
+#' \item{param.right: }{ parameters for the right factors}
+#' \item{llik: }{ log-likelihood trace over the optimization}
+#' }
+#' 
 #' @author Yongjin Park, \email{ypp@@csail.mit.edu}, \email{yongjin.peter.park@@gmail.com}
 #'
 #' @details
@@ -314,9 +328,9 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' ## shared genetic variants
 #' theta.left <- .rnorm(3, 1)
 #' theta.right <- .rnorm(1, 3)
-#' theta.shared <- theta.left \%*\% theta.right
+#' theta.shared <- theta.left %*% theta.right
 #'
-#' Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
+#' Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] %*% theta.shared
 #'
 #' v0 <- var(as.numeric(Y1[, 1:3]))
 #' Y1[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
@@ -326,7 +340,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' ## introduce confounding factors
 #' uu <- .rnorm(n, 5)
 #' vv <- .rnorm(m, 5)
-#' Y0 <- uu \%*\% t(vv)
+#' Y0 <- uu %*% t(vv)
 #' Y <- Y1 + Y0
 #' Y <- scale(Y)
 #'
@@ -354,10 +368,10 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #'
 #' out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
 #'
-#' image(Matrix(head(out$param.indiv$theta, 20)))
-#' image(Matrix(out$param.trait$theta))
+#' image(Matrix(head(out$param.left$theta, 20)))
+#' image(Matrix(out$param.right$theta))
 #'
-#' y.hat <- out$param.indiv$theta \%*\% t(out$param.trait$theta)
+#' y.hat <- out$param.left$theta %*% t(out$param.right$theta)
 #'
 #' plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
 #' plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
@@ -371,10 +385,10 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #'
 #' out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
 #'
-#' image(Matrix(head(out$param.indiv$theta, 20)))
-#' image(Matrix(out$param.trait$theta))
+#' image(Matrix(head(out$param.left$theta, 20)))
+#' image(Matrix(out$param.right$theta))
 #'
-#' y.hat <- out$param.indiv$theta \%*\% t(out$param.trait$theta)
+#' y.hat <- out$param.left$theta %*% t(out$param.right$theta)
 #'
 #' plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
 #' plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
@@ -508,8 +522,17 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #'
 #'
-#' @return a list of variational inference results
-#'
+#' @return a list of variational inference results.
+#' \itemize{
+#' \item{param.mediated: }{ parameters for the mediated effects}
+#' \item{param.unmediated: }{ parameters for the unmediated effects}
+#' \item{param.intercept: }{ parameters for the intercept effect}
+#' \item{param.covariate: }{ parameters for the multivariate covariate}
+#' \item{param.covariate.uni: }{ parameters for the univariate covariate}
+#' \item{bootstrap: }{ bootstrapped mediated parameters (if nboot > 0)}
+#' \item{llik: }{ log-likelihood trace over the optimization}
+#' }
+#' 
 #' @author Yongjin Park, \email{ypp@@csail.mit.edu}, \email{yongjin.peter.park@@gmail.com}
 #'
 #' @details
@@ -541,7 +564,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' theta.snp.gene <- .rnorm(n.causal.qtl, n.genes) / n.causal.qtl
 #'
-#' gene.expr <- lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] \%*\% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
+#' gene.expr <- lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] %*% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
 #'
 #' gene.expr <- do.call(cbind, gene.expr)
 #'
@@ -550,8 +573,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' causal.direct <- sample(p, n.causal.direct)
 #' theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direct
 #'
-#' y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
-#' y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
+#' y <- gene.expr[,1:n.causal.gene,drop = FALSE] %*% theta.med # mediation
+#' y <- y + X[, causal.direct, drop = FALSE] %*% theta.dir # direct
 #' y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 #'
 #' ## just caculate univariate z-scores
@@ -569,7 +592,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'     return(ret)
 #' }
 #'
-#' xy.beta <- fast.cov(X, scale(y))
+#' xy.beta <- fast.cov(X, scale(y)) * 2 # just to better visualize
 #' z.xy <- fast.z.cov(X, scale(y))
 #' xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
 #'
@@ -687,6 +710,11 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     if(is.null(multi.C)) {
         p <- dim(effect)[1]
         multi.C <- matrix(1/p, p, 1)
+    }
+
+    ## SNP confounding factors
+    if(is.null(univar.C)) {
+        univar.C <- matrix(0, p, 1)
     }
 
     ## X.gwas == X.med

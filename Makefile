@@ -25,3 +25,6 @@ check: $(PKG)_$(VER).tar.gz
 
 install: $(PKG)_$(VER).tar.gz
 	R CMD INSTALL $< 
+
+site:
+	R -e "pkgdown::build_site()"

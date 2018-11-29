@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • zqtl</title>
+<title>Read binary PLINK format — read.plink • zqtl</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,7 +30,10 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Read binary PLINK format — read.plink" />
+
+<meta property="og:description" content="Read binary PLINK format" />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -47,7 +50,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -89,76 +92,46 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Read binary PLINK format</h1>
+    
+    <div class="hidden name"><code>read.plink.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    
+    <p>Read binary PLINK format</p>
+    
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        
-        <td>
-          <p><code><a href="fit.med.zqtl.html">fit.med.zqtl()</a></code> </p>
-        </td>
-        <td><p>Variational inference of zQTL mediation</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="fit.zqtl.html">fit.zqtl()</a></code> </p>
-        </td>
-        <td><p>Variational inference of zQTL regression</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="fit.zqtl.factorize.html">fit.zqtl.factorize()</a></code> </p>
-        </td>
-        <td><p>Variational inference of zQTL factorization to identify potential
-confounders across GWAS statistids</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="read.plink.html">read.plink()</a></code> </p>
-        </td>
-        <td><p>Read binary PLINK format</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="take.ld.pairs.html">take.ld.pairs()</a></code> </p>
-        </td>
-        <td><p>Calculate covariance matrix and transform into triangular form for
-visualization</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="take.ld.svd.html">take.ld.svd()</a></code> </p>
-        </td>
-        <td><p>Decompose the scaled genotype matrix \(n^{-1/2}X = U D
-V^{\top}\) such that the LD matrix can become
-$$R = V D^{2} V^{\top}$$ for subsequent analysis.</p></td>
-      </tr>
-    </tbody>
+    <pre class="usage"><span class='fu'>read.plink</span>(<span class='no'>bed.header</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>bed.header</th>
+      <td><p>header for plink fileset</p></td>
+    </tr>
     </table>
-  </div>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>a list of FAM, BIM, BED data.</p>
+    
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+      <li><a href="#arguments">Arguments</a></li>
+      
+      <li><a href="#value">Value</a></li>
+          </ul>
+
+    <h2>Author</h2>
+    <p>Yongjin Park, <a href='mailto:ypp@csail.mit.edu'>ypp@csail.mit.edu</a>, <a href='mailto:yongjin.peter.park@gmail.com'>yongjin.peter.park@gmail.com</a></p>
   </div>
 </div>
 
