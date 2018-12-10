@@ -104,6 +104,14 @@ struct residual_t {
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
 
+  void init_by_y(const ReprMatrix& yy, const Scalar sd) {
+    ReprMatrix Y;
+    remove_missing(yy, Y);
+    Theta.beta = Y * sd;
+    resolve_param(Theta);
+    resolve();
+  }
+
   void add_sgd(const ReprMatrix& llik) { update_repr(Eta, llik); }
 
   void eval_sgd() {
