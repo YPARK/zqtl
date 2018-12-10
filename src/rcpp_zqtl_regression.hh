@@ -59,19 +59,20 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   TLOG("Constructed zqtl model");
 
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
-  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
-  eta_c.init_by_dot(Y, opt.jitter());
+  // eta_c.init_by_dot(Y, opt.jitter()); --> this doesn't help
 
   // delta_conf = Vt * Cdelta * theta_conf
   auto theta_c_delta =
-      make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
+      make_dense_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
-  delta_c.init_by_dot(Y, opt.jitter());
+  // delta_c.init_by_dot(Y, opt.jitter()); --> this doesn't help
 
   // mean effect size --> can be sparse matrix
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
+  // eta.init_by_dot(Y, opt.jitter()); --> this doesn't help
 
   TLOG("Constructed effects");
 
@@ -101,6 +102,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     const Index K = Vt.rows();
     const Index m = effect_sqrt.cols();
     const Index p = Vt.cols();
+    _eta.resolve();
 
     Mat temp(1, m);
     running_stat_t<Mat> _stat(1, m);
@@ -133,6 +135,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     const Index K = Vt.rows();
     const Index m = effect_sqrt.cols();
     const Index p = Vt.cols();
+    _delta.resolve();
 
     Mat temp(1, m);
     running_stat_t<Mat> _stat(1, m);
@@ -168,7 +171,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
-    delta_resid.init_by_y(Y, opt.jitter());
+    // delta_resid.init_by_y(Y, opt.jitter()); --> this doesn't help much
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
@@ -420,7 +423,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
-    delta_resid.init_by_y(Y, opt.jitter());
+    // delta_resid.init_by_y(Y, opt.jitter()); --> this doesn't help
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta_mf, eta_c), std::make_tuple(delta_c));
