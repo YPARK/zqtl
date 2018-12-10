@@ -61,16 +61,18 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
+  eta_c.init_by_dot(Y, opt.jitter());
 
   // delta_conf = Vt * Cdelta * theta_conf
   auto theta_c_delta =
       make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
+  delta_c.init_by_dot(Y, opt.jitter());
 
   // mean effect size --> can be sparse matrix
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
-  eta.init_by_dot(Y, opt.jitter());
+
   TLOG("Constructed effects");
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -138,7 +140,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat z(p, m);  // projected GWAS
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      z = Vt.transpose() * _delta.sample(rng);
+      z = Vt.transpose() * (_delta.sample(rng));
       if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
       xi = Dinv.asDiagonal() * Vt * z;
       temp = onesK * (xi.cwiseProduct(xi));
@@ -166,6 +168,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
+    delta_resid.init_by_y(Y, opt.jitter());
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
@@ -417,6 +420,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
+    delta_resid.init_by_y(Y, opt.jitter());
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta_mf, eta_c), std::make_tuple(delta_c));
