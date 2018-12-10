@@ -184,8 +184,13 @@ struct regression_t {
   }
 
   template <typename RNG>
-  inline const ReprMatrix& sample(const RNG& rng) {
+  inline const ReprMatrix& sample(RNG& rng) {
     return sample_repr(Eta, rng);
+  }
+
+  template <typename RNG>
+  inline const ReprMatrix& sample_zeromean(RNG& rng) {
+    return sample_repr_zeromean(Eta, rng);
   }
 
   inline const ReprMatrix& sample() { return sample_repr(Eta); }
@@ -297,7 +302,7 @@ struct transpose_regression_t {
   }
 
   template <typename RNG>
-  inline const ReprMatrix& sample(const RNG& rng) {
+  inline const ReprMatrix& sample(RNG& rng) {
     return sample_repr(Eta, rng);
   }
 

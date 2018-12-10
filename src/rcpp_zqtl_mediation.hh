@@ -153,7 +153,6 @@ Rcpp::List impl_fit_med_zqtl(
   // Fine-map residual unmediated effect followed by bootstrapping the
   // mediation effects
   auto do_finemap_unmediated = [&](auto& theta_med, auto& delta_med) {
-
     auto theta_direct = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
     auto eta_direct = make_regression_eta(Vt, Y, theta_direct);
 
@@ -171,7 +170,6 @@ Rcpp::List impl_fit_med_zqtl(
         std::make_tuple(delta_conf_univ_y, delta_med));
 
     param_unmediated_finemap = param_rcpp_list(theta_direct);
-
   };
 
   auto do_bootstrap = [&](auto& theta_med, auto& delta_med, auto& delta_unmed) {
@@ -209,7 +207,6 @@ Rcpp::List impl_fit_med_zqtl(
   Rcpp::List resid = Rcpp::List::create();
 
   auto take_residual = [&](auto& delta_med, auto& delta_unmed) {
-
     TLOG("Estimate the residuals");
 
     eta_intercept.resolve();
@@ -248,29 +245,39 @@ Rcpp::List impl_fit_med_zqtl(
 
   log10_trunc_op_t<Scalar> log10_op(1e-10);
 
-  auto take_eta_var = [&](auto& eta) {
-
+  auto take_eta_var = [&](auto& _eta) {
     const Index K = Vt.rows();
     const Index m = gwas_se.cols();
     const Index p = Vt.cols();
+    _eta.resolve();
 
     Mat temp(1, m);
+    Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
+    running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      z = Vt.transpose() * D2.asDiagonal() * (eta.sample(rng));
-
+      temp_Km = _eta.sample(rng);
+      z = Vt.transpose() * D2.asDiagonal() * temp_Km;
       if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
-
       xi = Dinv.asDiagonal() * Vt * z;
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
+
+      temp_Km = _eta.sample_zeromean(rng);
+      z = Vt.transpose() * D2.asDiagonal() * temp_Km;
+      if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
+      xi = Dinv.asDiagonal() * Vt * z;
+      temp = onesK * (xi.cwiseProduct(xi));
+      _stat_null(temp.unaryExpr(log10_op));
     }
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
-                              Rcpp::_["var"] = _stat.var());
+                              Rcpp::_["var"] = _stat.var(),
+			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.var"] = _stat_null.var());
   };
 
   ////////////////////////////////
@@ -280,27 +287,39 @@ Rcpp::List impl_fit_med_zqtl(
   // var = sum(xi * xi)         //
   ////////////////////////////////
 
-  auto take_delta_var = [&](auto& delta) {
-
+  auto take_delta_var = [&](auto& _delta) {
     const Index K = Vt.rows();
     const Index m = gwas_se.cols();
     const Index p = Vt.cols();
+    _delta.resolve();
 
     Mat temp(1, m);
+    Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
+    running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
-      z = Vt.transpose() * delta.sample(rng);
+      temp_Km = _delta.sample(rng);
+      z = Vt.transpose() * temp_Km;
       if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
       xi = Dinv.asDiagonal() * Vt * z;
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
+
+      temp_Km = _delta.sample_zeromean(rng);
+      z = Vt.transpose() * temp_Km;
+      if (opt.scale_var_calc()) z = z.cwiseProduct(gwas_se);
+      xi = Dinv.asDiagonal() * Vt * z;
+      temp = onesK * (xi.cwiseProduct(xi));
+      _stat_null(temp.unaryExpr(log10_op));
     }
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
-                              Rcpp::_["var"] = _stat.var());
+                              Rcpp::_["var"] = _stat.var(),
+			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.var"] = _stat_null.var());
   };
 
   ////////////

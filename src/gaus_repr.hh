@@ -9,6 +9,11 @@
 #ifndef GAUS_REPR_HH_
 #define GAUS_REPR_HH_
 
+#ifdef EIGEN_USE_MKL_ALL
+#else
+static Ziggurat::Ziggurat::Ziggurat ZIGG;
+#endif
+
 template <typename Matrix, typename ReprType>
 struct gaus_repr_t;
 
@@ -61,14 +66,24 @@ void update_var(gaus_repr_t<Matrix, RT>& repr, const T& V);
 template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr,
                           VSLStreamStatePtr rstream);
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
+                                   VSLStreamStatePtr rstream);
+
 #else
 
-template <typename Matrix, typename RT, typename Dummy>
-const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, Dummy rstream);
+template <typename Matrix, typename RT, typename RNG>
+const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG&);
+
+template <typename Matrix, typename RT, typename RNG>
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG&);
+
 #endif
 
 template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr);
+
+template <typename Matrix, typename RT>
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr);
 
 template <typename Matrix, typename RT>
 const Matrix& get_sampled_repr(gaus_repr_t<Matrix, RT>& repr);
@@ -145,14 +160,14 @@ struct gaus_repr_t {
     const Scalar operator()(const Scalar& eps, const Scalar& var) const {
       return eps / std::sqrt(var_min + var);
     }
-    static constexpr Scalar var_min = 1e-8;
+    static constexpr Scalar var_min = 1e-16;
   } EpsSd_op;
 
   struct eps_1var_op_t {
     const Scalar operator()(const Scalar& eps, const Scalar& var) const {
       return (eps * eps - one_val) / (var_min + var);
     }
-    static constexpr Scalar var_min = 1e-8;
+    static constexpr Scalar var_min = 1e-16;
     static constexpr Scalar one_val = 1.0;
   } Eps1Var_op;
 };
@@ -238,14 +253,39 @@ const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr,
   return repr.Eta;
 }
 
+template <typename Matrix, typename RT>
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
+                                   VSLStreamStatePtr rstream) {
+  static_assert(std::is_same<float, typename Matrix::Scalar>::value,
+                "Only assume float for intel RNG");
+
+  vsRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, rstream, repr.Eps.size(),
+                repr.Eps.data(), 0.0, 1.0);
+
+  return repr.Eta;
+}
+
 #else
 
-template <typename Matrix, typename RT, typename dummy_rng_t>
-const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, dummy_rng_t) {
+template <typename Matrix, typename RT, typename RNG>
+const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
-  repr.Eps = repr.Eps.unaryExpr(
-      [](const auto& x) { return static_cast<Scalar>(R::rnorm(0, 1)); });
+  // std::normal_distribution<Scalar> rnorm(0., 1.);
+  // repr.Eps = repr.Eps.unaryExpr([&](const auto& x) { return rnorm(rng); });
+  repr.Eps = repr.Eps.unaryExpr([&](const auto& x) {
+    return static_cast<Scalar>(ZIGG.norm());
+  });  // R::rnorm(0.0, 1.0)
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
+  return repr.Eta;
+}
+
+template <typename Matrix, typename RT, typename RNG>
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
+  using Scalar = typename Matrix::Scalar;
+  // std::normal_distribution<Scalar> rnorm(0., 1.);
+  // repr.Eps = repr.Eps.unaryExpr([&](const auto& x) { return rnorm(rng); });
+  repr.Eps = repr.Eps.unaryExpr(
+      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
   return repr.Eta;
 }
 
@@ -255,8 +295,16 @@ template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr) {
   using Scalar = typename Matrix::Scalar;
   repr.Eps = repr.Eps.unaryExpr(
-      [](const auto& x) { return static_cast<Scalar>(R::rnorm(0, 1)); });
+      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
+  return repr.Eta;
+}
+
+template <typename Matrix, typename RT>
+const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr) {
+  using Scalar = typename Matrix::Scalar;
+  repr.Eps = repr.Eps.unaryExpr(
+      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
   return repr.Eta;
 }
 
@@ -280,7 +328,7 @@ template <typename Matrix, typename RT, typename T>
 void update_repr(gaus_repr_t<Matrix, RT>& repr, const T& F) {
   // pre-compute : (i) eps / sd (ii) (eps^2 - 1) / var
   // using Scalar = typename Matrix::Scalar;
-  // const Scalar var_min = 1e-8;
+  // const Scalar var_min = 1e-16;
   // auto EpsSd_op = [var_min](const auto& eps, const auto& var) { return eps /
   // std::sqrt(var_min + var); };
   // auto Eps1Var_op = [var_min](const auto& eps, const auto& var) { return (eps

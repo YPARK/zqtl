@@ -100,6 +100,10 @@ struct residual_t {
   const ReprMatrix& sample(const RAND& rnorm) {
     return sample_repr(Eta, rnorm);
   }
+  template <typename RAND>
+  const ReprMatrix& sample_zeromean(const RAND& rnorm) {
+    return sample_repr_zeromean(Eta, rnorm);
+  }
   const ReprMatrix& sample() { return sample_repr(Eta); }
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }

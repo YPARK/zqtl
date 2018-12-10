@@ -104,6 +104,11 @@ struct factored_regression_t {
     return sample_repr(Eta, rng);
   }
 
+  template <typename RNG>
+  inline const ReprMatrix &sample_zeromean(RNG &rng) {
+    return sample_repr_zeromean(Eta, rng);
+  }
+
   const ReprMatrix &repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix &repr_var() const { return Eta.get_var(); }
 

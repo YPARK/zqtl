@@ -1,6 +1,7 @@
 useDynLib(zqtl)
 import(RcppEigen)
 import(RcppProgress)
+import(RcppZiggurat)
 importFrom(Rcpp, evalCpp)
 importFrom(utils, read.table)
 exportPattern("^[[:alpha:]]+")

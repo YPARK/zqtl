@@ -105,6 +105,10 @@ struct mediated_regression_t {
   const ReprMatrix& sample(const RNG& rng) {
     return sample_repr(Eta, rng);
   }
+  template <typename RNG>
+  const ReprMatrix& sample_zeromean(const RNG& rng) {
+    return sample_repr_zeromean(Eta, rng);
+  }
   const ReprMatrix& repr_mean() const { return Eta.get_mean(); }
   const ReprMatrix& repr_var() const { return Eta.get_var(); }
 

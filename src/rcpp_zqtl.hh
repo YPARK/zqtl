@@ -4,6 +4,8 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
+// [[Rcpp::depends(RcppZiggurat)]]
+#include <Ziggurat.h>
 
 using namespace Rcpp;
 
