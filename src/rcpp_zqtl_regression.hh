@@ -113,7 +113,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     z = Vt.transpose() * D2.asDiagonal() * temp_Km;
     if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
     xi = Dinv.asDiagonal() * Vt * z;
-    Mat obs = onesK * (xi.cwiseProduct(xi));
+    Mat obs = (onesK * (xi.cwiseProduct(xi))).unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_Km = _eta.sample(rng);
@@ -161,7 +161,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     z = Vt.transpose() * temp_Km;
     if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
     xi = Dinv.asDiagonal() * Vt * z;
-    Mat obs = onesK * (xi.cwiseProduct(xi));
+    Mat obs = (onesK * (xi.cwiseProduct(xi))).unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_Km = _delta.sample(rng);
@@ -409,7 +409,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     z = Vt.transpose() * D2.asDiagonal() * temp_Km;
     if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
     xi = Dinv.asDiagonal() * Vt * z;
-    Mat obs = onesK * (xi.cwiseProduct(xi));
+    Mat obs = (onesK * (xi.cwiseProduct(xi))).unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_Km = _eta.sample(rng);
@@ -457,7 +457,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     z = Vt.transpose() * temp_Km;
     if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
     xi = Dinv.asDiagonal() * Vt * z;
-    Mat obs = onesK * (xi.cwiseProduct(xi));
+    Mat obs = (onesK * (xi.cwiseProduct(xi))).unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_Km = _delta.sample(rng);
