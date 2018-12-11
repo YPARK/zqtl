@@ -63,6 +63,8 @@ void update_var(gaus_repr_t<Matrix, RT>& repr, const T& V);
 template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr,
                           VSLStreamStatePtr rstream);
+
+template <typename Matrix, typename RT>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
                                    VSLStreamStatePtr rstream);
 
