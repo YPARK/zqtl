@@ -127,7 +127,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -169,7 +169,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -179,20 +179,11 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
 
   Rcpp::List resid = Rcpp::List::create();
 
-  const Index n = U.rows();
+  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
+  auto delta_resid = make_residual_eta(Y, theta_resid);
 
-  // Yr		~ epsilon
-  // Xt * Yr	~ Xt * epsilon
-  // Vt * Zr	~ Vt * (V * D * Ut) * epsilon
-  // Vt * Zr	~ (D * Ut) * epsilon
-
-  Mat R = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  // R * Theta_r
-  auto theta_resid = make_dense_slab<Scalar>(R.cols(), Y.cols(), opt);
-  auto delta_resid = make_regression_eta(R, Y, theta_resid);
-
-  // auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  // auto delta_resid = make_residual_eta(Y, theta_resid);
+  auto theta_tot = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
+  auto delta_tot = make_residual_eta(Y, theta_tot);
 
   auto take_residual = [&]() {
     TLOG("Estimate the residuals");
@@ -202,7 +193,8 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
-    // delta_resid.init_by_y(Y, opt.jitter()); --> this doesn't help much
+
+    // Take residual variance
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
@@ -211,10 +203,15 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
     Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
 
-    resid = Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
-                               Rcpp::_["param"] = param_rcpp_list(theta_resid),
-                               Rcpp::_["Z.hat"] = Zhat,
-                               Rcpp::_["effect.hat"] = effect_hat);
+    // Take total variance
+    Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
+                                      std::make_tuple(delta_tot));
+
+    resid = Rcpp::List::create(
+        Rcpp::_["llik"] = llik_resid,
+        Rcpp::_["param"] = param_rcpp_list(theta_resid),
+        Rcpp::_["param.tot"] = param_rcpp_list(theta_tot),
+        Rcpp::_["Z.hat"] = Zhat, Rcpp::_["effect.hat"] = effect_hat);
   };
 
   ///////////////////////////
@@ -264,12 +261,14 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     auto _var_conf_mult = take_eta_var(eta_c);
     auto _var_conf_uni = take_delta_var(delta_c);
     auto _var_resid = take_delta_var(delta_resid);
+    auto _var_tot = take_delta_var(delta_tot);
 
     var_decomp = Rcpp::List::create(
         Rcpp::_["param"] = _var_mult,            // multivariate
         Rcpp::_["conf.multi"] = _var_conf_mult,  // confounder multi
         Rcpp::_["conf.uni"] = _var_conf_uni,     // confounder uni
-        Rcpp::_["resid"] = _var_resid);          // resid
+        Rcpp::_["resid"] = _var_resid,           // resid
+        Rcpp::_["tot"] = _var_tot);
   }
 
   if (opt.nboot() > 0) {
@@ -412,7 +411,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -454,7 +453,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -464,13 +463,11 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
 
   Rcpp::List resid = Rcpp::List::create();
 
-  Mat R = D2.cwiseSqrt().asDiagonal() * U.transpose();
-  // R * Theta_r
-  auto theta_resid = make_dense_slab<Scalar>(R.cols(), Y.cols(), opt);
-  auto delta_resid = make_regression_eta(R, Y, theta_resid);
+  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
+  auto delta_resid = make_residual_eta(Y, theta_resid);
 
-  // auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  // auto delta_resid = make_residual_eta(Y, theta_resid);
+  auto theta_tot = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
+  auto delta_tot = make_residual_eta(Y, theta_tot);
 
   auto take_residual = [&](auto& eta_mf) {
     TLOG("Estimate the residuals");
@@ -480,7 +477,8 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     delta_c.resolve();
 
     dummy_eta_t dummy;
-    // delta_resid.init_by_y(Y, opt.jitter()); --> this doesn't help
+
+    // Take residual variance
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta_mf, eta_c), std::make_tuple(delta_c));
@@ -489,10 +487,15 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
     Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
 
-    resid = Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
-                               Rcpp::_["param"] = param_rcpp_list(theta_resid),
-                               Rcpp::_["Z.hat"] = Zhat,
-                               Rcpp::_["effect.hat"] = effect_hat);
+    // Take total variance
+    Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
+                                      std::make_tuple(delta_tot));
+
+    resid = Rcpp::List::create(
+        Rcpp::_["llik"] = llik_resid,
+        Rcpp::_["param"] = param_rcpp_list(theta_resid),
+        Rcpp::_["param.tot"] = param_rcpp_list(theta_tot),
+        Rcpp::_["Z.hat"] = Zhat, Rcpp::_["effect.hat"] = effect_hat);
   };
 
   ///////////////////////////
@@ -580,16 +583,19 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   }
 
   Rcpp::List var_decomp = Rcpp::List::create();
+
   if (opt.do_var_calc()) {
     auto _var_conf_mult = take_eta_var(eta_c);
     auto _var_conf_uni = take_delta_var(delta_c);
     auto _var_resid = take_delta_var(delta_resid);
+    auto _var_tot = take_delta_var(delta_tot);
 
     Rcpp::List var_decomp = Rcpp::List::create(
         Rcpp::_["factored"] = var_factored,
         Rcpp::_["conf.multi"] = _var_conf_mult,  // confounder multi
         Rcpp::_["conf.uni"] = _var_conf_uni,     // confounder uni
-        Rcpp::_["resid"] = _var_resid);          // resid
+        Rcpp::_["resid"] = _var_resid,           // resid
+        Rcpp::_["tot"] = _var_tot);
   }
 
   if (opt.nboot() > 0) {
