@@ -261,6 +261,7 @@ const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
   vsRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, rstream, repr.Eps.size(),
                 repr.Eps.data(), 0.0, 1.0);
 
+  repr.Eta = repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
 
