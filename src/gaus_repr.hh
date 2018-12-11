@@ -9,10 +9,7 @@
 #ifndef GAUS_REPR_HH_
 #define GAUS_REPR_HH_
 
-#ifdef EIGEN_USE_MKL_ALL
-#else
 static Ziggurat::Ziggurat::Ziggurat ZIGG;
-#endif
 
 template <typename Matrix, typename ReprType>
 struct gaus_repr_t;
