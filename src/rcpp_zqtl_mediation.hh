@@ -214,24 +214,39 @@ Rcpp::List impl_fit_med_zqtl(
   auto take_ind_var = [&](auto& _delta) {
     const Index m = Y.cols();
     const Index n = DUt.cols();
-    // const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+    const Scalar n_denom = static_cast<Scalar>(DUt.cols());
 
     Mat temp_nm(n, m);
+    Mat temp_1m(1, m);
+
     running_stat_t<Mat> _stat(1, m);
+    running_stat_t<Mat> _stat_var(1, m);
 
     temp_nm = UDinv * _delta.repr_mean();
-    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
                   .unaryExpr(log10_op);
+
+    Mat obs_cent(1, m);
+    column_var(temp_nm, obs_cent);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_nm = UDinv * _delta.sample(rng);
-      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
-                .unaryExpr(log10_op));
+      temp_1m = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                    .unaryExpr(log10_op);
+
+      _stat(temp_1m);
+
+      column_var(temp_nm, temp_1m);
+      _stat_var(temp_1m);
     }
 
-    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
-                              Rcpp::_["var"] = _stat.var(),
-                              Rcpp::_["obs"] = obs);
+    return Rcpp::List::create(
+        Rcpp::_["mean"] = _stat.mean(),           // uncentered
+        Rcpp::_["var"] = _stat.var(),             // uncentered
+        Rcpp::_["obs"] = obs,                     //
+        Rcpp::_["mean.centered"] = _stat.mean(),  // centered
+        Rcpp::_["var.centered"] = _stat.var(),    // centered
+        Rcpp::_["obs.centered"] = obs_cent);
   };
 
   Rcpp::List resid = Rcpp::List::create();
