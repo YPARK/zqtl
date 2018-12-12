@@ -194,18 +194,18 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto take_ind_var = [&](auto& _delta) {
     const Index m = Y.cols();
     const Index n = DUt.cols();
-    const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+    // const Scalar n_denom = static_cast<Scalar>(DUt.rows());
 
     Mat temp_nm(n, m);
     running_stat_t<Mat> _stat(1, m);
 
     temp_nm = UDinv * _delta.repr_mean();
-    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
                   .unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_nm = UDinv * _delta.sample(rng);
-      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
                 .unaryExpr(log10_op));
     }
 
@@ -512,18 +512,18 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   auto take_ind_var = [&](auto& _delta) {
     const Index m = Y.cols();
     const Index n = DUt.cols();
-    const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+    // const Scalar n_denom = static_cast<Scalar>(DUt.rows());
 
     Mat temp_nm(n, m);
     running_stat_t<Mat> _stat(1, m);
 
     temp_nm = UDinv * _delta.repr_mean();
-    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
                   .unaryExpr(log10_op);
 
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       temp_nm = UDinv * _delta.sample(rng);
-      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)))
                 .unaryExpr(log10_op));
     }
 
