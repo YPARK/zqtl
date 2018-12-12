@@ -207,6 +207,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     dummy_eta_t dummy;
 
     // Take residual variance
+    delta_resid.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
@@ -216,6 +217,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
 
     // Take total variance
+    delta_tot.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
                                       std::make_tuple(delta_tot));
 
@@ -503,6 +505,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     dummy_eta_t dummy;
 
     // Take residual variance
+    delta_resid.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta_mf, eta_c), std::make_tuple(delta_c));
@@ -512,6 +515,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
 
     // Take total variance
+    delta_tot.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
                                       std::make_tuple(delta_tot));
 

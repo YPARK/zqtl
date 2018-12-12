@@ -58,6 +58,12 @@ Enjoy!
 
 # Release notes
 
+### v.1.3.5
+
+- Report both types of residual variance estimation
+- Lower the precision limit in SGVB steps
+
+
 ### v.1.3.4
 
 - Remove "backfire control" and "two step optimization"
