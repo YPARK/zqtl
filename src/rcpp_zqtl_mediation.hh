@@ -201,10 +201,47 @@ Rcpp::List impl_fit_med_zqtl(
     if (_do_hyper) opt.on_hyper();
   };
 
-  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  auto delta_resid = make_residual_eta(Y, theta_resid);
+  log10_trunc_op_t<Scalar> log10_op(1e-10);
+
+  /////////////////////////
+  // residual estimation //
+  /////////////////////////
+
+  // Directly recover phenotype matrix
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  Mat UDinv = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+
+  auto take_ind_var = [&](auto& _delta) {
+    const Index m = Y.cols();
+    const Index n = DUt.cols();
+    const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+
+    Mat temp_nm(n, m);
+    running_stat_t<Mat> _stat(1, m);
+
+    temp_nm = UDinv * _delta.repr_mean();
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                  .unaryExpr(log10_op);
+
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
+      temp_nm = UDinv * _delta.sample(rng);
+      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                .unaryExpr(log10_op));
+    }
+
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
+  };
 
   Rcpp::List resid = Rcpp::List::create();
+
+  auto theta_resid =
+      make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_resid = make_regression_eta(DUt, Y, theta_resid);
+
+  auto theta_tot = make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_tot = make_regression_eta(DUt, Y, theta_tot);
 
   auto take_residual = [&](auto& delta_med, auto& delta_unmed) {
     TLOG("Estimate the residuals");
@@ -222,13 +259,14 @@ Rcpp::List impl_fit_med_zqtl(
         std::make_tuple(eta_intercept, eta_conf_mult_y),  // clamped
         std::make_tuple(delta_med, delta_unmed, delta_conf_univ_y));
 
-    delta_resid.resolve();
+    // Take total variance
+    Mat llik_tot = impl_fit_eta_delta(model_y, opt, rng, std::make_tuple(dummy),
+                                      std::make_tuple(delta_tot));
 
-    Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
-
-    resid = Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
-                               Rcpp::_["param"] = param_rcpp_list(theta_resid),
-                               Rcpp::_["Z.hat"] = Zhat);
+    resid =
+        Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
+                           Rcpp::_["param"] = param_rcpp_list(theta_resid),
+                           Rcpp::_["param.tot"] = param_rcpp_list(theta_tot));
   };
 
   Mat gwas_se = yy_se.val;  // SNP x Trait
@@ -242,8 +280,6 @@ Rcpp::List impl_fit_med_zqtl(
   // xi = D^-1 * Vt * (z * se)  //
   // var = sum(xi * xi)         //
   ////////////////////////////////
-
-  log10_trunc_op_t<Scalar> log10_op(1e-10);
 
   auto take_eta_var = [&](auto& _eta) {
     const Index K = Vt.rows();
@@ -276,7 +312,7 @@ Rcpp::List impl_fit_med_zqtl(
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -318,7 +354,7 @@ Rcpp::List impl_fit_med_zqtl(
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
-			      Rcpp::_["null.mean"] = _stat_null.mean(),
+                              Rcpp::_["null.mean"] = _stat_null.mean(),
                               Rcpp::_["null.var"] = _stat_null.var());
   };
 
@@ -370,14 +406,15 @@ Rcpp::List impl_fit_med_zqtl(
       auto _var_med = take_delta_var(delta_med);
       auto _var_unmed = take_delta_var(delta_unmed);
       auto _var_conf_uni = take_delta_var(delta_conf_univ_y);
-      auto _var_resid = take_delta_var(delta_resid);
+      auto _var_resid = take_ind_var(delta_resid);
+      auto _var_tot = take_ind_var(delta_tot);
 
-      var_decomp = Rcpp::List::create(Rcpp::_["intercept"] = _var_inter,
-                                      Rcpp::_["conf.mult"] = _var_conf_mult,
-                                      Rcpp::_["mediated"] = _var_med,
-                                      Rcpp::_["unmediated"] = _var_unmed,
-                                      Rcpp::_["conf.uni"] = _var_conf_uni,
-                                      Rcpp::_["residual"] = _var_resid);
+      var_decomp = Rcpp::List::create(
+          Rcpp::_["intercept"] = _var_inter,
+          Rcpp::_["conf.mult"] = _var_conf_mult, Rcpp::_["mediated"] = _var_med,
+          Rcpp::_["unmediated"] = _var_unmed,
+          Rcpp::_["conf.uni"] = _var_conf_uni, Rcpp::_["residual"] = _var_resid,
+          Rcpp::_["total"] = _var_tot);
 
       if (opt.verbose()) TLOG("Finished variance decomposition\n\n");
 

@@ -105,7 +105,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat temp(1, m);
     Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
-    running_stat_t<Mat> _stat_null(1, m);
+    // running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
@@ -123,18 +123,17 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
 
-      temp_Km = _eta.sample_zeromean(rng);
-      z = Vt.transpose() * D2.asDiagonal() * temp_Km;
-      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
-      xi = Dinv.asDiagonal() * Vt * z;
-      temp = onesK * (xi.cwiseProduct(xi));
-      _stat_null(temp.unaryExpr(log10_op));
+      // temp_Km = _eta.sample_zeromean(rng);
+      // z = Vt.transpose() * D2.asDiagonal() * temp_Km;
+      // if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+      // xi = Dinv.asDiagonal() * Vt * z;
+      // temp = onesK * (xi.cwiseProduct(xi));
+      // _stat_null(temp.unaryExpr(log10_op));
     }
 
-    return Rcpp::List::create(
-        Rcpp::_["mean"] = _stat.mean(), Rcpp::_["var"] = _stat.var(),
-        Rcpp::_["obs"] = obs, Rcpp::_["null.mean"] = _stat_null.mean(),
-        Rcpp::_["null.var"] = _stat_null.var());
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
   };
 
   ////////////////////////////////
@@ -153,7 +152,7 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat temp(1, m);
     Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
-    running_stat_t<Mat> _stat_null(1, m);
+    // running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
@@ -171,31 +170,58 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
 
-      temp_Km = _delta.sample_zeromean(rng);
-      z = Vt.transpose() * temp_Km;
-      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
-      xi = Dinv.asDiagonal() * Vt * z;
-      temp = onesK * (xi.cwiseProduct(xi));
-      _stat_null(temp.unaryExpr(log10_op));
+      // temp_Km = _delta.sample_zeromean(rng);
+      // z = Vt.transpose() * temp_Km;
+      // if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+      // xi = Dinv.asDiagonal() * Vt * z;
+      // temp = onesK * (xi.cwiseProduct(xi));
+      // _stat_null(temp.unaryExpr(log10_op));
     }
 
-    return Rcpp::List::create(
-        Rcpp::_["mean"] = _stat.mean(), Rcpp::_["var"] = _stat.var(),
-        Rcpp::_["obs"] = obs, Rcpp::_["null.mean"] = _stat_null.mean(),
-        Rcpp::_["null.var"] = _stat_null.var());
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
   };
 
   /////////////////////////////////
   // calculate residual z-scores //
   /////////////////////////////////
 
+  // Directly recover phenotype matrix
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  Mat UDinv = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+
+  auto take_ind_var = [&](auto& _delta) {
+    const Index m = Y.cols();
+    const Index n = DUt.cols();
+    const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+
+    Mat temp_nm(n, m);
+    running_stat_t<Mat> _stat(1, m);
+
+    temp_nm = UDinv * _delta.repr_mean();
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                  .unaryExpr(log10_op);
+
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
+      temp_nm = UDinv * _delta.sample(rng);
+      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                .unaryExpr(log10_op));
+    }
+
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
+  };
+
   Rcpp::List resid = Rcpp::List::create();
 
-  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  auto delta_resid = make_residual_eta(Y, theta_resid);
+  auto theta_resid =
+      make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_resid = make_regression_eta(DUt, Y, theta_resid);
 
-  auto theta_tot = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  auto delta_tot = make_residual_eta(Y, theta_tot);
+  auto theta_tot = make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_tot = make_regression_eta(DUt, Y, theta_tot);
 
   auto take_residual = [&]() {
     TLOG("Estimate the residuals");
@@ -207,25 +233,18 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     dummy_eta_t dummy;
 
     // Take residual variance
-    delta_resid.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
         std::make_tuple(eta, eta_c), std::make_tuple(delta_c));
 
-    delta_resid.resolve();
-    Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
-    Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
-
     // Take total variance
-    delta_tot.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
                                       std::make_tuple(delta_tot));
 
-    resid = Rcpp::List::create(
-        Rcpp::_["llik"] = llik_resid,
-        Rcpp::_["param"] = param_rcpp_list(theta_resid),
-        Rcpp::_["param.tot"] = param_rcpp_list(theta_tot),
-        Rcpp::_["Z.hat"] = Zhat, Rcpp::_["effect.hat"] = effect_hat);
+    resid =
+        Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
+                           Rcpp::_["param"] = param_rcpp_list(theta_resid),
+                           Rcpp::_["param.tot"] = param_rcpp_list(theta_tot));
   };
 
   ///////////////////////////
@@ -274,8 +293,9 @@ Rcpp::List impl_fit_zqtl(const Mat& _effect, const Mat& _effect_se,
     auto _var_mult = take_eta_var(eta);
     auto _var_conf_mult = take_eta_var(eta_c);
     auto _var_conf_uni = take_delta_var(delta_c);
-    auto _var_resid = take_delta_var(delta_resid);
-    auto _var_tot = take_delta_var(delta_tot);
+
+    auto _var_resid = take_ind_var(delta_resid);
+    auto _var_tot = take_ind_var(delta_tot);
 
     var_decomp = Rcpp::List::create(
         Rcpp::_["param"] = _var_mult,            // multivariate
@@ -403,7 +423,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat temp(1, m);
     Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
-    running_stat_t<Mat> _stat_null(1, m);
+    // running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
@@ -421,18 +441,17 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
 
-      temp_Km = _eta.sample_zeromean(rng);
-      z = Vt.transpose() * D2.asDiagonal() * temp_Km;
-      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
-      xi = Dinv.asDiagonal() * Vt * z;
-      temp = onesK * (xi.cwiseProduct(xi));
-      _stat_null(temp.unaryExpr(log10_op));
+      // temp_Km = _eta.sample_zeromean(rng);
+      // z = Vt.transpose() * D2.asDiagonal() * temp_Km;
+      // if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+      // xi = Dinv.asDiagonal() * Vt * z;
+      // temp = onesK * (xi.cwiseProduct(xi));
+      // _stat_null(temp.unaryExpr(log10_op));
     }
 
-    return Rcpp::List::create(
-        Rcpp::_["mean"] = _stat.mean(), Rcpp::_["var"] = _stat.var(),
-        Rcpp::_["obs"] = obs, Rcpp::_["null.mean"] = _stat_null.mean(),
-        Rcpp::_["null.var"] = _stat_null.var());
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
   };
 
   ////////////////////////////////
@@ -451,7 +470,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
     Mat temp(1, m);
     Mat temp_Km(K, m);
     running_stat_t<Mat> _stat(1, m);
-    running_stat_t<Mat> _stat_null(1, m);
+    // running_stat_t<Mat> _stat_null(1, m);
     Mat onesK = Mat::Ones(1, K);
     Mat z(p, m);  // projected GWAS
 
@@ -469,61 +488,81 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
       temp = onesK * (xi.cwiseProduct(xi));
       _stat(temp.unaryExpr(log10_op));
 
-      temp_Km = _delta.sample_zeromean(rng);
-      z = Vt.transpose() * temp_Km;
-      if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
-      xi = Dinv.asDiagonal() * Vt * z;
-      temp = onesK * (xi.cwiseProduct(xi));
-      _stat_null(temp.unaryExpr(log10_op));
+      // temp_Km = _delta.sample_zeromean(rng);
+      // z = Vt.transpose() * temp_Km;
+      // if (opt.scale_var_calc()) z = z.cwiseProduct(effect_sqrt);
+      // xi = Dinv.asDiagonal() * Vt * z;
+      // temp = onesK * (xi.cwiseProduct(xi));
+      // _stat_null(temp.unaryExpr(log10_op));
     }
 
-    return Rcpp::List::create(
-        Rcpp::_["mean"] = _stat.mean(), Rcpp::_["var"] = _stat.var(),
-        Rcpp::_["obs"] = obs, Rcpp::_["null.mean"] = _stat_null.mean(),
-        Rcpp::_["null.var"] = _stat_null.var());
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
   };
 
   /////////////////////////////////
   // calculate residual z-scores //
   /////////////////////////////////
 
+  // Directly recover phenotype matrix
+  Mat DUt = D2.cwiseSqrt().asDiagonal() * U.transpose();
+  Mat UDinv = U * D2.cwiseSqrt().cwiseInverse().asDiagonal();
+
+  auto take_ind_var = [&](auto& _delta) {
+    const Index m = Y.cols();
+    const Index n = DUt.cols();
+    const Scalar n_denom = static_cast<Scalar>(DUt.rows());
+
+    Mat temp_nm(n, m);
+    running_stat_t<Mat> _stat(1, m);
+
+    temp_nm = UDinv * _delta.repr_mean();
+    Mat obs = (Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                  .unaryExpr(log10_op);
+
+    for (Index b = 0; b < opt.nboot_var(); ++b) {
+      temp_nm = UDinv * _delta.sample(rng);
+      _stat((Mat::Ones(1, n) * (temp_nm.cwiseProduct(temp_nm)) / n_denom)
+                .unaryExpr(log10_op));
+    }
+
+    return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
+                              Rcpp::_["var"] = _stat.var(),
+                              Rcpp::_["obs"] = obs);
+  };
+
   Rcpp::List resid = Rcpp::List::create();
 
-  auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  auto delta_resid = make_residual_eta(Y, theta_resid);
+  auto theta_resid =
+      make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_resid = make_regression_eta(DUt, Y, theta_resid);
 
-  auto theta_tot = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
-  auto delta_tot = make_residual_eta(Y, theta_tot);
+  auto theta_tot = make_dense_slab<Scalar>(DUt.cols(), Y.cols(), opt);  // n x m
+  auto delta_tot = make_regression_eta(DUt, Y, theta_tot);
 
-  auto take_residual = [&](auto& eta_mf) {
+  auto take_residual = [&](auto& _eta_f) {
     TLOG("Estimate the residuals");
 
-    eta_mf.resolve();
+    _eta_f.resolve();
     eta_c.resolve();
     delta_c.resolve();
 
     dummy_eta_t dummy;
 
     // Take residual variance
-    delta_resid.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_resid = impl_fit_eta_delta(
         model, opt, rng, std::make_tuple(dummy), std::make_tuple(delta_resid),
-        std::make_tuple(eta_mf, eta_c), std::make_tuple(delta_c));
-
-    delta_resid.resolve();
-    Mat Zhat = Vt.transpose() * delta_resid.repr_mean();
-    Mat effect_hat = Zhat.cwiseProduct(effect_sqrt);
+        std::make_tuple(_eta_f, eta_c), std::make_tuple(delta_c));
 
     // Take total variance
-    delta_tot.init_by_y(Y, static_cast<Scalar>(1.0));
     Mat llik_tot = impl_fit_eta_delta(model, opt, rng, std::make_tuple(dummy),
                                       std::make_tuple(delta_tot));
 
-    resid = Rcpp::List::create(
-        Rcpp::_["llik"] = llik_resid,
-        Rcpp::_["param"] = param_rcpp_list(theta_resid),
-        Rcpp::_["param.tot"] = param_rcpp_list(theta_tot),
-        Rcpp::_["Z.hat"] = Zhat, Rcpp::_["effect.hat"] = effect_hat);
+    resid =
+        Rcpp::List::create(Rcpp::_["llik"] = llik_resid,
+                           Rcpp::_["param"] = param_rcpp_list(theta_resid),
+                           Rcpp::_["param.tot"] = param_rcpp_list(theta_tot));
   };
 
   ///////////////////////////
@@ -615,8 +654,8 @@ Rcpp::List impl_fit_fac_zqtl(const Mat& _effect, const Mat& _effect_se,
   if (opt.do_var_calc()) {
     auto _var_conf_mult = take_eta_var(eta_c);
     auto _var_conf_uni = take_delta_var(delta_c);
-    auto _var_resid = take_delta_var(delta_resid);
-    auto _var_tot = take_delta_var(delta_tot);
+    auto _var_resid = take_ind_var(delta_resid);
+    auto _var_tot = take_ind_var(delta_tot);
 
     Rcpp::List var_decomp = Rcpp::List::create(
         Rcpp::_["factored"] = var_factored,
