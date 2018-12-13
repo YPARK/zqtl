@@ -263,7 +263,8 @@ Rcpp::List impl_fit_zqtl(const Mat &_effect, const Mat &_effect_se,
     const Index K = Vt.rows();
     const Scalar sK = static_cast<Scalar>(Vt.rows());
     Mat temp = Dinv.asDiagonal() * Y;
-    Mat ret = (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
+    Mat ret =
+        (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
     return Rcpp::wrap(ret);
   };
 
@@ -615,7 +616,8 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
     const Index K = Vt.rows();
     const Scalar sK = static_cast<Scalar>(Vt.rows());
     Mat temp = Dinv.asDiagonal() * Y;
-    Mat ret = (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
+    Mat ret =
+        (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
     return Rcpp::wrap(ret);
   };
 
@@ -627,7 +629,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
     auto _var_resid = take_delta_var(delta_resid);
     auto _var_tot = take_tot_var();
 
-    Rcpp::List var_decomp = Rcpp::List::create(
+    var_decomp = Rcpp::List::create(
         Rcpp::_["factored"] = var_factored,
         Rcpp::_["conf.multi"] = _var_conf_mult,  // confounder multi
         Rcpp::_["conf.uni"] = _var_conf_uni,     // confounder uni
