@@ -45,7 +45,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
 
-\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
 \item{scale.var}{Scaled variance calculation (default: FALSE)}
 
@@ -131,7 +131,7 @@ n <- 500
 p <- 1000
 n.genes <- 10
 h2 <- 0.8
-n.causal.direct <- 3
+n.causal.direct <- 1
 n.causal.qtl <- 3
 n.causal.gene <- 2
 
@@ -180,12 +180,12 @@ fast.z.cov <- function(x, y) {
 
 xy.beta <- fast.cov(X, scale(y)) * 2 # just to better visualize
 z.xy <- fast.z.cov(X, scale(y))
-xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
+xy.beta.se <- xy.beta / (z.xy + 1e-8) + 1e-8
 
 ################################################################
 ## Use multivariate effects directly
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e4, do.stdize = TRUE,
+               gammax = 1e3, do.stdize = TRUE,
                pi = -0, tau = -4,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,
@@ -210,7 +210,7 @@ plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
 
 ################################################################
 vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e4, do.stdize = TRUE,
+               gammax = 1e3, do.stdize = TRUE,
                pi = -0, tau = -4, submodel.size = 3,
                do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
                verbose = TRUE, min.se = 1e-4,

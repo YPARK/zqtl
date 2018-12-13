@@ -94,7 +94,7 @@ observed GWAS statsitics matrix \eqn{Z \propto X^{\top}Y}{Z ~ X'Y}.
 library(Matrix)
 
 n <- 500
-p <- 2000
+p <- 1000
 m <- 50
 
 set.seed(1)

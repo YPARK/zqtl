@@ -77,9 +77,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
 
-\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
-\item{scale.var}{Scaled variance calculation (default: TRUE)}
+\item{scale.var}{Scaled variance calculation (default: FALSE)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
@@ -131,74 +131,51 @@ theta_right}
 }
 \examples{
 
-library(Matrix)
-
 n <- 500
 p <- 2000
-m <- 50
+m <- 1
 
 set.seed(1)
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
 X <- .rnorm(n, p)
-X0 <- X[, -(1:(p/2)), drop = FALSE]
-X1 <- X[, (1:(p/2)), drop = FALSE]
-
-Y1 <- matrix(0, n, m)
 Y <- matrix(0, n, m)
-h2 <- 0.4
+h2 <- 0.25
 
-c.snps <- sample(p / 2, 3)
+c.snps <- sample(p, 3)
 
-## shared genetic variants
-theta.left <- .rnorm(3, 1)
-theta.right <- .rnorm(1, 3)
-theta.shared <- theta.left \%*\% theta.right
+theta <- .rnorm(3, m) * sqrt(h2 / 3)
 
-Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
+Y <- X[, c.snps, drop=FALSE] \%*\% theta + .rnorm(n, m) * sqrt(1 - h2)
 
-v0 <- var(as.numeric(Y1[, 1:3]))
-Y1[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
-v1 <- apply(Y1, 2, var)
-Y1 <- Y1 + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
+temp <- lapply(1:p, function(j) { summary(lm(Y ~ X[, j]))$coefficients[2, 1:2, drop = FALSE] })
+stat <- do.call(rbind, temp)
 
-## introduce confounding factors
-uu <- .rnorm(n, 5)
-vv <- .rnorm(m, 5)
-Y0 <- uu \%*\% t(vv)
-Y <- Y1 + Y0
+xy.beta <- as.matrix(stat[, 1, drop = FALSE])
+xy.se <- as.matrix(stat[, 2, drop = FALSE])
 
-## just caculate univariate z-scores
-fast.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / n.obs
-    return(ret)
-}
+out <- zqtl::fit.zqtl(xy.beta, xy.se, X,
+                      vbiter = 3000,
+                      gammax = 1e3,
+                      pi = 0,
+                      eigen.tol = 1e-2,
+                      do.var.calc = TRUE)
+                      
+plot(out$param$lodds, main = 'association', pch = 19, cex = .5, col = 'gray', ylab = 'log-odds')
+points(c.snps, out$param$lodds[c.snps], col = 'red', pch = 19)
+legend('topright', legend = c('causal', 'others'), pch = 19, col = c('red','gray'))
 
-fast.z.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / sqrt(n.obs)
-    return(ret)
-}
+.var = c(out$var$param$mean,
+         out$var$conf.mult$mean,
+         out$var$conf.uni$mean,
+         out$var$resid$mean,
+         out$var$tot)
 
-xy.beta <- fast.cov(X, scale(Y))
-z.xy <- fast.z.cov(X, scale(Y))
-xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
-
-vb.opt <- list(tol = 0, vbiter = 3000, jitter = 0.1,
-               pi = -1, tau = -8, rate = 0.01, gammax = 1e2,
-               eigen.tol = 1e-2, k = m, svd.init = TRUE)
-
-out <- zqtl::fit.zqtl(xy.beta, xy.beta.se, X, factored = TRUE, options = vb.opt)
-
-## show associations
-.rnd <- c(c.snps, setdiff(sample(p, 20), c.snps))
-image(Matrix(out$param.left$lodds[.rnd, ]))
-image(Matrix(out$param.right$lodds))
-
+barplot(height = 10^(.var),
+        col = 2:6,
+        names.arg = c('gen', 'c1', 'c2', 'resid', 'tot'),
+        horiz = TRUE)
 
 }
 \author{
