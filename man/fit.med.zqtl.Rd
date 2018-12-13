@@ -45,7 +45,7 @@ fit.med.zqtl(effect, effect.se, effect.m, effect.m.se, X.gwas)
 
 \item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
 
-\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
 \item{scale.var}{Scaled variance calculation (default: FALSE)}
 

@@ -77,9 +77,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
 
-\item{nboot.var}{Number of bootstraps for variance estimation (default: 10)}
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
-\item{scale.var}{Scaled variance calculation (default: TRUE)}
+\item{scale.var}{Scaled variance calculation (default: FALSE)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 

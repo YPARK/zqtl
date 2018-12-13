@@ -41,8 +41,8 @@
 #' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
 #' @param nboot Number of bootstraps followed by finemapping (default: 0)
-#' @param nboot.var Number of bootstraps for variance estimation (default: 10)
-#' @param scale.var Scaled variance calculation (default: TRUE)
+#' @param nboot.var Number of bootstraps for variance estimation (default: 100)
+#' @param scale.var Scaled variance calculation (default: FALSE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
 #'
@@ -196,8 +196,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      out.residual = FALSE,
                      do.var.calc = FALSE,
                      nboot = 0,
-                     nboot.var = 10,
-                     scale.var = TRUE,
+                     nboot.var = 100,
+                     scale.var = FALSE,
                      min.se = 1e-4,
                      rseed = NULL) {
 
@@ -485,7 +485,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' @param do.finemap.direct Fine-map direct effect SNPs (default: FALSE)
 #' @param nboot Number of bootstraps followed by finemapping (default: 0)
-#' @param nboot.var Number of bootstraps for variance estimation (default: 10)
+#' @param nboot.var Number of bootstraps for variance estimation (default: 100)
 #' @param scale.var Scaled variance calculation (default: FALSE)
 #' @param num.conditional number of conditional models
 #' @param submodel.size size of each conditional model
@@ -668,7 +668,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          do.direct.estimation = TRUE,
                          do.finemap.direct = FALSE,
                          nboot = 0,
-                         nboot.var = 10,
+                         nboot.var = 100,
                          scale.var = FALSE,
                          do.var.calc = FALSE,
                          med.lodds.cutoff = 0,
