@@ -59,19 +59,20 @@ Rcpp::List impl_fit_zqtl(const Mat &_effect, const Mat &_effect_se,
   TLOG("Constructed zqtl model");
 
   // eta_conf = Vt * inv(effect_sq) * C * theta_conf
-  auto theta_c = make_dense_slab<Scalar>(VtC.cols(), Y.cols(), opt);
+  auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
-  // eta_c.init_by_dot(Y, opt.jitter()); --> this doesn't help
+  eta_c.init_by_dot(Y, opt.jitter());
 
   // delta_conf = Vt * Cdelta * theta_conf
-  auto theta_c_delta = make_dense_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
+  auto theta_c_delta =
+      make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
-  // delta_c.init_by_dot(Y, opt.jitter()); --> this doesn't help
+  delta_c.init_by_dot(Y, opt.jitter());
 
   // mean effect size --> can be sparse matrix
   auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), Y.cols(), opt);
   auto eta = make_regression_eta(Vt, Y, theta);
-  // eta.init_by_dot(Y, opt.jitter()); --> this doesn't help
+  eta.init_by_dot(Y, opt.jitter());
 
   TLOG("Constructed effects");
 
@@ -205,6 +206,7 @@ Rcpp::List impl_fit_zqtl(const Mat &_effect, const Mat &_effect_se,
 
   auto theta_resid = make_dense_slab<Scalar>(Y.rows(), Y.cols(), opt);
   auto delta_resid = make_residual_eta(Y, theta_resid);
+  delta_resid.init_by_y(Y, opt.jitter());
 
   auto take_residual = [&]() {
     TLOG("Estimate the residuals");
@@ -367,6 +369,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
   Mat VtC = Vt * C;
   auto theta_c = make_dense_spike_slab<Scalar>(VtC.cols(), Y.cols(), opt);
   auto eta_c = make_regression_eta(VtC, Y, theta_c);
+  eta_c.init_by_dot(Y, opt.jitter());
 
   ////////////////////////////////////////////////////////////////
   // This is useful to correct for phenotype correlations
@@ -375,6 +378,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
   auto theta_c_delta =
       make_dense_spike_slab<Scalar>(VtCd.cols(), Y.cols(), opt);
   auto delta_c = make_regression_eta(VtCd, Y, theta_c_delta);
+  delta_c.init_by_dot(Y, opt.jitter());
 
   ////////////////////////////////////////////////////////////////
   // factored parameters
