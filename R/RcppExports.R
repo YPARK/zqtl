@@ -2,6 +2,139 @@
 #' Variational inference of zQTL regression
 #'
 #' @export
+#' @name fit.zqtl.adjust
+#'
+#' @usage fit.zqtl.adjust(effect, effect.se, X, multi.C, univar.C)
+#'
+#' @param effect Marginal effect size matrix (SNP x trait)
+#' @param effect.se Marginal effect size standard error matrix (SNP x trait)
+#' @param n sample size of actual data (will ignore if n = 0)
+#' @param X Design matrix (reference Ind x SNP)
+#' @param multi.C multivariate SNP confounding factors (SNP x confounder; default: NULL)
+#' @param univar.C univariate SNP confounding factors (SNP x confounder; default: NULL)
+#' @param options A list of inference/optimization options.
+#' @param do.hyper Hyper parameter tuning (default: FALSE)
+#' @param do.rescale Rescale z-scores by standard deviation (default: FALSE)
+#' @param tau Fixed value of tau
+#' @param pi Fixed value of pi
+#' @param tau.lb Lower-bound of tau (default: -10)
+#' @param tau.ub Upper-bound of tau (default: -4)
+#' @param pi.lb Lower-bound of pi (default: -4)
+#' @param pi.ub Upper-bound of pi (default: -1)
+#' @param tol Convergence criterion (default: 1e-4)
+#' @param gammax Maximum precision (default: 1000)
+#' @param rate Update rate (default: 1e-2)
+#' @param decay Update rate decay (default: 0)
+#' @param jitter SD of random jitter for mediation & factorization (default: 0.1)
+#' @param nsample Number of stochastic samples (default: 10)
+#' @param vbiter Number of variational Bayes iterations (default: 2000)
+#' @param verbose Verbosity (default: TRUE)
+#' @param print.interv Printing interval (default: 10)
+#' @param nthread Number of threads during calculation (default: 1)
+#' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param do.stdize Standardize (default: TRUE)
+#' @param out.residual estimate residual z-scores (default: FALSE)
+#' @param nboot Number of bootstraps followed by finemapping (default: 100)
+#' @param scale.var Scaled variance calculation (default: FALSE)
+#' @param min.se Minimum level of SE (default: 1e-4)
+#' @param rseed Random seed
+#'
+#' @return a list of variational inference results.
+#' \itemize{
+#' \item{conf.multi: }{ association with multivariate confounding variables}
+#' \item{conf.uni: }{ association with univariate confounding variables}
+#' \item{resid: }{ residuals}
+#' \item{gwas.clean: }{ cleansed version of univariate GWAS effects}
+#' \item{var: }{ variance decomposition results}
+#' \item{llik: }{ log-likelihood trace over the optimization}
+#' }
+#' 
+#' @author Yongjin Park, \email{ypp@@csail.mit.edu}, \email{yongjin.peter.park@@gmail.com}
+#'
+#' @examples
+#' 
+fit.zqtl.adjust <- function(effect,           # marginal effect : y ~ x
+                            effect.se,        # marginal se : y ~ x
+                            X,                # X matrix
+                            n = 0,            # sample size
+                            multi.C = NULL,   # covariate matrix (before LD)
+                            univar.C = NULL,  # covariate matrix (already multified by LD)
+                            factored = FALSE, # Factored multiple traits
+                            options = list(),
+                            do.hyper = FALSE,
+                            do.rescale = FALSE,
+                            tau = NULL,
+                            pi = NULL,
+                            tau.lb = -10,
+                            tau.ub = -4,
+                            pi.lb = -4,
+                            pi.ub = -1,
+                            tol = 1e-4,
+                            gammax = 1e3,
+                            rate = 1e-2,
+                            decay = 0,
+                            jitter = 1e-1,
+                            nsample = 10,
+                            vbiter = 2000,
+                            verbose = TRUE,
+                            print.interv = 10,
+                            nthread = 1,
+                            eigen.tol = 1e-2,
+                            do.stdize = TRUE,
+                            out.residual = FALSE,
+                            nboot = 0,
+                            min.se = 1e-4,
+                            rseed = NULL) {
+
+    stopifnot(is.matrix(effect))
+    stopifnot(is.matrix(effect.se))
+    stopifnot(all(dim(effect) == dim(effect.se)))
+    stopifnot(is.matrix(X))
+
+    p <- ncol(X)
+
+    ## SNP confounding factors
+    if(is.null(multi.C)) {
+        p <- dim(effect)[1]
+        multi.C <- matrix(1/p, p, 1)
+    }
+
+    if(is.null(univar.C)) {
+        p <- dim(effect)[1]
+        univar.C <- matrix(1/p, p, 1)
+    }
+
+    stopifnot(is.matrix(multi.C))
+    stopifnot(dim(effect)[1] == dim(multi.C)[1])
+
+    stopifnot(is.matrix(univar.C))
+    stopifnot(dim(effect)[1] == dim(univar.C)[1])
+
+    ## Override options
+    opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
+                  'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
+                  'jitter', 'nsample', 'vbiter', 'verbose',
+                  'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
+                  'rseed', 'nboot')
+
+    .eval <- function(txt) eval(parse(text = txt))
+    for(v in opt.vars) {
+        val <- .eval(v)
+        if(!(v %in% names(options)) && !is.null(val)) {
+            options[[v]] <- val
+        }
+    }
+    options[['sample.size']] <- n
+
+    ## call R/C++ functions ##
+    return(.Call('rcpp_adjust_zqtl', effect, effect.se, X, multi.C, univar.C, options, PACKAGE = 'zqtl'))
+}
+
+
+################################################################
+#' Variational inference of zQTL regression
+#'
+#' @export
 #' @name fit.zqtl
 #'
 #' @usage fit.zqtl(effect, effect.se, X)
@@ -709,7 +842,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(univar.C))
     stopifnot(dim(effect)[1] == dim(univar.C)[1])
 
-    ################################################################
+################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
