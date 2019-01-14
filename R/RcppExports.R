@@ -183,6 +183,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(all(dim(effect) == dim(effect.se)))
     stopifnot(is.matrix(X))
 
+    p <- ncol(X)
+
     ## SNP confounding factors
     if(is.null(multi.C)) {
         p <- dim(effect)[1]
@@ -683,6 +685,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(all(dim(effect) == dim(effect.se)))
     stopifnot(is.matrix(X.gwas))
 
+    p <- ncol(X.gwas)
+
     ## SNP confounding factors
     if(is.null(multi.C)) {
         p <- dim(effect)[1]
@@ -705,7 +709,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     stopifnot(is.matrix(univar.C))
     stopifnot(dim(effect)[1] == dim(univar.C)[1])
 
-################################################################
+    ################################################################
     ## Override options
     opt.vars <- c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                   'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
