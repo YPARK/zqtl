@@ -17,9 +17,9 @@ RcppExport SEXP rcpp_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
   END_RCPP
 }
 
-RcppExport SEXP rcpp_med_zqtl_vanilla(SEXP effect_sexp, SEXP effect_se_sexp,
-                                      SEXP x_sexp, SEXP c_sexp,
-                                      SEXP c_delta_sexp, SEXP options_sexp) {
+RcppExport SEXP rcpp_zqtl_vanilla(SEXP effect_sexp, SEXP effect_se_sexp,
+                                  SEXP x_sexp, SEXP c_sexp, SEXP c_delta_sexp,
+                                  SEXP options_sexp) {
   BEGIN_RCPP
 
   Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
