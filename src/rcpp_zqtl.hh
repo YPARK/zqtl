@@ -47,6 +47,6 @@ using Index = Mat::Index;
 #include "rcpp_zqtl_factorization.hh"
 #include "rcpp_zqtl_mediation.hh"
 #include "rcpp_zqtl_regression.hh"
-#include "rcpp_zqtl_adjust.hh"
+#include "rcpp_zqtl_vanilla.hh"
 
 #endif

@@ -2,9 +2,9 @@
 #' Variational inference of zQTL regression
 #'
 #' @export
-#' @name fit.zqtl.adjust
+#' @name fit.zqtl.vanilla
 #'
-#' @usage fit.zqtl.adjust(effect, effect.se, X, multi.C, univar.C)
+#' @usage fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 #'
 #' @param effect Marginal effect size matrix (SNP x trait)
 #' @param effect.se Marginal effect size standard error matrix (SNP x trait)
@@ -53,38 +53,37 @@
 #'
 #' @examples
 #' 
-fit.zqtl.adjust <- function(effect,           # marginal effect : y ~ x
-                            effect.se,        # marginal se : y ~ x
-                            X,                # X matrix
-                            n = 0,            # sample size
-                            multi.C = NULL,   # covariate matrix (before LD)
-                            univar.C = NULL,  # covariate matrix (already multified by LD)
-                            factored = FALSE, # Factored multiple traits
-                            options = list(),
-                            do.hyper = FALSE,
-                            do.rescale = FALSE,
-                            tau = NULL,
-                            pi = NULL,
-                            tau.lb = -10,
-                            tau.ub = -4,
-                            pi.lb = -4,
-                            pi.ub = -1,
-                            tol = 1e-4,
-                            gammax = 1e3,
-                            rate = 1e-2,
-                            decay = 0,
-                            jitter = 1e-1,
-                            nsample = 10,
-                            vbiter = 2000,
-                            verbose = TRUE,
-                            print.interv = 10,
-                            nthread = 1,
-                            eigen.tol = 1e-2,
-                            do.stdize = TRUE,
-                            out.residual = FALSE,
-                            nboot = 0,
-                            min.se = 1e-4,
-                            rseed = NULL) {
+fit.zqtl.vanilla <- function(effect,           # marginal effect : y ~ x
+                             effect.se,        # marginal se : y ~ x
+                             X,                # X matrix
+                             n = 0,            # sample size
+                             multi.C = NULL,   # covariate matrix (before LD)
+                             univar.C = NULL,  # covariate matrix (already multified by LD)
+                             options = list(),
+                             do.hyper = FALSE,
+                             do.rescale = FALSE,
+                             tau = NULL,
+                             pi = NULL,
+                             tau.lb = -10,
+                             tau.ub = -4,
+                             pi.lb = -4,
+                             pi.ub = -1,
+                             tol = 1e-4,
+                             gammax = 1e3,
+                             rate = 1e-2,
+                             decay = 0,
+                             jitter = 1e-1,
+                             nsample = 10,
+                             vbiter = 2000,
+                             verbose = TRUE,
+                             print.interv = 10,
+                             nthread = 1,
+                             eigen.tol = 1e-2,
+                             do.stdize = TRUE,
+                             out.residual = FALSE,
+                             nboot = 0,
+                             min.se = 1e-4,
+                             rseed = NULL) {
 
     stopifnot(is.matrix(effect))
     stopifnot(is.matrix(effect.se))
@@ -127,7 +126,7 @@ fit.zqtl.adjust <- function(effect,           # marginal effect : y ~ x
     options[['sample.size']] <- n
 
     ## call R/C++ functions ##
-    return(.Call('rcpp_adjust_zqtl', effect, effect.se, X, multi.C, univar.C, options, PACKAGE = 'zqtl'))
+    return(.Call('rcpp_zqtl_vanilla', effect, effect.se, X, multi.C, univar.C, options, PACKAGE = 'zqtl'))
 }
 
 
