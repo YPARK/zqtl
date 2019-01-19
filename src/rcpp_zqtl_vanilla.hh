@@ -5,9 +5,9 @@
 // simply adjust Cdelta without multivariate effect //
 //////////////////////////////////////////////////////
 
-Rcpp::List impl_adjust_zqtl(const Mat &_effect, const Mat &_effect_se,
-			    const Mat &X, const Mat &C, const Mat &Cdelta,
-			    const options_t &opt) {
+Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
+                             const Mat &X, const Mat &C, const Mat &Cdelta,
+                             const options_t &opt) {
   if (opt.with_ld_matrix()) {
     ELOG("Deprecated");
     return Rcpp::List::create();
@@ -84,7 +84,6 @@ Rcpp::List impl_adjust_zqtl(const Mat &_effect, const Mat &_effect_se,
   std::mt19937 rng(opt.rseed());
 #endif
 
-
   ///////////////////////////
   // report clean z-scores //
   ///////////////////////////
@@ -131,9 +130,7 @@ Rcpp::List impl_adjust_zqtl(const Mat &_effect, const Mat &_effect_se,
       Rcpp::_["D2"] = D2, Rcpp::_["S.inv"] = weight,
       Rcpp::_["conf.multi"] = param_rcpp_list(theta_c),
       Rcpp::_["conf.uni"] = param_rcpp_list(theta_c_delta),
-      Rcpp::_["llik"] = llik,
-      Rcpp::_["gwas.clean"] = clean);
+      Rcpp::_["llik"] = llik, Rcpp::_["gwas.clean"] = clean);
 }
-
 
 #endif

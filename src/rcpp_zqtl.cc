@@ -17,8 +17,9 @@ RcppExport SEXP rcpp_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
   END_RCPP
 }
 
-RcppExport SEXP rcpp_adjust_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_sexp,
-				 SEXP c_sexp, SEXP c_delta_sexp, SEXP options_sexp) {
+RcppExport SEXP rcpp_med_zqtl_vanilla(SEXP effect_sexp, SEXP effect_se_sexp,
+                                      SEXP x_sexp, SEXP c_sexp,
+                                      SEXP c_delta_sexp, SEXP options_sexp) {
   BEGIN_RCPP
 
   Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
@@ -30,7 +31,7 @@ RcppExport SEXP rcpp_adjust_zqtl(SEXP effect_sexp, SEXP effect_se_sexp, SEXP x_s
 
   options_t opt;
   set_options_from_list(options_list, opt);
-  return Rcpp::wrap(impl_adjust_zqtl(effect, effect_se, X, C, Cdelta, opt));
+  return Rcpp::wrap(impl_zqtl_vanilla(effect, effect_se, X, C, Cdelta, opt));
   END_RCPP
 }
 
@@ -77,8 +78,8 @@ RcppExport SEXP rcpp_med_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,  // GWAS
                                       effect_m_se_mat_t(qtl_se),     //
                                       geno_y_mat_t(Xgwas),           //
                                       geno_m_mat_t(Xmed),            //
-                                      mult_conf_t(C),                 //
-                                      univ_conf_t(Cd),                 //
+                                      mult_conf_t(C),                //
+                                      univ_conf_t(Cd),               //
                                       opt));
   END_RCPP
 }
@@ -89,7 +90,7 @@ RcppExport SEXP rcpp_fac_med_zqtl(SEXP effect_sexp,
                                   SEXP x_gwas_sexp,  // genotype for gwas
                                   SEXP x_med_sexp,   // genotype for mediation
                                   SEXP c_sexp,       // covariates
-                                  SEXP cd_sexp,       // covariates
+                                  SEXP cd_sexp,      // covariates
                                   SEXP options_sexp) {
   BEGIN_RCPP
 
@@ -112,8 +113,8 @@ RcppExport SEXP rcpp_fac_med_zqtl(SEXP effect_sexp,
                                           effect_m_se_mat_t(qtl_se),     //
                                           geno_y_mat_t(Xgwas),           //
                                           geno_m_mat_t(Xmed),            //
-                                          mult_conf_t(C),                 //
-                                          univ_conf_t(Cd),                 //
+                                          mult_conf_t(C),                //
+                                          univ_conf_t(Cd),               //
                                           opt));
   END_RCPP
 }
