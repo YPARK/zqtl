@@ -15,6 +15,8 @@ fit.zqtl(effect, effect.se, X)
 
 \item{n}{sample size of actual data (will ignore if n = 0)}
 
+\item{A}{Annotation matrix (SNP x annotations; default: NULL)}
+
 \item{multi.C}{multivariate SNP confounding factors (SNP x confounder; default: NULL)}
 
 \item{univar.C}{univariate SNP confounding factors (SNP x confounder; default: NULL)}
@@ -75,7 +77,7 @@ fit.zqtl(effect, effect.se, X)
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 
-\item{nboot}{Number of bootstraps followed by finemapping (default: 0)}
+\item{nboot}{Number of bootstraps (default: 0)}
 
 \item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
@@ -89,6 +91,8 @@ fit.zqtl(effect, effect.se, X)
 a list of variational inference results.
 \itemize{
 \item{param: }{ sparse genetic effect size (theta, theta.var, lodds)}
+\item{param.left: }{ the left factor for the factored effect}
+\item{param.right: }{ the left factor for the factored effect}
 \item{conf.multi: }{ association with multivariate confounding variables}
 \item{conf.uni: }{ association with univariate confounding variables}
 \item{resid: }{ residuals}
@@ -131,37 +135,51 @@ theta_right}
 }
 \examples{
 
-n <- 500
-p <- 2000
-m <- 1
+###########################
+## A simple zQTL example ##
+###########################
+
+n = 500
+p = 2000
+m = 1
 
 set.seed(1)
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- .rnorm(n, p)
-Y <- matrix(0, n, m)
-h2 <- 0.25
+X = .rnorm(n, p)
+Y = matrix(0, n, m)
+h2 = 0.25
 
-c.snps <- sample(p, 3)
+c.snps = sample(p, 3)
 
-theta <- .rnorm(3, m) * sqrt(h2 / 3)
+theta = .rnorm(3, m) * sqrt(h2 / 3)
 
-Y <- X[, c.snps, drop=FALSE] \%*\% theta + .rnorm(n, m) * sqrt(1 - h2)
+Y = X[, c.snps, drop=FALSE] \%*\% theta + .rnorm(n, m) * sqrt(1 - h2)
 
-temp <- lapply(1:p, function(j) { summary(lm(Y ~ X[, j]))$coefficients[2, 1:2, drop = FALSE] })
-stat <- do.call(rbind, temp)
+library(dplyr)
+library(tidyr)
 
-xy.beta <- as.matrix(stat[, 1, drop = FALSE])
-xy.se <- as.matrix(stat[, 2, drop = FALSE])
+qtl.tab = calc.qtl.stat(X, Y)
 
-out <- zqtl::fit.zqtl(xy.beta, xy.se, X,
-                      vbiter = 3000,
-                      gammax = 1e3,
-                      pi = 0,
-                      eigen.tol = 1e-2,
-                      do.var.calc = TRUE)
-                      
+xy.beta = qtl.tab \%>\%
+    dplyr::select(x.col, y.col, beta) \%>\%
+    tidyr::spread(key = y.col, value = beta) \%>\%
+    (function(x) matrix(x[1:p, seq(2, m+1)], ncol = 1))
+
+xy.se = qtl.tab \%>\%
+    dplyr::select(x.col, y.col, se) \%>\%
+    tidyr::spread(key = y.col, value = se) \%>\%
+    (function(x) matrix(x[1:p, seq(2, m + 1)], ncol = 1))
+
+out = fit.zqtl(xy.beta, xy.se, X,
+                     vbiter = 3000,
+                     gammax = 1e3,
+                     pi = 0,
+                     eigen.tol = 1e-2,
+                     do.var.calc = TRUE,
+                     scale.var = TRUE)
+
 plot(out$param$lodds, main = 'association', pch = 19, cex = .5, col = 'gray', ylab = 'log-odds')
 points(c.snps, out$param$lodds[c.snps], col = 'red', pch = 19)
 legend('topright', legend = c('causal', 'others'), pch = 19, col = c('red','gray'))
@@ -175,7 +193,9 @@ legend('topright', legend = c('causal', 'others'), pch = 19, col = c('red','gray
 barplot(height = 10^(.var),
         col = 2:6,
         names.arg = c('gen', 'c1', 'c2', 'resid', 'tot'),
-        horiz = TRUE)
+        horiz = TRUE,
+        ylab = 'category',
+        xlab = 'estimated variance')
 
 }
 \author{

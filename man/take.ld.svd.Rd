@@ -2,9 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{take.ld.svd}
 \alias{take.ld.svd}
-\title{Decompose the scaled genotype matrix \eqn{n^{-1/2}X = U D
-V^{\top}}{X/sqrt(n) = U D V'} such that the LD matrix can become
-\deqn{R = V D^{2} V^{\top}}{LD = V D^2 V'} for subsequent analysis.}
+\title{Decompose the scaled genotype matrix.}
 \usage{
 take.ld.svd(X, options, eigen.tol, do.stdize)
 }
@@ -18,7 +16,10 @@ take.ld.svd(X, options, eigen.tol, do.stdize)
 \item{do.stdize}{Standardize (default: TRUE)}
 }
 \description{
-Decompose the scaled genotype matrix \eqn{n^{-1/2}X = U D
-V^{\top}}{X/sqrt(n) = U D V'} such that the LD matrix can become
+Decompose the scaled genotype matrix.
+}
+\details{
+Decompose \eqn{n^{-1/2}X = U D V^{\top}}{X/sqrt(n) = U D V'}
+such that the LD matrix can become
 \deqn{R = V D^{2} V^{\top}}{LD = V D^2 V'} for subsequent analysis.
 }

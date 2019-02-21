@@ -93,71 +93,57 @@ observed GWAS statsitics matrix \eqn{Z \propto X^{\top}Y}{Z ~ X'Y}.
 
 library(Matrix)
 
-n <- 500
-p <- 1000
-m <- 50
+n = 500
+p = 1000
+m = 50
 
 set.seed(1)
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X <- .rnorm(n, p)
-X0 <- X[, -(1:(p/2)), drop = FALSE]
-X1 <- X[, (1:(p/2)), drop = FALSE]
+X = .rnorm(n, p)
+X0 = X[, -(1:(p/2)), drop = FALSE]
+X1 = X[, (1:(p/2)), drop = FALSE]
 
-Y1 <- matrix(0, n, m)
-Y <- matrix(0, n, m)
-h2 <- 0.4
+Y1 = matrix(0, n, m)
+Y = matrix(0, n, m)
+h2 = 0.4
 
-c.snps <- sample(p / 2, 3)
+c.snps = sample(p / 2, 3)
 
 ## shared genetic variants
-theta.left <- .rnorm(3, 1)
-theta.right <- .rnorm(1, 3)
-theta.shared <- theta.left \%*\% theta.right
+theta.left = .rnorm(3, 1)
+theta.right = .rnorm(1, 3)
+theta.shared = theta.left \%*\% theta.right
 
-Y1[, 1:3] <- Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
+Y1[, 1:3] = Y1[, 1:3] + X[, c.snps, drop = FALSE] \%*\% theta.shared
 
-v0 <- var(as.numeric(Y1[, 1:3]))
-Y1[, -(1:3)] <- .rnorm(n, m - 3) * sqrt(v0)
-v1 <- apply(Y1, 2, var)
-Y1 <- Y1 + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
+v0 = var(as.numeric(Y1[, 1:3]))
+Y1[, -(1:3)] = .rnorm(n, m - 3) * sqrt(v0)
+v1 = apply(Y1, 2, var)
+Y1 = Y1 + sweep(.rnorm(n, m), 2, c(sqrt(v1 * (1/h2 - 1))), `*`)
 
 ## introduce confounding factors
-uu <- .rnorm(n, 5)
-vv <- .rnorm(m, 5)
-Y0 <- uu \%*\% t(vv)
-Y <- Y1 + Y0
-Y <- scale(Y)
+uu = .rnorm(n, 5)
+vv = .rnorm(m, 5)
+Y0 = uu \%*\% t(vv)
+Y = Y1 + Y0
+Y = scale(Y)
 
-fast.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / n.obs
-    return(ret)
-}
+xy.beta = fast.cov(X, Y)
+z.xy = fast.z.cov(X, Y)
+xy.beta.se = xy.beta / (z.xy + 1e-4) + 1e-4
 
-fast.z.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / sqrt(n.obs)
-    return(ret)
-}
-
-xy.beta <- fast.cov(X, Y)
-z.xy <- fast.z.cov(X, Y)
-xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
-
-vb.opt <- list(tol = 0, vbiter = 2000, jitter = 1e-1,
+vb.opt = list(tol = 0, vbiter = 2000, jitter = 1e-1,
                pi = -1, rate = 0.01, gammax = 1e3,
                eigen.tol = 1e-1, k = m, right.nn = FALSE)
 
-out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
+out = fit.zqtl.factorize(xy.beta, xy.beta.se, X, options = vb.opt)
 
 image(Matrix(head(out$param.left$theta, 20)))
 image(Matrix(out$param.right$theta))
 
-y.hat <- out$param.left$theta \%*\% t(out$param.right$theta)
+y.hat = out$param.left$theta \%*\% t(out$param.right$theta)
 
 plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
 plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)
@@ -165,16 +151,16 @@ plot(as.numeric(scale(y.hat)), as.numeric(scale(Y)), pch = 19, cex = .3)
 
 ## pure null
 
-xy.beta <- fast.cov(X0, scale(Y0))
-z.xy <- fast.z.cov(X0, scale(Y0))
-xy.beta.se <- xy.beta / (z.xy + 1e-4) + 1e-4
+xy.beta = fast.cov(X0, scale(Y0))
+z.xy = fast.z.cov(X0, scale(Y0))
+xy.beta.se = xy.beta / (z.xy + 1e-4) + 1e-4
 
-out <- zqtl::fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
+out = fit.zqtl.factorize(xy.beta, xy.beta.se, X0, options = vb.opt)
 
 image(Matrix(head(out$param.left$theta, 20)))
 image(Matrix(out$param.right$theta))
 
-y.hat <- out$param.left$theta \%*\% t(out$param.right$theta)
+y.hat = out$param.left$theta \%*\% t(out$param.right$theta)
 
 plot(as.numeric(scale(y.hat)), as.numeric(scale(Y0)), pch = 19, cex = .3)
 plot(as.numeric(scale(y.hat)), as.numeric(scale(Y1)), pch = 19, cex = .3)

@@ -127,112 +127,87 @@ Mediation analysis
 }
 \examples{
 
-n <- 500
-p <- 1000
-n.genes <- 10
-h2 <- 0.8
-n.causal.direct <- 1
-n.causal.qtl <- 3
-n.causal.gene <- 2
-
+n = 500
+p = 1000
+n.genes = 10
+h2 = 0.8
+n.causal.direct = 1
+n.causal.qtl = 3
+n.causal.gene = 2
 set.seed(13)
 
 .rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
 
-X.raw <- sapply(1:p, function(j) {
-    f <- runif(1, min = 0.1, max = 0.9)
+X.raw = sapply(1:p, function(j) {
+    f = runif(1, min = 0.1, max = 0.9)
     rbinom(n, 2, f)
 })
 
-X <- scale(X.raw)
+X = scale(X.raw)
 
-c.qtls <- matrix(sapply(1:n.genes, function(j) matrix(sample(p, n.causal.qtl))), nrow = n.causal.qtl)
+c.qtls = matrix(sapply(1:n.genes, function(j) matrix(sample(p, n.causal.qtl))), nrow = n.causal.qtl)
 
-theta.snp.gene <- .rnorm(n.causal.qtl, n.genes) / n.causal.qtl
+theta.snp.gene = .rnorm(n.causal.qtl, n.genes) / n.causal.qtl
 
-gene.expr <- lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] \%*\% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
+gene.expr = lapply(1:dim(c.qtls)[2], function(j) X[, c.qtls[,j], drop = FALSE] \%*\% theta.snp.gene[, j, drop = FALSE] + 0.5 * rnorm(n) )
 
-gene.expr <- do.call(cbind, gene.expr)
+gene.expr = do.call(cbind, gene.expr)
 
-theta.med <- sample(c(-1,1), n.causal.gene, TRUE)
+theta.med = sample(c(-1,1), n.causal.gene, TRUE)
 
-causal.direct <- sample(p, n.causal.direct)
-theta.dir <- matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direct
+causal.direct = sample(p, n.causal.direct)
+theta.dir = matrix(rnorm(n.causal.direct), n.causal.direct, 1) / n.causal.direct
 
-y <- gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
-y <- y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
-y <- y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
+y = gene.expr[,1:n.causal.gene,drop = FALSE] \%*\% theta.med # mediation
+y = y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
+y = y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
-## just caculate univariate z-scores
-fast.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / n.obs
-    return(ret)
-}
+eqtl.tab = calc.qtl.stat(X, gene.expr)
+gwas.tab = calc.qtl.stat(X, y)
 
-fast.z.cov <- function(x, y) {
-    n.obs <- crossprod(!is.na(x), !is.na(y))
-    ret <- crossprod(replace(x, is.na(x), 0),
-                     replace(y, is.na(y), 0)) / sqrt(n.obs)
-    return(ret)
-}
+xg.beta = eqtl.tab \%>\%
+    dplyr::select(x.col, y.col, beta) \%>\%
+    tidyr::spread(key = y.col, value = beta) \%>\%
+    (function(x) as.matrix(x[1:p, -1]))
 
-xy.beta <- fast.cov(X, scale(y)) * 2 # just to better visualize
-z.xy <- fast.z.cov(X, scale(y))
-xy.beta.se <- xy.beta / (z.xy + 1e-8) + 1e-8
+xg.se = eqtl.tab \%>\%
+    dplyr::select(x.col, y.col, se) \%>\%
+    tidyr::spread(key = y.col, value = se) \%>\%
+    (function(x) as.matrix(x[1:p, -1]))
 
-################################################################
-## Use multivariate effects directly
-vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e3, do.stdize = TRUE,
-               pi = -0, tau = -4,
-               do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
-               verbose = TRUE, min.se = 1e-4,
-               print.interv = 200,
-               multivar.mediator = TRUE)
+xy.beta = gwas.tab \%>\%
+    dplyr::select(x.col, y.col, beta) \%>\%
+    tidyr::spread(key = y.col, value = beta) \%>\%
+    (function(x) as.matrix(x[1:p, -1]))
 
-eqtl.true <- matrix(nrow = p, ncol = n.genes)
-eqtl.se.true <- matrix(1, nrow = p, ncol = n.genes)
+xy.se = gwas.tab \%>\%
+    dplyr::select(x.col, y.col, se) \%>\%
+    tidyr::spread(key = y.col, value = se) \%>\%
+    (function(x) as.matrix(x[1:p, -1]))
 
-for(j in 1:n.genes) {
-    eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
-}
+vb.opt = list(nsample = 10,
+              vbiter = 3000,
+              rate = 1e-2,
+              gammax = 1e3,
+              do.stdize = TRUE,
+              pi = -0, tau = -4,
+              do.hyper = FALSE,
+              eigen.tol = 1e-2,
+              tol = 1e-8,
+              verbose = TRUE,
+              print.interv = 200,
+              multivar.mediator = FALSE)
 
-med.out <- zqtl::fit.med.zqtl(effect = xy.beta,
-                        effect.se = xy.beta.se,
-                        effect.m = eqtl.true,
-                        effect.m.se = eqtl.se.true,
-                        X.gwas = X,
-                        options = vb.opt)
+med.out = fit.med.zqtl(effect = xy.beta,
+                             effect.se = xy.se,
+                             effect.m = xg.beta,
+                             effect.m.se = xg.se,
+                             X.gwas = X,
+                             options = vb.opt)
 
-plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
-
-################################################################
-vb.opt <- list(nsample = 10, vbiter = 3000, rate = 1e-2,
-               gammax = 1e3, do.stdize = TRUE,
-               pi = -0, tau = -4, submodel.size = 3,
-               do.hyper = FALSE, eigen.tol = 1e-2, tol = 1e-8,
-               verbose = TRUE, min.se = 1e-4,
-               print.interv = 200,
-               multivar.mediator = TRUE)
-
-eqtl.true <- matrix(nrow = p, ncol = n.genes)
-eqtl.se.true <- matrix(1, nrow = p, ncol = n.genes)
-
-for(j in 1:n.genes) {
-    eqtl.true[c.qtls[,j], j] <- theta.snp.gene[,j]
-}
-
-med.out <- zqtl::fit.med.zqtl(effect = xy.beta,
-                        effect.se = xy.beta.se,
-                        effect.m = eqtl.true,
-                        effect.m.se = eqtl.se.true,
-                        X.gwas = X,
-                        options = vb.opt)
-
-plot(med.out$param.mediated$lodds, ylab = 'lodds', main = 'mediation')
-
+barplot(height = med.out$param.mediated$lodds[, 1],
+        names.arg = paste('g',1:n.genes),
+        horiz = TRUE, xlab = 'log-odds', ylab = 'mediators')
 
 }
 \author{

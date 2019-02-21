@@ -56,11 +56,15 @@ struct tag_param_row_spike_slab {};
 //                (1-alpha[j,g]) * N(0, w0[g])
 struct tag_param_mixture {};
 
+// theta ~ Beta(mu * phi, (1 - mu) * phi)
+struct tag_param_beta {};
+
 struct tag_param_sparse {};
 struct tag_param_dense {};
 
 ////////////////////////////////////////////////////////////////
 // include implementations
+#include "param_beta.hh"
 #include "param_col_slab.hh"
 #include "param_col_slab_zero.hh"
 #include "param_col_spike_gamma.hh"

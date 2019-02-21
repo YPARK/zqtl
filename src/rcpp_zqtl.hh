@@ -22,6 +22,7 @@ using namespace Rcpp;
 #include "parameters.hh"
 #include "rcpp_util.hh"
 #include "regression.hh"
+#include "regression_annotated.hh"
 #include "regression_factored.hh"
 #include "regression_mediated.hh"
 #include "residual.hh"
@@ -48,5 +49,6 @@ using Index = Mat::Index;
 #include "rcpp_zqtl_mediation.hh"
 #include "rcpp_zqtl_regression.hh"
 #include "rcpp_zqtl_vanilla.hh"
+#include "rcpp_zqtl_annotated.hh"
 
 #endif

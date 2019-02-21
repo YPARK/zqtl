@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{fit.zqtl.vanilla}
 \alias{fit.zqtl.vanilla}
-\title{Variational inference of zQTL regression}
+\title{Inference of zQTL regression without multivariate effect size.}
 \usage{
 fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 }
@@ -15,9 +15,9 @@ fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 
 \item{n}{sample size of actual data (will ignore if n = 0)}
 
-\item{multi.C}{multivariate SNP confounding factors (SNP x confounder; default: NULL)}
+\item{multi.C}{multivariate SNP annotations (SNP x something; default: NULL)}
 
-\item{univar.C}{univariate SNP confounding factors (SNP x confounder; default: NULL)}
+\item{univar.C}{univariate SNP annotations (SNP x something; default: NULL)}
 
 \item{options}{A list of inference/optimization options.}
 
@@ -63,13 +63,17 @@ fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 
 \item{out.residual}{estimate residual z-scores (default: FALSE)}
 
-\item{nboot}{Number of bootstraps followed by finemapping (default: 100)}
+\item{do.var.calc}{variance calculation (default: FALSE)}
+
+\item{scale.var}{Scaled variance calculation (default: FALSE)}
+
+\item{nboot}{Number of bootstraps (default: 0)}
+
+\item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
 \item{rseed}{Random seed}
-
-\item{scale.var}{Scaled variance calculation (default: FALSE)}
 }
 \value{
 a list of variational inference results.
@@ -83,9 +87,50 @@ a list of variational inference results.
 }
 }
 \description{
-Variational inference of zQTL regression
+Inference of zQTL regression without multivariate effect size.
 }
 \examples{
+
+n = 500
+p = 2000
+m = 1
+
+set.seed(1)
+.rnorm <- function(a, b) matrix(rnorm(a * b), a, b)
+X = .rnorm(n, p)
+Y = matrix(0, n, m)
+h2 = 0.25
+y1 = X[, 1:500] \%*\% .rnorm(500, 1) * sqrt(h2/500)
+y0 = .rnorm(n, 1) * sqrt(1 - h2)
+Y = y1 + y0
+qtl.tab = calc.qtl.stat(X, Y)
+qtl.1.tab = calc.qtl.stat(X, y1)
+z.1 = matrix(qtl.1.tab$beta/qtl.1.tab$se, ncol = 1)
+qtl.0.tab = calc.qtl.stat(X[sample(n), , drop = FALSE], y1)
+z.0 = matrix(qtl.0.tab$beta/qtl.0.tab$se, ncol = 1)
+z.out = fit.zqtl.vanilla(matrix(qtl.tab$beta, ncol=1),
+                               matrix(qtl.tab$se, ncol=1),
+                               X = X,
+                               univar.C = cbind(z.1, z.0),
+                               do.var.calc = TRUE,
+                               scale.var = TRUE,
+                               nboot.var = 100)
+
+library(dplyr)
+.make.df <- function(x) {
+    data.frame(mean = x$mean, sd = x$sd)
+}
+.power10 <- function(x, component) {
+    take.var.power10(x) \%>\%
+        .make.df() \%>\%
+        mutate(component)
+}
+var.tab = bind_rows(.power10(z.out$var$univar.tot, 'univar.tot'),
+                    .power10(z.out$var$multivar.tot, 'multivar.tot'),
+                    .power10(z.out$var$resid, 'resid'),
+                    .power10(z.out$var$univar, 'univar'))
+print(var.tab)
+
 
 }
 \author{

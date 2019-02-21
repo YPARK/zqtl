@@ -510,4 +510,10 @@ Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_slab) {
                             Rcpp::_["theta.var"] = var_param(param));
 }
 
+template <typename T>
+Rcpp::List impl_param_rcpp_list(const T &param, const tag_param_beta) {
+  return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
+                            Rcpp::_["theta.var"] = var_param(param));
+}
+
 #endif

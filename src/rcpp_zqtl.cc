@@ -137,6 +137,25 @@ RcppExport SEXP rcpp_fac_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,
   END_RCPP
 }
 
+RcppExport SEXP rcpp_annot_zqtl(SEXP effect_sexp, SEXP effect_se_sexp,
+                                SEXP x_sexp, SEXP annot_sexp, SEXP c_sexp,
+                                SEXP c_delta_sexp, SEXP options_sexp) {
+  BEGIN_RCPP
+
+  Rcpp::traits::input_parameter<const Mat>::type effect(effect_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type effect_se(effect_se_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type A(annot_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type C(c_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type Cdelta(c_delta_sexp);
+  Rcpp::traits::input_parameter<const Mat>::type X(x_sexp);
+  Rcpp::List options_list(options_sexp);
+
+  options_t opt;
+  set_options_from_list(options_list, opt);
+  return Rcpp::wrap(impl_zqtl_annot(effect, effect_se, X, A, C, Cdelta, opt));
+  END_RCPP
+}
+
 RcppExport SEXP rcpp_adj(SEXP d1, SEXP d2_start, SEXP d2_end, SEXP cis) {
   BEGIN_RCPP
   Rcpp::traits::input_parameter<const Rcpp::NumericVector&>::type d1_loc(d1);

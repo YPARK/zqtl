@@ -50,7 +50,8 @@ struct options_t {
 
     MF_SVD_INIT = true;
     MF_RIGHT_NN = true;
-    MU_MIN = 1e-2;
+    MU_MIN = 1e-4;
+    VAR_BETA_MIN = 1e-4;
 
     DO_HYPER = false;
     DO_RESCALE = false;
@@ -98,6 +99,7 @@ struct options_t {
   const bool mf_svd_init() const { return MF_SVD_INIT; }
   const bool mf_right_nn() const { return MF_RIGHT_NN; }
   const float mu_min() const { return MU_MIN; }
+  const float var_beta_min() const { return VAR_BETA_MIN; }
   const float eigen_tol() const { return EIGEN_TOL; };
   const bool std_ld() const { return STD_LD; }
   const float sample_size() const { return SAMPLE_SIZE; };
@@ -163,6 +165,7 @@ struct options_t {
   bool MF_SVD_INIT;
   bool MF_RIGHT_NN;
   float MU_MIN;
+  float VAR_BETA_MIN;
 
   float EIGEN_TOL;
   bool STD_LD;

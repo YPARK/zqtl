@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">zqtl</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.3.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.0</span>
       </span>
     </div>
 
@@ -77,6 +77,11 @@
 <a href="#notes-on-mac-os-x-users" class="anchor"></a>Notes on Mac OS X users</h2>
 <p>For some unknown reason, compiled Eigen library does not work as expected with <code>clang</code> compiler, e.g., producing lots of <code>nan</code> results. We recommend using <code>gcc</code> after version 5 that fully support <code>std=c++14</code> flag.</p>
 </div>
+<div id="required-packages" class="section level2">
+<h2 class="hasAnchor">
+<a href="#required-packages" class="anchor"></a>Required packages</h2>
+<p><code>Rcpp</code>, <code>RcppEigen</code>, <code>RcppProgress</code>, <code>RcppZiggurat</code>, <code>dplyr</code>, <code>tidyr</code></p>
+</div>
 <div id="installation-a-simple-version" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation-a-simple-version" class="anchor"></a>Installation (a simple version)</h2>
@@ -86,7 +91,6 @@
 <div id="installation-optional" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation-optional" class="anchor"></a>Installation (optional)</h2>
-<p>Prerequisite: <code>Rcpp</code>, <code>RcppEigen</code>, <code>RcppProgress</code> packages</p>
 <p>Make sure your R development environment support <code>C++14</code> by including <code>-std=c++14</code> to <code>CFLAGS</code> and <code>CXXFLAGS</code> in <code>~/.R/Makevars</code> file. For instance,</p>
 <pre><code>CXX = g++-6
 CXXFLAGS = -O3 -std=c++14
@@ -102,6 +106,21 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <div id="release-notes" class="section level1">
 <h1 class="hasAnchor">
 <a href="#release-notes" class="anchor"></a>Release notes</h1>
+<div id="v-1-4-0" class="section level3">
+<h3 class="hasAnchor">
+<a href="#v-1-4-0" class="anchor"></a>v 1.4.0</h3>
+<ul>
+<li>Add useful utilities</li>
+</ul>
+</div>
+<div id="v-1-3-6" class="section level3">
+<h3 class="hasAnchor">
+<a href="#v-1-3-6" class="anchor"></a>v.1.3.6</h3>
+<ul>
+<li>Improve variance calculation</li>
+<li>Partitioned variance calculation with annotation information</li>
+</ul>
+</div>
 <div id="v-1-3-5" class="section level3">
 <h3 class="hasAnchor">
 <a href="#v-1-3-5" class="anchor"></a>v.1.3.5</h3>

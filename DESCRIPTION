@@ -1,9 +1,9 @@
 Package: zqtl
 Type: Package
 Title: Summary-based multivariate QTL modeling
-Version: 1.3.5
-Date: 2018-10-03
-Author: Yongjin Park, Abhishek Sarkar, Liang He, and Manolis Kellis
+Version: 1.4.0
+Date: 2019-02-21
+Author: Yongjin Park, Abhishek Sarkar, Liang He, Khoi Nguyen, and Manolis Kellis
 Maintainer: Yongjin Park <ypp@csail.mit.edu>
 Description: Implementation of zQTL methods
 License: MIT License

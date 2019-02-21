@@ -273,10 +273,6 @@ struct factored_regression_t {
     resolve_param(ThetaR);
     this->resolve();
   }
-
-  struct square_op_t {
-    Scalar operator()(const Scalar &x) const { return x * x; }
-  } square_op;
 };
 
 template <typename ParamLeft, typename ParamRight, typename Scalar,
