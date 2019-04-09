@@ -169,10 +169,13 @@ for((ld_idx=1; ld_idx<=$nLD; ++ld_idx)); do
 
     $TABIX -p bed $gwas_ld
 
+    na=$($TABIX $ANNOT_BED_FILE $interval | wc -l)
+    [ $na -gt 1 ] || continue
+    
     echo "Parsing annotations ..."
-
     annot_names=$($TABIX $ANNOT_BED_FILE $interval | awk -F'\t' '{ annot[$NF]++ } END { for(a in annot) print a }')
-
+    echo "$annot_names"
+    
     for aa in $annot_names; do
 
 	gwas_ld_aa=$gwas_ld_dir/$aa.bed.gz
