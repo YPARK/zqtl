@@ -141,6 +141,8 @@ for((ld_idx=1; ld_idx<=$nLD; ++ld_idx)); do
 
     plink_hdr=$GENO_HDR/$chr
 
+    echo "Finding PLINK $plink_hdr ..."
+
     [ -f $plink_hdr.bed ] || continue
 
     ###################################################
@@ -151,16 +153,25 @@ for((ld_idx=1; ld_idx<=$nLD; ++ld_idx)); do
     annot_ld=$TEMPDIR/$ld_idx/annot.bed.gz
     gwas_ld_dir=$TEMPDIR/$ld_idx/stratified
 
+   
     $TABIX -h $GWAS_BED_FILE $interval | sort -k1,1 -k2,2n | bgzip -c > $gwas_ld
-    $TABIX -p bed $gwas_ld
+    # Check empty GWAS in this LD block
+    n=$(cat $gwas_ld | gzip -d | wc -l)
+
+    if [ $n -lt 2 ]; then
+	interval2=$(echo $interval | sed 's/chr//g')
+	$TABIX -h $GWAS_BED_FILE $interval2 | awk 'NR == 1 { print } NR > 1 { print "chr" $0 }' | sort -k1,1 -k2,2n | bgzip -c > $gwas_ld
+    fi
 
     # Check empty GWAS in this LD block
     n=$(cat $gwas_ld | gzip -d | wc -l)
     [ $n -gt 2 ] || continue
 
+    $TABIX -p bed $gwas_ld
+
     echo "Parsing annotations ..."
 
-    annot_names=$($TABIX $ANNOT_BED_FILE $interval | awk '{ annot[$NF]++ } END { for(a in annot) print a }')
+    annot_names=$($TABIX $ANNOT_BED_FILE $interval | awk -F'\t' '{ annot[$NF]++ } END { for(a in annot) print a }')
 
     for aa in $annot_names; do
 

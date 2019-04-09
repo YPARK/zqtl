@@ -88,6 +88,12 @@ UD = sweep(ld.svd$U, 2, ld.svd$D, `*`)[, 1:K, drop = FALSE]
 Vt = ld.svd$V.t[1:K, , drop = FALSE]
 DVt = sweep(ld.svd$V.t, 1, ld.svd$D, `*`)[1:K, , drop = FALSE]
 
+## could have multiple score for the same spot
+gwas.tab = gwas.tab %>%
+    group_by(plink.pos) %>%
+    slice(which.max(abs(beta/se))) %>%
+    ungroup()
+
 z = left_join(x.tib, gwas.tab, by = c("snp.loc", "plink.pos")) %>%
     mutate(z = beta/se) %>%
     select(z) %>%
