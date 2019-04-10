@@ -18,6 +18,7 @@ K = as.integer(argv[7])      # e.g., 10
 OUT.FILE = argv[8]           # e.g., 'temp/out.gz'
 
 library(dplyr)
+library(tidyr)
 library(readr)
 
 dir.create(dirname(OUT.FILE), recursive=TRUE, showWarnings=FALSE)
@@ -143,8 +144,6 @@ take.adjusted.y <- function(.annot) {
 
     }
 
-    ## normalize by the number of variants
-    y.1 = y.1 * (ntot / n1)
     return(y.1)
 }
 
@@ -165,6 +164,7 @@ for(j in 1:n.annot) {
         gsub(pattern='.bed.gz',replacement='')
 
     annot.x = .read.tsv(.annot.file)
+    n.a = 0
 
     if(nrow(annot.x) > 0) {
         annot.x = annot.x %>%
@@ -177,17 +177,32 @@ for(j in 1:n.annot) {
                 select(x.pos) %>%
                 unlist(use.names=FALSE)
 
-            if(length(annot.x) > 0) {
+            n.a = length(annot.x)
+            if(n.a > 0) {
                 Y.annot[, j] = take.adjusted.y(annot.x)
                 annot.pos = c(annot.pos, annot.x) %>% unique()
             }
         }
     }
-    annot.names = c(annot.names, .annot.name)
+
+    .annot.tab = data.frame(annotation = .annot.name,
+                            n.a = n.a)
+
+    annot.names = rbind(annot.names,.annot.tab)
 }
 
+annot.names = annot.names %>%
+    mutate(annotation = as.character(annotation))
+
 Y.annot = as.data.frame(Y.annot)
-colnames(Y.annot) = annot.names
+colnames(Y.annot) = annot.names$annotation
+
+ind.tab = data.frame(fid = as.character(plink$FAM[, 1]),
+                     iid = as.character(plink$FAM[, 2]))
+
+Y.annot = cbind(ind.tab, Y.annot) %>%
+    gather(key='annotation', value='y.a',-fid, -iid) %>%
+    left_join(annot.names)
 
 ###########################
 ## Find the un-annotated ##
@@ -198,14 +213,17 @@ unannotated = setdiff(x.tib$x.pos, annot.pos)
 n0 = length(unannotated)
 y0 =  take.adjusted.y(unannotated)
 
-out.tab = data.frame(ld.idx = LD.IDX,
-                     fid = plink$FAM[, 1],
+out.tab = data.frame(fid = plink$FAM[, 1],
                      iid = plink$FAM[, 2],
-                     nsnp = nsnp,
-                     n0 = n0,
                      y=as.numeric(y),
                      y0=as.numeric(y0))
 
-out.tab = cbind(out.tab, Y.annot)
+out.tab = Y.annot %>% left_join(out.tab) %>%
+    mutate(ld.idx = LD.IDX) %>% 
+    mutate(nsnp = nsnp) %>% 
+    mutate(n0 = n0) %>% 
+    mutate(y = round(y, 4)) %>% 
+    mutate(y0 = round(y0, 4)) %>% 
+    mutate(y.a = round(y.a, 4))
 
 write_tsv(out.tab, OUT.FILE)

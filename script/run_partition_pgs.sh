@@ -231,7 +231,11 @@ done
 
 ################################################################
 # 4. Combine
-./pgs_combine.R $TEMPDIR/ $OUT_FILE || exit 1
+ls -1 $TEMPDIR/*.pgs.gz | \
+    xargs -I file cat file | \
+    gzip -d | \
+    awk 'NR == 1 || ($1 != "fid" && $2 != "iid")' | \
+    gzip -c > $OUT_FILE
 
 [ -d $TEMPDIR ] && rm -r $TEMPDIR
 
