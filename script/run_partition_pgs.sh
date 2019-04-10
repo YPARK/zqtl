@@ -169,6 +169,7 @@ for((ld_idx=1; ld_idx<=$nLD; ++ld_idx)); do
 
     $TABIX -p bed $gwas_ld
 
+    # Check empty annotation in this LD block
     na=$($TABIX $ANNOT_BED_FILE $interval | wc -l)
     [ $na -gt 1 ] || continue
     

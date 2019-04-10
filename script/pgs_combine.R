@@ -33,13 +33,13 @@ pgs.files = list.files(PGS.DIR, pattern = '.pgs.gz', full.names=TRUE)
 pgs.y.tab = lapply(pgs.files, read.pgs.y) %>%
     bind_rows() %>% 
     group_by(fid, iid) %>%
-    summarize(y = sum(y), y0 = sum(y0)) %>%
+    summarize(y = sum(y, na.rm=TRUE), y0 = sum(y0, na.rm=TRUE)) %>%
     ungroup()
 
 pgs.annot.tab = lapply(pgs.files, read.pgs.annotation) %>%
     bind_rows() %>% 
     group_by(fid, iid, annotation) %>%
-    summarize(y = sum(y.a)) %>%
+    summarize(y = sum(y.a, na.rm=TRUE)) %>%
     ungroup() %>%
     spread(key=annotation, value=y, fill=0)
 

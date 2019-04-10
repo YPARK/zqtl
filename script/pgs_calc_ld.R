@@ -109,31 +109,31 @@ y = UDinv %*% (Vt %*% z)
 annot.tbi.files = list.files(ANNOT.DIR, pattern = '.bed.gz.tbi', full.names=TRUE)
 annot.bed.files = sapply(annot.tbi.files, gsub, pattern='.tbi', replacement='')
 
-take.adjusted.y <- function(annot.x) {
+take.adjusted.y <- function(.annot) {
 
-    n1 = length(annot.x)
+    n1 = length(.annot)
 
-    if(length(n1) < 1) {
+    if(n1 < 1) {
         return(matrix(0, nrow(U), 1))
     }
 
     ntot = nrow(x.tib)
     n0 = ntot - n1
 
-    z.1 = z[annot.x, , drop = FALSE]
-    Vt.1 = Vt[, annot.x, drop = FALSE]
+    z.1 = z[.annot, , drop = FALSE]
+    Vt.1 = Vt[, .annot, drop = FALSE]
     y.1 = UDinv %*% (Vt.1 %*% z.1)
 
     ## Adjust the influence of annotation potentially leaking out
     if(n0 > 0) {
 
         ## rbar = t(D*V0*1) * (D*V0*1) / n0
-        DVt.0 = DVt[, -annot.x, drop = FALSE] / sqrt(n0)
+        DVt.0 = DVt[, -.annot, drop = FALSE] / sqrt(n0)
         eta.0 = apply(DVt.0, 1, sum)
         rbar = sum(eta.0^2)
 
         ## z1'*V1*t(V0)*1
-        Vt.0 = Vt[, -annot.x, drop = FALSE]
+        Vt.0 = Vt[, -.annot, drop = FALSE]
         Vt.0.sum = apply(Vt.0 / n0, 1, sum)
 
         delta.a = (t(z.1) %*% t(Vt.1) %*% Vt.0.sum / rbar)
