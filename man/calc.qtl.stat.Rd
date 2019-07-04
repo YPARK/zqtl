@@ -12,6 +12,8 @@ calc.qtl.stat(xx, yy)
 \item{yy}{n x t phenotype matrix}
 
 \item{se.min}{mininum standard error (default: 1e-8)}
+
+\item{verbose}{(default: FALSE)}
 }
 \value{
 summary statistics matrix

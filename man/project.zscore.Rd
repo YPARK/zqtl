@@ -4,10 +4,10 @@
 \alias{project.zscore}
 \title{Project z-scores on to different LD block}
 \usage{
-project.zscore(ld.src.tgt, ld.svd.src, z.src)
+project.zscore(ld.svd.tgt, ld.svd.src, z.src)
 }
 \arguments{
-\item{ld.src.tgt}{SVD result on the target LD block}
+\item{ld.svd.tgt}{SVD result on the target LD block}
 
 \item{ld.svd.src}{SVD result on the source LD block}
 

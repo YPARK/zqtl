@@ -34,8 +34,8 @@ impute.zscore <- function(Z, V.t, observed) {
 #'
 #' @export
 #' @name project.zscore
-#' @usage project.zscore(ld.src.tgt, ld.svd.src, z.src)
-#' @param ld.src.tgt SVD result on the target LD block
+#' @usage project.zscore(ld.svd.tgt, ld.svd.src, z.src)
+#' @param ld.svd.tgt SVD result on the target LD block
 #' @param ld.svd.src SVD result on the source LD block
 #' @param z.src z-score matrix of the source LD block
 #' @param stdize standardize if TRUE, otherwise just center the mean
@@ -47,11 +47,11 @@ impute.zscore <- function(Z, V.t, observed) {
 #' Therefore, a new z-score projected onto the target LD block will be:
 #' \deqn{\mathbf{z}_{tgt} \sim \mathcal{N}\!\left(V_{tgt}D_{tgt}U_{tgt}^{\top}\mathbf{y}_{src}, V_{tgt}D_{tgt}^{2}V_{tgt}^{\top}\right).}
 #' 
-project.zscore <- function(ld.src.tgt, ld.svd.src, z.src, ...) {
+project.zscore <- function(ld.svd.tgt, ld.svd.src, z.src, ...) {
 
-    U.1 = ld.src.tgt$U
-    D.1 = ld.src.tgt$D
-    Vt.1 = ld.src.tgt$V.t
+    U.1 = ld.svd.tgt$U
+    D.1 = ld.svd.tgt$D
+    Vt.1 = ld.svd.tgt$V.t
 
     U.0 = ld.svd.src$U
     D.0 = ld.svd.src$D
@@ -87,7 +87,7 @@ project.zscore <- function(ld.src.tgt, ld.svd.src, z.src, ...) {
 #' \deqn{\mathbf{z} \gets (\mathbf{z} - \mu I) / \tau.}
 #' 
 scale.zscore <- function(Z, V.t, D, stdize = TRUE) {
-    library(dplyr)
+    loadNamespace('dplyr')
     .p = ncol(V.t)
     .K = nrow(V.t)
 
@@ -887,7 +887,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' Mediation analysis
 #'
 #' @examples
-#'
+#' library(dplyr)
+#' 
 #' n = 500
 #' p = 1000
 #' n.genes = 10
@@ -924,7 +925,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' y = y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 #'
 #' eqtl.tab = calc.qtl.stat(X, gene.expr)
-#' gwas.tab = calc.qtl.stat(X, y)
+#' gwas.tab = calc.qtl.stat(X, y) 
 #'
 #' xg.beta = eqtl.tab %>%
 #'     dplyr::select(x.col, y.col, beta) %>%
@@ -1261,15 +1262,16 @@ log.msg <- function(...) {
 #' @param xx n x p genotype matrix
 #' @param yy n x t phenotype matrix
 #' @param se.min mininum standard error (default: 1e-8)
+#' @param verbose (default: FALSE)
 #'
 #' @return summary statistics matrix
 #'
 #' @export
 #'
-calc.qtl.stat <- function(xx, yy, se.min = 1e-8) {
+calc.qtl.stat <- function(xx, yy, se.min = 1e-8, verbose = FALSE) {
 
-    require(dplyr)
-    require(tidyr)
+    loadNamespace('dplyr')
+    loadNamespace('tidyr')
 
     .xx = scale(xx)
     .yy = scale(yy)
@@ -1282,7 +1284,9 @@ calc.qtl.stat <- function(xx, yy, se.min = 1e-8) {
     n.obs = crossprod(!is.na(.xx), !is.na(.yy))
     beta.mat = crossprod(.xx %>% rm.na.zero(), .yy %>% rm.na.zero()) / n.obs
 
-    log.msg('Computed cross-products')
+    if(verbose){
+        log.msg('Computed cross-products')
+    }
 
     ## residual standard deviation
     resid.se.mat = matrix(NA, ncol(.xx), ncol(.yy))
@@ -1294,7 +1298,9 @@ calc.qtl.stat <- function(xx, yy, se.min = 1e-8) {
         err.k = sweep(sweep(.xx, 2, beta.k, `*`), 1, yy.k, `-`)
         se.k = apply(err.k, 2, sd, na.rm = TRUE)
 
-        log.msg('Residual on the column %d', k)
+        if(verbose) {
+            log.msg('Residual on the column %d', k)
+        }
         resid.se.mat[, k] = se.k + se.min
     }
 
