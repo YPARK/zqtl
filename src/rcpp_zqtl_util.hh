@@ -55,15 +55,21 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   svd.compute(Xsafe, Eigen::ComputeThinU | Eigen::ComputeThinV);
   if (opt.verbose()) TLOG("Done SVD");
 
-  // Walk through eigen spectrum and pick components
+  ///////////////////////////////////////////////////
+  // Walk through the spectrum and pick components //
+  ///////////////////////////////////////////////////
+
   Index num_comp = 0;
   Mat d2vec = svd.singularValues() / n;
   d2vec = d2vec.cwiseProduct(d2vec);
+
   for (num_comp = 0; num_comp < svd.matrixV().cols(); ++num_comp) {
     if (d2vec(num_comp) < TOL) break;
   }
 
-  if (opt.verbose()) TLOG("Included number of components : " << num_comp);
+  if (opt.verbose()) {
+    TLOG("Included number of components : " << num_comp);
+  }
 
   if (num_comp < 1) {
     ELOG("0 Number of SVD component!");
@@ -72,6 +78,12 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   // Don't forget to rescale
   Mat dvec_out(num_comp, 1);
   dvec_out = svd.singularValues().head(num_comp) / n;
+
+  // Regularize to truncate very small values
+  Scalar reg_value = opt.eigen_reg();
+  Scalar _reg = reg_value / static_cast<Scalar>(num_comp);
+  dvec_out += _reg * Mat::Ones(num_comp, 1);
+
   Mat Vt(num_comp, Xsafe.cols());
   Vt = svd.matrixV().leftCols(num_comp).transpose();
   Mat U(Xsafe.rows(), num_comp);
@@ -184,6 +196,8 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
     opt.RSEED = Rcpp::as<Scalar>(_list["rseed"]);
   if (_list.containsElementNamed("eigen.tol"))
     opt.EIGEN_TOL = Rcpp::as<Scalar>(_list["eigen.tol"]);
+  if (_list.containsElementNamed("eigen.reg"))
+    opt.EIGEN_REG = Rcpp::as<Scalar>(_list["eigen.reg"]);
   if (_list.containsElementNamed("sample.size"))
     opt.SAMPLE_SIZE = Rcpp::as<Scalar>(_list["sample.size"]);
   if (_list.containsElementNamed("med.sample.size"))

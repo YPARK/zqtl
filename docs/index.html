@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">zqtl</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.1</span>
       </span>
     </div>
 
@@ -72,10 +72,16 @@
 </script><div id="summary-based-qtl-mapping" class="section level1">
 <div class="page-header"><h1 class="hasAnchor">
 <a href="#summary-based-qtl-mapping" class="anchor"></a>Summary-based QTL mapping</h1></div>
-<div id="notes-on-mac-os-x-users" class="section level2">
+<div id="notes-on-mac-os" class="section level2">
 <h2 class="hasAnchor">
-<a href="#notes-on-mac-os-x-users" class="anchor"></a>Notes on Mac OS X users</h2>
-<p>For some unknown reason, compiled Eigen library does not work as expected with <code>clang</code> compiler, e.g., producing lots of <code>nan</code> results. We recommend using <code>gcc</code> after version 5 that fully support <code>std=c++14</code> flag.</p>
+<a href="#notes-on-mac-os" class="anchor"></a>Notes on Mac OS</h2>
+<p>For some unknown reasons, compiled Eigen library does not work as expected with the <code>clang</code> compiler. The matrix operations keep producing lots of <code>nan</code> results. We recommend using <code>gcc</code> after version 5 that fully support <code>std=c++14</code> flag.</p>
+</div>
+<div id="notes-on-conda" class="section level2">
+<h2 class="hasAnchor">
+<a href="#notes-on-conda" class="anchor"></a>Notes on <code>Conda</code>
+</h2>
+<p>It is very easy to mess up your C++ and R library within the <code>conda</code> environment. Even <code>tidyverse</code> doesn’t work as expected in the conda version. Use regular <code>R</code> installation that deposits library files in a reasonable location.</p>
 </div>
 <div id="required-packages" class="section level2">
 <h2 class="hasAnchor">
@@ -106,6 +112,13 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <div id="release-notes" class="section level1">
 <h1 class="hasAnchor">
 <a href="#release-notes" class="anchor"></a>Release notes</h1>
+<div id="v-1-4-1" class="section level3">
+<h3 class="hasAnchor">
+<a href="#v-1-4-1" class="anchor"></a>v 1.4.1</h3>
+<ul>
+<li>Regularization of eigen values (the <code>eigen.reg</code> parameter)</li>
+</ul>
+</div>
 <div id="v-1-4-0" class="section level3">
 <h3 class="hasAnchor">
 <a href="#v-1-4-0" class="anchor"></a>v 1.4.0</h3>

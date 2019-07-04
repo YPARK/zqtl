@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">zqtl</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.1</span>
       </span>
     </div>
 
@@ -215,6 +215,10 @@
       <td><p>Error tolerance in Eigen decomposition (default: 0.01)</p></td>
     </tr>
     <tr>
+      <th>eigen.reg</th>
+      <td><p>Regularization of Eigen decomposition (default: 0.0)</p></td>
+    </tr>
+    <tr>
       <th>do.stdize</th>
       <td><p>Standardize (default: TRUE)</p></td>
     </tr>
@@ -302,11 +306,11 @@
                     <span class='fu'>.power10</span>(<span class='no'>z.out</span>$<span class='no'>var</span>$<span class='no'>resid</span>, <span class='st'>'resid'</span>),
                     <span class='fu'>.power10</span>(<span class='no'>z.out</span>$<span class='no'>var</span>$<span class='no'>univar</span>, <span class='st'>'univar'</span>))
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/print'>print</a></span>(<span class='no'>var.tab</span>)</div><div class='output co'>#&gt;           mean           sd    component
-#&gt; 1 2.491964e-01 6.854245e-03   univar.tot
-#&gt; 2 4.940722e-10 5.937249e-11 multivar.tot
-#&gt; 3 4.801067e-01 1.258703e-03        resid
-#&gt; 4 2.293463e-01 6.763122e-02       univar
-#&gt; 5 2.135182e-06 5.750750e-06       univar</div><div class='input'>
+#&gt; 1 2.672790e-01 4.716815e-03   univar.tot
+#&gt; 2 2.724073e-09 2.873068e-10 multivar.tot
+#&gt; 3 4.875334e-01 1.237112e-03        resid
+#&gt; 4 2.693141e-01 5.457826e-02       univar
+#&gt; 5 1.838433e-06 3.944846e-06       univar</div><div class='input'>
 
 </div></pre>
   </div>

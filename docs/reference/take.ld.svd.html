@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">zqtl</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.1</span>
       </span>
     </div>
 
@@ -105,7 +105,7 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>take.ld.svd</span>(<span class='no'>X</span>, <span class='no'>options</span>, <span class='no'>eigen.tol</span>, <span class='no'>do.stdize</span>)</pre>
+    <pre class="usage"><span class='fu'>take.ld.svd</span>(<span class='no'>X</span>, <span class='no'>options</span>, <span class='no'>eigen.tol</span>, <span class='no'>eigen.reg</span>, <span class='no'>do.stdize</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -121,6 +121,10 @@
     <tr>
       <th>eigen.tol</th>
       <td><p>Error tolerance in Eigen decomposition (default: 0.01)</p></td>
+    </tr>
+    <tr>
+      <th>eigen.reg</th>
+      <td><p>Regularization of Eigen decomposition (default: 0.0)</p></td>
     </tr>
     <tr>
       <th>do.stdize</th>

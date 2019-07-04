@@ -71,6 +71,8 @@ fit.zqtl(effect, effect.se, X)
 
 \item{eigen.tol}{Error tolerance in Eigen decomposition (default: 0.01)}
 
+\item{eigen.reg}{Regularization of Eigen decomposition (default: 0.0)}
+
 \item{do.stdize}{Standardize (default: TRUE)}
 
 \item{out.residual}{estimate residual z-scores (default: FALSE)}

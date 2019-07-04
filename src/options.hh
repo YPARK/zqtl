@@ -34,7 +34,9 @@ struct options_t {
     WITH_LD_MATRIX = false;
     WITH_RANDOM_EFFECT = false;
 
-    EIGEN_TOL = 0.1;
+    EIGEN_TOL = 0.01;
+    EIGEN_REG = 0.0;
+
     STD_LD = true;
     SAMPLE_SIZE = 0.0;
     M_SAMPLE_SIZE = 0.0;
@@ -101,6 +103,7 @@ struct options_t {
   const float mu_min() const { return MU_MIN; }
   const float var_beta_min() const { return VAR_BETA_MIN; }
   const float eigen_tol() const { return EIGEN_TOL; };
+  const float eigen_reg() const { return EIGEN_REG; };
   const bool std_ld() const { return STD_LD; }
   const float sample_size() const { return SAMPLE_SIZE; };
   const float m_sample_size() const { return M_SAMPLE_SIZE; };
@@ -168,6 +171,7 @@ struct options_t {
   float VAR_BETA_MIN;
 
   float EIGEN_TOL;
+  float EIGEN_REG;
   bool STD_LD;
   float SAMPLE_SIZE;
   float M_SAMPLE_SIZE;

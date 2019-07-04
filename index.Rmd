@@ -10,12 +10,19 @@
 
 # Summary-based QTL mapping
 
-## Notes on Mac OS X users
+## Notes on Mac OS
 
-For some unknown reason, compiled Eigen library does not work as
-expected with `clang` compiler, e.g., producing lots of `nan` results.
-We recommend using `gcc` after version 5 that fully support
-`std=c++14` flag.
+For some unknown reasons, compiled Eigen library does not work as
+expected with the `clang` compiler.  The matrix operations keep
+producing lots of `nan` results.  We recommend using `gcc` after
+version 5 that fully support `std=c++14` flag.
+
+## Notes on `Conda`
+
+It is very easy to mess up your C++ and R library within the `conda`
+environment. Even `tidyverse` doesn't work as expected in the conda
+version.  Use regular `R` installation that deposits library files in
+a reasonable location.
 
 ## Required packages
 
@@ -60,6 +67,10 @@ options (this may not be true).
 Enjoy!
 
 # Release notes
+
+### v 1.4.1
+
+- Regularization of eigen values (the `eigen.reg` parameter)
 
 ### v 1.4.0
 

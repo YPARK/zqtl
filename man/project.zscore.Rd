@@ -12,6 +12,8 @@ project.zscore(ld.src.tgt, ld.svd.src, z.src)
 \item{ld.svd.src}{SVD result on the source LD block}
 
 \item{z.src}{z-score matrix of the source LD block}
+
+\item{stdize}{standardize if TRUE, otherwise just center the mean}
 }
 \value{
 new z-score matrix

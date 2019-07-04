@@ -4,7 +4,7 @@
 \alias{take.ld.svd}
 \title{Decompose the scaled genotype matrix.}
 \usage{
-take.ld.svd(X, options, eigen.tol, do.stdize)
+take.ld.svd(X, options, eigen.tol, eigen.reg, do.stdize)
 }
 \arguments{
 \item{X}{n x p matrix}
@@ -12,6 +12,8 @@ take.ld.svd(X, options, eigen.tol, do.stdize)
 \item{options}{a list of options}
 
 \item{eigen.tol}{Error tolerance in Eigen decomposition (default: 0.01)}
+
+\item{eigen.reg}{Regularization of Eigen decomposition (default: 0.0)}
 
 \item{do.stdize}{Standardize (default: TRUE)}
 }

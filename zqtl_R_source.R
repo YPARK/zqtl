@@ -38,6 +38,7 @@ impute.zscore <- function(Z, V.t, observed) {
 #' @param ld.src.tgt SVD result on the target LD block
 #' @param ld.svd.src SVD result on the source LD block
 #' @param z.src z-score matrix of the source LD block
+#' @param stdize standardize if TRUE, otherwise just center the mean
 #' @return new z-score matrix
 #'
 #' @details
@@ -46,7 +47,7 @@ impute.zscore <- function(Z, V.t, observed) {
 #' Therefore, a new z-score projected onto the target LD block will be:
 #' \deqn{\mathbf{z}_{tgt} \sim \mathcal{N}\!\left(V_{tgt}D_{tgt}U_{tgt}^{\top}\mathbf{y}_{src}, V_{tgt}D_{tgt}^{2}V_{tgt}^{\top}\right).}
 #' 
-project.zscore <- function(ld.src.tgt, ld.svd.src, z.src) {
+project.zscore <- function(ld.src.tgt, ld.svd.src, z.src, ...) {
 
     U.1 = ld.src.tgt$U
     D.1 = ld.src.tgt$D
@@ -61,7 +62,7 @@ project.zscore <- function(ld.src.tgt, ld.svd.src, z.src) {
     ret = t(U.1) %*% ret
     ret = sweep(t(Vt.1), 2, D.1, `*`) %*% ret
 
-    ret = scale.zscore(ret, Vt.1, D.1)
+    ret = scale.zscore(ret, Vt.1, D.1, ...)
     return(ret)
 }
 
@@ -86,9 +87,7 @@ project.zscore <- function(ld.src.tgt, ld.svd.src, z.src) {
 #' \deqn{\mathbf{z} \gets (\mathbf{z} - \mu I) / \tau.}
 #' 
 scale.zscore <- function(Z, V.t, D, stdize = TRUE) {
-
-    require(dplyr)
-
+    library(dplyr)
     .p = ncol(V.t)
     .K = nrow(V.t)
 
@@ -109,8 +108,8 @@ scale.zscore <- function(Z, V.t, D, stdize = TRUE) {
     z.mean = t(DV.t) %*% (.x %*% .mu)
     if(stdize) {
         z.sd = (.y - .x %*% .mu) %>%
-            (function(.c) apply(.c^2, 2, sum) / (.K - 1)) %>%
-            sqrt()
+            (function(.c) apply(.c^2, 2, sum) / (.K - 1))
+        z.sd = sqrt(z.sd)
         ret = sweep(Z - z.mean, 2, pmax(z.sd, 1e-8), `/`)
     } else {
         ret = Z - z.mean
@@ -188,6 +187,7 @@ take.var.power10 <- function(var.result) {
 #' @param print.interv Printing interval (default: 10)
 #' @param nthread Number of threads during calculation (default: 1)
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param eigen.reg Regularization of Eigen decomposition (default: 0.0)
 #' @param do.stdize Standardize (default: TRUE)
 #' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
@@ -278,6 +278,7 @@ fit.zqtl.vanilla <- function(effect,           # marginal effect : y ~ x
                              print.interv = 10,
                              nthread = 1,
                              eigen.tol = 1e-2,
+                             eigen.reg = 0,
                              do.stdize = TRUE,
                              out.residual = FALSE,
                              do.var.calc = FALSE,
@@ -315,7 +316,8 @@ fit.zqtl.vanilla <- function(effect,           # marginal effect : y ~ x
     opt.vars = c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                  'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                  'jitter', 'nsample', 'vbiter', 'verbose',
-                 'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
+                 'print.interv', 'nthread', 'eigen.tol', 'eigen.reg',
+                 'do.stdize', 'out.residual', 'min.se',
                  'rseed', 'do.var.calc', 'scale.var', 'nboot', 'nboot.var')
 
     .eval <- function(txt) eval(parse(text = txt))
@@ -383,6 +385,7 @@ fit.zqtl.vanilla <- function(effect,           # marginal effect : y ~ x
 #' @param print.interv Printing interval (default: 10)
 #' @param nthread Number of threads during calculation (default: 1)
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param eigen.reg Regularization of Eigen decomposition (default: 0.0)
 #' @param do.stdize Standardize (default: TRUE)
 #' @param out.residual estimate residual z-scores (default: FALSE)
 #' @param do.var.calc variance calculation (default: FALSE)
@@ -534,6 +537,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
                      print.interv = 10,
                      nthread = 1,
                      eigen.tol = 1e-2,
+                     eigen.reg = 0,
                      do.stdize = TRUE,
                      out.residual = FALSE,
                      do.var.calc = FALSE,
@@ -571,7 +575,8 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
     opt.vars = c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                  'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                  'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
-                 'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
+                 'print.interv', 'nthread', 'eigen.tol', 'eigen.reg',
+                 'do.stdize', 'out.residual', 'min.se',
                  'rseed', 'do.var.calc', 'scale.var', 'nboot', 'nboot.var')
 
     .eval <- function(txt) eval(parse(text = txt))
@@ -636,6 +641,7 @@ fit.zqtl <- function(effect,              # marginal effect : y ~ x
 #' @param print.interv Printing interval (default: 10)
 #' @param nthread Number of threads during calculation (default: 1)
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param eigen.reg Regularization of Eigen decomposition (default: 0.0)
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
@@ -763,6 +769,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
                                print.interv = 10,
                                nthread = 1,
                                eigen.tol = 1e-2,
+                               eigen.reg = 0,
                                do.stdize = TRUE,
                                min.se = 1e-4,
                                factorization.model = 0,
@@ -778,7 +785,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
     opt.vars = c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                  'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                  'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init', 'right.nn', 'mu.min',
-                 'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'min.se',
+                 'print.interv', 'nthread', 'eigen.tol', 'eigen.reg', 'do.stdize', 'min.se',
                  'rseed', 'factorization.model')
 
     .eval <- function(txt) eval(parse(text = txt))
@@ -855,6 +862,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' @param print.interv Printing interval (default: 10)
 #' @param nthread Number of threads during calculation (default: 1)
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param eigen.reg Regularization of Eigen decomposition (default: 0.0)
 #' @param do.stdize Standardize (default: TRUE)
 #' @param min.se Minimum level of SE (default: 1e-4)
 #' @param rseed Random seed
@@ -1010,6 +1018,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          print.interv = 10,
                          nthread = 1,
                          eigen.tol = 1e-2,
+                         eigen.reg = 0,
                          do.stdize = TRUE,
                          out.residual = FALSE,
                          min.se = 1e-4,
@@ -1048,7 +1057,8 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
     opt.vars = c('do.hyper', 'do.rescale', 'tau', 'pi', 'tau.lb',
                  'tau.ub', 'pi.lb', 'pi.ub', 'tol', 'gammax', 'rate', 'decay',
                  'jitter', 'nsample', 'vbiter', 'verbose', 'k', 'svd.init',
-                 'print.interv', 'nthread', 'eigen.tol', 'do.stdize', 'out.residual', 'min.se',
+                 'print.interv', 'nthread', 'eigen.tol', 'eigen.reg',
+                 'do.stdize', 'out.residual', 'min.se',
                  'rseed', 'do.var.calc', 'num.strat.size', 'nboot', 'nboot.var', 'scale.var',
                  'multivar.mediator', 'de.propensity', 'de.factorization', 'factorization.model',
                  'do.direct.estimation', 'do.finemap.direct',
@@ -1146,11 +1156,12 @@ take.ld.pairs <- function(X, cutoff = 0.05, stdize = FALSE) {
 #' Decompose the scaled genotype matrix.
 #'
 #' @name take.ld.svd
-#' @usage take.ld.svd(X, options, eigen.tol, do.stdize)
+#' @usage take.ld.svd(X, options, eigen.tol, eigen.reg, do.stdize)
 #'
 #' @param X n x p matrix
 #' @param options a list of options
 #' @param eigen.tol Error tolerance in Eigen decomposition (default: 0.01)
+#' @param eigen.reg Regularization of Eigen decomposition (default: 0.0)
 #' @param do.stdize Standardize (default: TRUE)
 #'
 #' @details
@@ -1163,9 +1174,10 @@ take.ld.pairs <- function(X, cutoff = 0.05, stdize = FALSE) {
 #'
 take.ld.svd <- function(X, options = list(),
                         eigen.tol = 1e-2,
+                        eigen.reg = 0,
                         do.stdize = TRUE){
 
-    opt.vars = c('eigen.tol', 'do.stdize')
+    opt.vars = c('eigen.tol', 'eigen.reg', 'do.stdize')
 
     .eval <- function(txt) eval(parse(text = txt))
     for(v in opt.vars) {
