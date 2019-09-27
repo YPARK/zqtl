@@ -87,11 +87,8 @@ project.zscore <- function(ld.svd.tgt, ld.svd.src, z.src, ...) {
 #' \deqn{\mathbf{z} \gets (\mathbf{z} - \mu I) / \tau.}
 #' 
 scale.zscore <- function(Z, V.t, D, stdize = TRUE) {
-<<<<<<< HEAD
-    loadNamespace('dplyr')
-=======
-    loadNamespace(dplyr)
->>>>>>> 1b0da0ae48f273eeb721b284eab0bca4fb37377e
+    loadNamespace("dplyr")
+
     .p = ncol(V.t)
     .K = nrow(V.t)
 
@@ -1274,13 +1271,8 @@ log.msg <- function(...) {
 #'
 calc.qtl.stat <- function(xx, yy, se.min = 1e-8, verbose = FALSE) {
 
-<<<<<<< HEAD
-    loadNamespace('dplyr')
-    loadNamespace('tidyr')
-=======
-    loadNamespace(dplyr)
-    loadNamespace(tidyr)
->>>>>>> 1b0da0ae48f273eeb721b284eab0bca4fb37377e
+    loadNamespace("dplyr")
+    loadNamespace("tidyr")
 
     .xx = scale(xx)
     .yy = scale(yy)
