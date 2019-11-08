@@ -55,6 +55,11 @@ struct options_t {
     MU_MIN = 1e-4;
     VAR_BETA_MIN = 1e-4;
 
+    SVD_RANK = -1;
+    RAND_SVD = false;
+    RAND_SVD_ITER = 5;
+    JACOBI_SVD = false;
+
     DO_HYPER = false;
     DO_RESCALE = false;
     OUT_RESID = false;
@@ -120,6 +125,11 @@ struct options_t {
   const bool do_de_conditional() const { return DO_DIRECT_EFFECT_CONDITIONAL; }
   const bool do_med_two_step() const { return DO_MED_TWO_STEP; }
 
+  const int svd_rank() const { return SVD_RANK; }
+  const bool rand_svd() const { return RAND_SVD; }
+  const int rand_svd_iter() const { return RAND_SVD_ITER; }
+  const bool jacobi_svd() const { return JACOBI_SVD; }
+
   const bool do_hyper() const { return DO_HYPER; }
   void off_hyper() { DO_HYPER = false; }
   void on_hyper() { DO_HYPER = true; }
@@ -183,6 +193,11 @@ struct options_t {
   bool DO_DIRECT_EFFECT_FACTORIZATION;
   bool DO_DIRECT_EFFECT_CONDITIONAL;
   int DE_FACTORIZATION_MODEL;
+
+  int SVD_RANK;
+  bool RAND_SVD;
+  int RAND_SVD_ITER;
+  bool JACOBI_SVD;
 
   bool DO_HYPER;
   bool OUT_RESID;

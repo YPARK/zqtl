@@ -68,6 +68,10 @@ Enjoy!
 
 # Release notes
 
+### v 1.4.2
+
+- Add faster SVD routine for a large genotype matrix
+
 ### v 1.4.1
 
 - Regularization of eigen values (the `eigen.reg` parameter)

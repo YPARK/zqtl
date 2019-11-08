@@ -49,10 +49,48 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   Xsafe *= n;  // prevent underflow
   const Scalar TOL = opt.eigen_tol();
 
+  Mat U_full;
+  Mat V_full;
+  Vec dd_full;
+
   if (opt.verbose()) TLOG("Start SVD ... ");
-  Eigen::JacobiSVD<Mat> svd;
-  svd.setThreshold(TOL);
-  svd.compute(Xsafe, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+  if (opt.rand_svd()) {
+    if (opt.verbose()) TLOG("Using randomized SVD ... ");
+
+    RandomizedSVD<Mat> svd(opt.svd_rank(), opt.rand_svd_iter());
+    if (opt.verbose()) svd.set_verbose();
+    svd.compute(Xsafe);
+
+    U_full = svd.matrixU();
+    V_full = svd.matrixV();
+    dd_full = svd.singularValues();
+
+  } else {
+    if (opt.jacobi_svd()) {
+      if (opt.verbose()) TLOG("Using Jacobi SVD ... ");
+
+      Eigen::JacobiSVD<Mat> svd;
+      svd.setThreshold(TOL);
+      svd.compute(Xsafe, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+      U_full = svd.matrixU();
+      V_full = svd.matrixV();
+      dd_full = svd.singularValues();
+
+    } else {
+      if (opt.verbose()) TLOG("Using BCD SVD ... ");
+
+      Eigen::BDCSVD<Mat> svd;
+      svd.setThreshold(TOL);
+      svd.compute(Xsafe, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+      U_full = svd.matrixU();
+      V_full = svd.matrixV();
+      dd_full = svd.singularValues();
+    }
+  }
+
   if (opt.verbose()) TLOG("Done SVD");
 
   ///////////////////////////////////////////////////
@@ -60,10 +98,10 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   ///////////////////////////////////////////////////
 
   Index num_comp = 0;
-  Mat d2vec = svd.singularValues() / n;
+  Mat d2vec = dd_full / n;
   d2vec = d2vec.cwiseProduct(d2vec);
 
-  for (num_comp = 0; num_comp < svd.matrixV().cols(); ++num_comp) {
+  for (num_comp = 0; num_comp < V_full.cols(); ++num_comp) {
     if (d2vec(num_comp) < TOL) break;
   }
 
@@ -77,7 +115,7 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
 
   // Don't forget to rescale
   Mat dvec_out(num_comp, 1);
-  dvec_out = svd.singularValues().head(num_comp) / n;
+  dvec_out = dd_full.head(num_comp) / n;
 
   // Regularize to truncate very small values
   Scalar reg_value = opt.eigen_reg();
@@ -85,12 +123,16 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   dvec_out += _reg * Mat::Ones(num_comp, 1);
 
   Mat Vt(num_comp, Xsafe.cols());
-  Vt = svd.matrixV().leftCols(num_comp).transpose();
+  Vt = V_full.leftCols(num_comp).transpose();
   Mat U(Xsafe.rows(), num_comp);
-  U = svd.matrixU().leftCols(num_comp);
+  U = U_full.leftCols(num_comp);
 
   return std::tuple<Mat, Mat, Mat>(U, dvec_out, Vt);
 }
+
+/////////////////////
+// parsing options //
+/////////////////////
 
 void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("tau.lb"))
@@ -208,6 +250,18 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("do.hyper"))
     opt.DO_HYPER = Rcpp::as<bool>(_list["do.hyper"]);
 
+  if (_list.containsElementNamed("rand.svd"))
+    opt.RAND_SVD = Rcpp::as<bool>(_list["rand.svd"]);
+
+  if (_list.containsElementNamed("jacobi.svd"))
+    opt.JACOBI_SVD = Rcpp::as<bool>(_list["jacobi.svd"]);
+
+  if (_list.containsElementNamed("rand.svd.iter"))
+    opt.RAND_SVD_ITER = Rcpp::as<Index>(_list["rand.svd.iter"]);
+
+  if (_list.containsElementNamed("svd.rank"))
+    opt.SVD_RANK = Rcpp::as<int>(_list["svd.rank"]);
+
   if (_list.containsElementNamed("do.finemap.unmed"))
     opt.DO_FINEMAP_UNMEDIATED = Rcpp::as<bool>(_list["do.finemap.unmed"]);
 
@@ -238,8 +292,7 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   }
 
   if (_list.containsElementNamed("factorization.model")) {
-    opt.DE_FACTORIZATION_MODEL =
-        Rcpp::as<int>(_list["factorization.model"]);
+    opt.DE_FACTORIZATION_MODEL = Rcpp::as<int>(_list["factorization.model"]);
   }
 
   if (_list.containsElementNamed("out.resid"))
@@ -525,7 +578,7 @@ Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_slab) {
 }
 
 template <typename T>
-Rcpp::List impl_param_rcpp_list(const T &param, const tag_param_beta) {
+Rcpp::List impl_param_rcpp_list(const T& param, const tag_param_beta) {
   return Rcpp::List::create(Rcpp::_["theta"] = mean_param(param),
                             Rcpp::_["theta.var"] = var_param(param));
 }
