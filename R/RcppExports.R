@@ -21,7 +21,7 @@
 #' imputed z-score: \deqn{\tilde{\mathbf{z}} \approx
 #' VDU^{\top}\mathbf{y}_{0} \sim \mathcal{N}\!\left(V
 #' V_{0}^{\top}\mathbf{z}_{0}, VD^{2}V^{\top}\right).}
-#' 
+#'
 impute.zscore <- function(Z, V.t, observed) {
     Vt0 = V.t[, observed, drop = FALSE]
     ret = t(V.t) %*% (Vt0 %*% Z)
@@ -46,7 +46,7 @@ impute.zscore <- function(Z, V.t, observed) {
 #' \deqn{\mathbf{y}_{src} \sim \mathcal{N}\!\left(U_{src}D_{src}^{-1}V_{src}^{\top}\mathbf{z}_{src}, I\right).}
 #' Therefore, a new z-score projected onto the target LD block will be:
 #' \deqn{\mathbf{z}_{tgt} \sim \mathcal{N}\!\left(V_{tgt}D_{tgt}U_{tgt}^{\top}\mathbf{y}_{src}, V_{tgt}D_{tgt}^{2}V_{tgt}^{\top}\right).}
-#' 
+#'
 project.zscore <- function(ld.svd.tgt, ld.svd.src, z.src, ...) {
 
     U.1 = ld.svd.tgt$U
@@ -72,7 +72,7 @@ project.zscore <- function(ld.svd.tgt, ld.svd.src, z.src, ...) {
 #' @export
 #' @name scale.zscore
 #' @usage scale.zscore(Z, V.t, D, stdize = TRUE)
-#' 
+#'
 #' @param Z z-score matrix
 #' @param V.t t(V) matrix of the SVD result on genotype matrix
 #' @param D D diagonal elements of the SVD result on genotype matrix
@@ -83,9 +83,9 @@ project.zscore <- function(ld.svd.tgt, ld.svd.src, z.src, ...) {
 #' @details
 #' Estimate \eqn{\mu} and \eqn{\tau} parameters in the model:
 #' \deqn{\mathbf{z} \sim \mathcal{N}\!\left(R (\mu I), \tau^{2}R \right)}
-#' then standardize z-scores by 
+#' then standardize z-scores by
 #' \deqn{\mathbf{z} \gets (\mathbf{z} - \mu I) / \tau.}
-#' 
+#'
 scale.zscore <- function(Z, V.t, D, stdize = TRUE) {
     loadNamespace("dplyr")
 
@@ -889,7 +889,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'
 #' @examples
 #' library(dplyr)
-#' 
+#'
 #' n = 500
 #' p = 1000
 #' n.genes = 10
@@ -926,7 +926,7 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #' y = y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 #'
 #' eqtl.tab = calc.qtl.stat(X, gene.expr)
-#' gwas.tab = calc.qtl.stat(X, y) 
+#' gwas.tab = calc.qtl.stat(X, y)
 #'
 #' xg.beta = eqtl.tab %>%
 #'     dplyr::select(x.col, y.col, beta) %>%
@@ -1223,6 +1223,22 @@ fast.z.cov <- function(x, y) {
     n.obs = crossprod(!is.na(x), !is.na(y))
     ret = crossprod(replace(x, is.na(x), 0),
                      replace(y, is.na(y), 0)) / sqrt(n.obs)
+    return(ret)
+}
+
+################################################################
+#' Safe t(X) %*% Y calculation
+#' @name safe.XtY
+#' @param x matrix
+#' @param y matrix
+safe.XtY <- function(x, y) {
+
+    ntarget = nrow(x)
+    nobs = crossprod(is.finite(x), is.finite(y))
+    ret = crossprod(replace(x, !is.finite(x), 0),
+                    replace(y, !is.finite(y), 0))
+
+    ret = ret / pmax(nobs, 1) * ntarget
     return(ret)
 }
 

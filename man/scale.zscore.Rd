@@ -24,6 +24,6 @@ Standardize z-scores.
 \details{
 Estimate \eqn{\mu} and \eqn{\tau} parameters in the model:
 \deqn{\mathbf{z} \sim \mathcal{N}\!\left(R (\mu I), \tau^{2}R \right)}
-then standardize z-scores by 
+then standardize z-scores by
 \deqn{\mathbf{z} \gets (\mathbf{z} - \mu I) / \tau.}
 }

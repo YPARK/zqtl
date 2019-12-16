@@ -166,7 +166,7 @@ y = y + X[, causal.direct, drop = FALSE] \%*\% theta.dir # direct
 y = y + rnorm(n) * c(sqrt(var(y) * (1/h2 - 1)))
 
 eqtl.tab = calc.qtl.stat(X, gene.expr)
-gwas.tab = calc.qtl.stat(X, y) 
+gwas.tab = calc.qtl.stat(X, y)
 
 xg.beta = eqtl.tab \%>\%
     dplyr::select(x.col, y.col, beta) \%>\%

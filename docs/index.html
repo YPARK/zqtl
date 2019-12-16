@@ -7,8 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Summary-based multivariate QTL modeling • zqtl</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Summary-based multivariate QTL modeling">
 <meta property="og:description" content="Implementation of zQTL methods">
 <meta name="twitter:card" content="summary">
@@ -18,7 +19,7 @@
 <![endif]-->
 </head>
 <body>
-    <div class="container template-article">
+    <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
@@ -30,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">zqtl</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.4.2</span>
       </span>
     </div>
 
@@ -38,7 +39,7 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="index.html">
-    <span class="fa fa-home fa-lg"></span>
+    <span class="fas fa fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -55,21 +56,11 @@
 <!--/.navbar -->
 
       
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    
 
-    
-    
-<!-- dynamically load mathjax for compatibility with self-contained -->
-<script>
-  (function () {
-    var script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
-    document.getElementsByTagName("head")[0].appendChild(script);
-  })();
-</script><div id="summary-based-qtl-mapping" class="section level1">
+      </header><div class="row">
+  <div class="contents col-md-9">
+
+<div id="summary-based-qtl-mapping" class="section level1">
 <div class="page-header"><h1 class="hasAnchor">
 <a href="#summary-based-qtl-mapping" class="anchor"></a>Summary-based QTL mapping</h1></div>
 <div id="notes-on-mac-os" class="section level2">
@@ -112,40 +103,47 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <div id="release-notes" class="section level1">
 <h1 class="hasAnchor">
 <a href="#release-notes" class="anchor"></a>Release notes</h1>
-<div id="v-1-4-1" class="section level3">
+<div id="v-142" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-4-1" class="anchor"></a>v 1.4.1</h3>
+<a href="#v-142" class="anchor"></a>v 1.4.2</h3>
+<ul>
+<li>Add faster SVD routine for a large genotype matrix</li>
+</ul>
+</div>
+<div id="v-141" class="section level3">
+<h3 class="hasAnchor">
+<a href="#v-141" class="anchor"></a>v 1.4.1</h3>
 <ul>
 <li>Regularization of eigen values (the <code>eigen.reg</code> parameter)</li>
 </ul>
 </div>
-<div id="v-1-4-0" class="section level3">
+<div id="v-140" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-4-0" class="anchor"></a>v 1.4.0</h3>
+<a href="#v-140" class="anchor"></a>v 1.4.0</h3>
 <ul>
 <li>Add useful utilities</li>
 </ul>
 </div>
-<div id="v-1-3-6" class="section level3">
+<div id="v136" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-6" class="anchor"></a>v.1.3.6</h3>
+<a href="#v136" class="anchor"></a>v.1.3.6</h3>
 <ul>
 <li>Improve variance calculation</li>
 <li>Partitioned variance calculation with annotation information</li>
 </ul>
 </div>
-<div id="v-1-3-5" class="section level3">
+<div id="v135" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-5" class="anchor"></a>v.1.3.5</h3>
+<a href="#v135" class="anchor"></a>v.1.3.5</h3>
 <ul>
 <li>Report both types of residual variance estimation</li>
 <li>Lower the precision limit in SGVB steps</li>
 <li>Add adjusting routines for convenience</li>
 </ul>
 </div>
-<div id="v-1-3-4" class="section level3">
+<div id="v134" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-4" class="anchor"></a>v.1.3.4</h3>
+<a href="#v134" class="anchor"></a>v.1.3.4</h3>
 <ul>
 <li>Remove “backfire control” and “two step optimization”</li>
 <li>Revive variance calculation with residual estimation</li>
@@ -153,9 +151,9 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <li>Output “clean” version of GWAS effects</li>
 </ul>
 </div>
-<div id="v-1-3-3" class="section level3">
+<div id="v133" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-3" class="anchor"></a>v.1.3.3</h3>
+<a href="#v133" class="anchor"></a>v.1.3.3</h3>
 <ul>
 <li>Minor fix on smoothness of the unmediated effect</li>
 <li>Add <code>do.control.backfire</code> to regress out <code>M0 -&gt; M</code>.</li>
@@ -163,9 +161,9 @@ CFLAGS = -O3 -std=c++14</code></pre>
 </li>
 </ul>
 </div>
-<div id="v-1-3-2" class="section level3">
+<div id="v132" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-2" class="anchor"></a>v.1.3.2</h3>
+<a href="#v132" class="anchor"></a>v.1.3.2</h3>
 <ul>
 <li>Estimate unmediated factors by factorization</li>
 <li>Boost sample size by resampling eigen vectors</li>
@@ -173,9 +171,9 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <li>Parametric bootstrap for sensitivity analysis</li>
 </ul>
 </div>
-<div id="v-1-3-1" class="section level3">
+<div id="v131" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-1" class="anchor"></a>v.1.3.1</h3>
+<a href="#v131" class="anchor"></a>v.1.3.1</h3>
 <ul>
 <li>Make propensity sampling as second option</li>
 <li>Estimate the unmediated effect as before</li>
@@ -183,40 +181,40 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <li>Allow multiple mediators in the conditional analysis</li>
 </ul>
 </div>
-<div id="v-1-3-0" class="section level3">
+<div id="v130" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-3-0" class="anchor"></a>v.1.3.0</h3>
+<a href="#v130" class="anchor"></a>v.1.3.0</h3>
 <ul>
 <li>Counterfactual estimation of average unmediated effects via sampling</li>
 <li>Factored mediation model</li>
 </ul>
 </div>
-<div id="v-1-2-3" class="section level3">
+<div id="v123" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-2-3" class="anchor"></a>v.1.2.3</h3>
+<a href="#v123" class="anchor"></a>v.1.2.3</h3>
 <ul>
 <li>Take multivariate effect sizes for mediator QTLs</li>
 <li>Initialization by dot product</li>
 </ul>
 </div>
-<div id="v-1-2-2" class="section level3">
+<div id="v122" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-2-2" class="anchor"></a>v.1.2.2</h3>
+<a href="#v122" class="anchor"></a>v.1.2.2</h3>
 <ul>
 <li>Restrict number of mediator variables during the estimation of unmediated effects</li>
 </ul>
 </div>
-<div id="v-1-2-1" class="section level3">
+<div id="v121" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-2-1" class="anchor"></a>v.1.2.1</h3>
+<a href="#v121" class="anchor"></a>v.1.2.1</h3>
 <ul>
 <li>Estimation of average unmediated effects</li>
 <li>Minor bugfix in regression (twice rescaling)</li>
 </ul>
 </div>
-<div id="v-1-2-0" class="section level3">
+<div id="v120" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-2-0" class="anchor"></a>v.1.2.0</h3>
+<a href="#v120" class="anchor"></a>v.1.2.0</h3>
 <ul>
 <li>Matrix factorization for confounder correction</li>
 <li>Confirmed usefulness of non-negative parameters</li>
@@ -225,26 +223,26 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <li>Variance model in mediation analysis</li>
 </ul>
 </div>
-<div id="v-1-1-0" class="section level3">
+<div id="v110" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-1-0" class="anchor"></a>v.1.1.0</h3>
+<a href="#v110" class="anchor"></a>v.1.1.0</h3>
 <ul>
 <li>Spiked Gamma for the factored zQTL methods</li>
 <li>Additional covariate component for confounder correction</li>
 </ul>
 </div>
-<div id="v-1-0-1" class="section level3">
+<div id="v101" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-0-1" class="anchor"></a>v.1.0.1</h3>
+<a href="#v101" class="anchor"></a>v.1.0.1</h3>
 <ul>
 <li>Variance calculation. See <code>note/variance.md</code> for details.</li>
 <li>Random effect component to account for uncertainty of individuals</li>
 <li>Removing LD-structure bias between mediation QTL and GWAS cohorts</li>
 </ul>
 </div>
-<div id="v-1-0-0" class="section level3">
+<div id="v100" class="section level3">
 <h3 class="hasAnchor">
-<a href="#v-1-0-0" class="anchor"></a>v.1.0.0</h3>
+<a href="#v100" class="anchor"></a>v.1.0.0</h3>
 <ul>
 <li>Initial version migrated from MIT github</li>
 </ul>
@@ -266,29 +264,29 @@ CFLAGS = -O3 -std=c++14</code></pre>
 <p><strong>Outlier removal.</strong> To minimize standard error, we remove outlier SNPs by excluding SNPs with χ2 &gt; max{80, 0.001N}, where N is the maximum sample size in the study. We also remove the MHC region from all analyses, because of its unusual LD patterns and genetic architecture.</p>
 </blockquote>
 <p>For a univariate mediation analysis, the scale and meanshift of summary statistics do not substantially affect downstream analysis. However, for our model based analysis, we need z-scores of GWAS and mediation QTLs should behave similarly, just as a design matrix in Lasso regression is standardized.</p>
-<p>Let’s consider a generative scheme with a single bias term <span class="math inline">\(\mu\)</span> and scaling by <span class="math inline">\(\tau\)</span>:</p>
-<p><span class="math display">\[\mathbf{z} \sim \mathcal{N}\!\left(R (\mu I), \tau R\right)\]</span></p>
-<p>where the SNP-SNP covariance matrix <span class="math inline">\(R = V^{\top} D^{2} V\)</span> was calculated from singular value decomposition of genotype matrix <span class="math inline">\(X/\sqrt{n} = UDV^{\top}\)</span>. An equivalent isotropic model could be derived after multiplying by <span class="math inline">\(D^{-1}V^{\top}\)</span>:</p>
-<p><span class="math display">\[D^{-1} V^{\top}\mathbf{z} \sim \mathcal{N}\!\left(D V^{\top} I \mu, \tau I\right)\]</span></p>
-<p>Letting <span class="math inline">\(\mathbf{y}\equiv D^{-1} V^{\top}\mathbf{z}\)</span> and <span class="math inline">\(\mathbf{x} \equiv D V^{\top} I\)</span>, we can find the maximum likelihood estimate <span class="math inline">\(\hat{\mu}\)</span> by minimizing</p>
-<p><span class="math display">\[- \frac{1}{2} \ln \tau -\frac{1}{2\tau} \sum_{k} \left(y_{k} - x_{k} \mu\right)^{2},\]</span></p>
+<p>Let’s consider a generative scheme with a single bias term $\mu$ and scaling by $\tau$:</p>
+<p>$$\mathbf{z} \sim \mathcal{N}!\left(R (\mu I), \tau R\right)$$</p>
+<p>where the SNP-SNP covariance matrix $R = V^{\top} D^{2} V$ was calculated from singular value decomposition of genotype matrix $X/\sqrt{n} = UDV^{\top}$. An equivalent isotropic model could be derived after multiplying by $D^{-1}V^{\top}$:</p>
+<p>$$D^{-1} V^{\top}\mathbf{z} \sim \mathcal{N}!\left(D V^{\top} I \mu, \tau I\right)$$</p>
+<p>Letting $\mathbf{y}\equiv D^{-1} V^{\top}\mathbf{z}$ and $\mathbf{x} \equiv D V^{\top} I$, we can find the maximum likelihood estimate $\hat{\mu}$ by minimizing</p>
+<p>$$- \frac{1}{2} \ln \tau -\frac{1}{2\tau} \sum_{k} \left(y_{k} - x_{k} \mu\right)^{2},$$</p>
 <p>which leads to</p>
-<p><span class="math display">\[\hat{\mu} = \frac{\sum_{k} y_{k} x_{k}}{\sum_{k} x_{k}^{2}} = \frac{\mathbf{x}^{\top}\mathbf{y}}{\mathbf{x}^{\top}\mathbf{x}} = \frac{\mathbf{z}^{\top}I}{I^{\top}RI}\]</span></p>
+<p>$$\hat{\mu} = \frac{\sum_{k} y_{k} x_{k}}{\sum_{k} x_{k}^{2}} = \frac{\mathbf{x}^{\top}\mathbf{y}}{\mathbf{x}^{\top}\mathbf{x}} = \frac{\mathbf{z}^{\top}I}{I^{\top}RI}$$</p>
 <p>and</p>
-<p><span class="math display">\[\hat{\tau} = \frac{1}{K - 1}\|\mathbf{y} - \hat{\mu}\mathbf{x}\|^{2}\]</span></p>
+<p>$$\hat{\tau} = \frac{1}{K - 1}|\mathbf{y} - \hat{\mu}\mathbf{x}|^{2}$$</p>
 <p>Using these, we standardize</p>
-<p><span class="math display">\[\mathbf{z} \gets (\mathbf{z} - \hat{\mu} RI)/\sqrt{\hat{\tau}}\]</span></p>
+<p>$$\mathbf{z} \gets (\mathbf{z} - \hat{\mu} RI)/\sqrt{\hat{\tau}}$$</p>
 </div>
 <div id="simulation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#simulation" class="anchor"></a>Simulation</h2>
 <p>Let’s take a look at Kichaev <em>et al.</em> (2014)</p>
 <blockquote>
-<p>Once we established the causal SNPs, we used a linear model to simulate continuous phenotypes such that the causal SNPs aggregated to explain a fixed proportion of the phenotypic variance (<span class="math inline">\(h_{g}^{2}\)</span>). This phenotypic variance was partitioned equally amongst all the causal SNPs (qualitatively similar results were obtained when phenotypic variance was unevenly partitioned among causal variants (see Figure S6)). In particular, the individual’s phenotype was drawn according to <span class="math inline">\(Y_{m} = \sum_{i=1}^{N_{c}}\beta_{i} G_{im} + \epsilon_{m}\)</span>, where <span class="math inline">\(N_{c}\)</span> is the total number of causal variants, <span class="math inline">\(\beta_{i}\)</span> is the effect size of the ith causal SNP, <span class="math inline">\(G_{im}\)</span> is number of copies of the risk allele <span class="math inline">\(i\)</span> (randomly assigned as reference or alternate) for individual m, and <span class="math inline">\(\epsilon_{m} \sim \mathcal{N}\!\left(0, 1 - h_{g}^{2}\right)\)</span>. Finally, we calculated association Z-scores (<span class="math inline">\(Z_{ij}\)</span>) at each SNP <span class="math inline">\(i,j\)</span> by taking the Wald statistic from the regression of the Y on <span class="math inline">\(G_{ij}\)</span>, where Y is a vector of phenotypes for M individuals and <span class="math inline">\(G_{ij}\)</span> is the vector of corresponding genotypes for the ith SNP at the jth locus. For simulations that required loci greater than 10 KB, we instead drew Z-scores from a Multivariate Normal distribution with covariance equal to LD based on the European 1 KG and non-centrality parameters at causal sites drawn from a Normal distribution with mean 5 and standard deviation 0.2.</p>
+<p>Once we established the causal SNPs, we used a linear model to simulate continuous phenotypes such that the causal SNPs aggregated to explain a fixed proportion of the phenotypic variance ($h_{g}^{2}$). This phenotypic variance was partitioned equally amongst all the causal SNPs (qualitatively similar results were obtained when phenotypic variance was unevenly partitioned among causal variants (see Figure S6)). In particular, the individual’s phenotype was drawn according to $Y_{m} = \sum_{i=1}^{N_{c}}\beta_{i} G_{im} + \epsilon_{m}$, where $N_{c}$ is the total number of causal variants, $\beta_{i}$ is the effect size of the ith causal SNP, $G_{im}$ is number of copies of the risk allele $i$ (randomly assigned as reference or alternate) for individual m, and $\epsilon_{m} \sim \mathcal{N}!\left(0, 1 - h_{g}^{2}\right)$. Finally, we calculated association Z-scores ($Z_{ij}$) at each SNP $i,j$ by taking the Wald statistic from the regression of the Y on $G_{ij}$, where Y is a vector of phenotypes for M individuals and $G_{ij}$ is the vector of corresponding genotypes for the ith SNP at the jth locus. For simulations that required loci greater than 10 KB, we instead drew Z-scores from a Multivariate Normal distribution with covariance equal to LD based on the European 1 KG and non-centrality parameters at causal sites drawn from a Normal distribution with mean 5 and standard deviation 0.2.</p>
 </blockquote>
 <p>From Kichaev <em>et al.</em> (2017)</p>
 <blockquote>
-<p>We simulated phenotypes under a linear model such that for individual i of population p, their phenotype Y was drawn as <span class="math inline">\(Y_{ip} = \sum_{j=1}^{N_{c}} \beta_{j} G_{ijp} + \epsilon_{ip}\)</span>, where <span class="math inline">\(N_{c}\)</span> is the total number of causal variants, <span class="math inline">\(\beta_{j}\)</span> is the effect size of the jth causal SNP, <span class="math inline">\(G_{ijp}\)</span> is the number of copies of the risk allele j for individual i of population p. Following recent works, we simulated similar heritability across populations The population-specific error term, <span class="math inline">\(\epsilon_{ip}\)</span>, was drawn according to a <span class="math inline">\(\mathcal{N}\!\left(0,\sigma_{ep}^{2}\right)\)</span>, where <span class="math inline">\(\sigma_{ep}^{2} = (\sigma_{gp}^{2} - h_{g}^{2} \sigma_{gp}^{2})/h_{g}^{2}\)</span>, <span class="math inline">\(\sigma_{gp}^{2} = \boldsymbol{\beta}^{\top}\mathsf{Cov}(X_{p})\boldsymbol{\beta}\)</span>, and <span class="math inline">\(\mathsf{Cov}(X_{p})\)</span> is the population-specific covariance of the genotypes (LD). The effect size, <span class="math inline">\(\beta_{j}\)</span>, was set to be inversely proportional to the average SD of the population allele frequencies; this is roughly equivalent to assuming that each causal SNP explains an equal proportion of the phenotypic variance.</p>
+<p>We simulated phenotypes under a linear model such that for individual i of population p, their phenotype Y was drawn as $Y_{ip} = \sum_{j=1}^{N_{c}} \beta_{j} G_{ijp} + \epsilon_{ip}$, where $N_{c}$ is the total number of causal variants, $\beta_{j}$ is the effect size of the jth causal SNP, $G_{ijp}$ is the number of copies of the risk allele j for individual i of population p. Following recent works, we simulated similar heritability across populations The population-specific error term, $\epsilon_{ip}$, was drawn according to a $\mathcal{N}!\left(0,\sigma_{ep}^{2}\right)$, where $\sigma_{ep}^{2} = (\sigma_{gp}^{2} - h_{g}^{2} \sigma_{gp}^{2})/h_{g}^{2}$, $\sigma_{gp}^{2} = \boldsymbol{\beta}^{\top}\mathsf{Cov}(X_{p})\boldsymbol{\beta}$, and $\mathsf{Cov}(X_{p})$ is the population-specific covariance of the genotypes (LD). The effect size, $\beta_{j}$, was set to be inversely proportional to the average SD of the population allele frequencies; this is roughly equivalent to assuming that each causal SNP explains an equal proportion of the phenotypic variance.</p>
 </blockquote>
 </div>
 <div id="correction-of-non-genetic-correlations-between-z-scores" class="section level2">
@@ -393,6 +391,7 @@ var_mediation = Σ (αβ)_j^2 / σ^2</code></pre>
 </div>
 </div>
 </div>
+
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
@@ -410,8 +409,7 @@ var_mediation = Σ (αβ)_j^2 / σ^2</code></pre>
 </ul>
 </div>
 
-      </div>
-
+  </div>
 </div>
 
 
@@ -420,12 +418,14 @@ var_mediation = Σ (αβ)_j^2 / σ^2</code></pre>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
+
       </footer>
 </div>
 
   
+
 
   </body>
 </html>
