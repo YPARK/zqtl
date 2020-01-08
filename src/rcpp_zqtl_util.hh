@@ -101,8 +101,14 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   Mat d2vec = dd_full / n;
   d2vec = d2vec.cwiseProduct(d2vec);
 
+  Scalar cum = 0.0;
+  const Scalar tot = d2vec.sum();
+  const Scalar cutoff = tot * (1 - TOL);
+
   for (num_comp = 0; num_comp < V_full.cols(); ++num_comp) {
-    if (d2vec(num_comp) < TOL) break;
+    cum += d2vec(num_comp);
+    // Include as long as (cum / tot) <= (1 - TOL)
+    if(cum  > cutoff) break;
   }
 
   if (opt.verbose()) {
