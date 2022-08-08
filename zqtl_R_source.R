@@ -1229,6 +1229,7 @@ fast.z.cov <- function(x, y) {
 ################################################################
 #' Safe t(X) %*% Y calculation
 #' @name safe.XtY
+#' @usage safe.XtY(x, y)
 #' @param x matrix
 #' @param y matrix
 safe.XtY <- function(x, y) {

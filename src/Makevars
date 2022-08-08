@@ -1,0 +1,5 @@
+CXX_STD = CXX14
+WARN = -Wno-ignored-attributes -Wno-unused-function -Wno-unused-const-variable -Wno-pointer-arith -Wno-unused-result -Wno-unused-but-set-variable -Wno-unused-local-typedefs -Wno-sign-compare -Wno-maybe-uninitialized -Wno-unused-variable
+PKG_CFLAGS = -O3 $(SHLIB_OPENMP_CFLAGS) $(SHLIB_OPENMP_CXXFLAGS) -I. $(WARN)
+PKG_CXXFLAGS = -O3 $(SHLIB_OPENMP_CFLAGS) $(SHLIB_OPENMP_CXXFLAGS) -I. $(WARN)
+PKG_LIBS = -lm -lz -L. $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CFLAGS) $(SHLIB_OPENMP_CXXFLAGS)
