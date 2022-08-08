@@ -1,5 +1,6 @@
 #include <cmath>
 #include <random>
+
 #include "eigen_util.hh"
 
 #ifdef EIGEN_USE_MKL_ALL
@@ -9,7 +10,8 @@
 #ifndef GAUS_REPR_HH_
 #define GAUS_REPR_HH_
 
-static Ziggurat::Ziggurat::Ziggurat ZIGG;
+// This is not always available
+// static Ziggurat::Ziggurat::Ziggurat ZIGG;
 
 template <typename Matrix, typename ReprType>
 struct gaus_repr_t;
@@ -271,10 +273,10 @@ template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
   // std::normal_distribution<Scalar> rnorm(0., 1.);
-  // repr.Eps = repr.Eps.unaryExpr([&](const auto& x) { return rnorm(rng); });
-  repr.Eps = repr.Eps.unaryExpr([&](const auto& x) {
-    return static_cast<Scalar>(ZIGG.norm());
-  });  // R::rnorm(0.0, 1.0)
+  // repr.Eps = repr.Eps.unaryExpr(
+  //     [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
+  repr.Eps = repr.Eps.unaryExpr(
+      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
@@ -283,9 +285,11 @@ template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
   // std::normal_distribution<Scalar> rnorm(0., 1.);
-  // repr.Eps = repr.Eps.unaryExpr([&](const auto& x) { return rnorm(rng); });
+  // repr.Eps = repr.Eps.unaryExpr(
+  //     [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
+      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
+  repr.Eta = repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
 
@@ -295,7 +299,7 @@ template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr) {
   using Scalar = typename Matrix::Scalar;
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
+      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
@@ -304,7 +308,8 @@ template <typename Matrix, typename RT>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr) {
   using Scalar = typename Matrix::Scalar;
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(ZIGG.norm()); });
+      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
+  repr.Eta = repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
 

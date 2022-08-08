@@ -113,7 +113,7 @@ Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
       // 1. sample theta
       theta_s = var_param(_theta);
       theta_s = theta_s.unaryExpr([&](const auto &v) {
-        return std::sqrt(v) * static_cast<Scalar>(ZIGG.norm());
+        return std::sqrt(v) * static_cast<Scalar>(R::rnorm(0.0, 1.0));
       });
 
       theta_s += mean_param(_theta);
@@ -211,7 +211,7 @@ Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
       // 1. sample theta
       theta_s = var_param(_theta);
       theta_s = theta_s.unaryExpr([&](const auto &v) {
-        return std::sqrt(v) * static_cast<Scalar>(ZIGG.norm());
+        return std::sqrt(v) * static_cast<Scalar>(R::rnorm(0.0, 1.0));
       });
 
       theta_s += mean_param(_theta);

@@ -1257,15 +1257,15 @@ zscore.pvalue <- function(z) {
 ################################################################
 #' output log message (override `sprintf`)
 #' @name log.msg
-#' @usage log.msg(...)
-#' @param ... input for sprintf
+#' @usage log.msg(stuff)
+#' @param stuff input for sprintf
+#'
+#'
+#' @examples
+#'
+#' log.msg("Test Message %d", 1)
 #'
 #' @export
-#'
-#' @usage
-#'
-#' log.msg('Test Message %d', 1)
-#'
 log.msg <- function(...) {
     ss = as.character(date())
     cat(sprintf('[%s] ', ss), sprintf(...), '\n', file = stderr(), sep = '')

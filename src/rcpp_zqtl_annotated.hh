@@ -127,13 +127,13 @@ Rcpp::List impl_zqtl_annot(const Mat &_effect,     // p x m
       // 1. sample theta
       loading_s = var_param(_theta_right);
       loading_s = loading_s.unaryExpr([&](const auto &v) {
-        return std::sqrt(v) * static_cast<Scalar>(ZIGG.norm());
+        return std::sqrt(v) * static_cast<Scalar>(R::rnorm(0.0, 1.0));
       });
       loading_s += mean_param(_theta_right);
 
       theta_s = var_param(_theta_left);
       theta_s = theta_s.unaryExpr([&](const auto &v) {
-        return std::sqrt(v) * static_cast<Scalar>(ZIGG.norm());
+        return std::sqrt(v) * static_cast<Scalar>(R::rnorm(0.0, 1.0));
       });
 
       theta_s += mean_param(_theta_left);

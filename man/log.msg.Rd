@@ -4,11 +4,16 @@
 \alias{log.msg}
 \title{output log message (override `sprintf`)}
 \usage{
-log.msg(...)
+log.msg(stuff)
 }
 \arguments{
-\item{...}{input for sprintf}
+\item{stuff}{input for sprintf}
 }
 \description{
 output log message (override `sprintf`)
+}
+\examples{
+
+log.msg("Test Message \%d", 1)
+
 }
