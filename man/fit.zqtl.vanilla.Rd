@@ -11,9 +11,9 @@ fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 
 \item{effect.se}{Marginal effect size standard error matrix (SNP x trait)}
 
-\item{X}{Design matrix (reference Ind x SNP)}
-
 \item{n}{sample size of actual data (will ignore if n = 0)}
+
+\item{X}{Design matrix (reference Ind x SNP)}
 
 \item{multi.C}{multivariate SNP annotations (SNP x something; default: NULL)}
 
@@ -67,11 +67,11 @@ fit.zqtl.vanilla(effect, effect.se, X, multi.C, univar.C)
 
 \item{do.var.calc}{variance calculation (default: FALSE)}
 
-\item{scale.var}{Scaled variance calculation (default: FALSE)}
-
 \item{nboot}{Number of bootstraps (default: 0)}
 
 \item{nboot.var}{Number of bootstraps for variance estimation (default: 100)}
+
+\item{scale.var}{Scaled variance calculation (default: FALSE)}
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 

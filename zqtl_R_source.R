@@ -1232,6 +1232,9 @@ fast.z.cov <- function(x, y) {
 #' @usage safe.XtY(x, y)
 #' @param x matrix
 #' @param y matrix
+#'
+#' @export
+#' 
 safe.XtY <- function(x, y) {
 
     ntarget = nrow(x)
@@ -1260,7 +1263,6 @@ zscore.pvalue <- function(z) {
 #' @name log.msg
 #' @usage log.msg(stuff)
 #' @param stuff input for sprintf
-#'
 #'
 #' @examples
 #'

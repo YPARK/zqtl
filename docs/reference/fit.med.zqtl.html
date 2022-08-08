@@ -65,20 +65,20 @@
 <dd><p>SE of the marginal genetic effects (SNP x mediator)</p></dd>
 
 
-<dt>X.gwas</dt>
-<dd><p>Design matrix (reference Ind.GWAS x SNP)</p></dd>
-
-
-<dt>X.med</dt>
-<dd><p>Design matrix (reference Ind.MED x SNP)</p></dd>
-
-
 <dt>n</dt>
 <dd><p>sample size of GWAS data (will ignore if n = 0)</p></dd>
 
 
 <dt>n.med</dt>
 <dd><p>sample size of mediation data (will ignore if n.med = 0)</p></dd>
+
+
+<dt>X.gwas</dt>
+<dd><p>Design matrix (reference Ind.GWAS x SNP)</p></dd>
+
+
+<dt>X.med</dt>
+<dd><p>Design matrix (reference Ind.MED x SNP)</p></dd>
 
 
 <dt>multi.C</dt>
@@ -97,8 +97,8 @@
 <dd><p>Multivariate mediator QTL effect (default: FALSE)</p></dd>
 
 
-<dt>de.propensity</dt>
-<dd><p>Propensity sampling to estimate direct effect (default: FALSE)</p></dd>
+<dt>do.direct.estimation</dt>
+<dd><p>Estimate direct effect (default: TRUE)</p></dd>
 
 
 <dt>de.factorization</dt>
@@ -109,12 +109,8 @@
 <dd><p>Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)</p></dd>
 
 
-<dt>num.strat.size</dt>
-<dd><p>Size of stratified sampling (default: 2)</p></dd>
-
-
-<dt>do.direct.estimation</dt>
-<dd><p>Estimate direct effect (default: TRUE)</p></dd>
+<dt>de.propensity</dt>
+<dd><p>Propensity sampling to estimate direct effect (default: FALSE)</p></dd>
 
 
 <dt>do.finemap.direct</dt>
@@ -133,20 +129,28 @@
 <dd><p>Scaled variance calculation (default: FALSE)</p></dd>
 
 
-<dt>do.var.calc</dt>
-<dd><p>variance calculation (default: FALSE)</p></dd>
-
-
-<dt>num.duplicate.sample</dt>
-<dd><p>Duplicate number of independent components (default: 1)</p></dd>
-
-
 <dt>num.conditional</dt>
 <dd><p>number of conditional models</p></dd>
 
 
 <dt>submodel.size</dt>
 <dd><p>size of each conditional model</p></dd>
+
+
+<dt>out.residual</dt>
+<dd><p>estimate residual z-scores (default: FALSE)</p></dd>
+
+
+<dt>do.var.calc</dt>
+<dd><p>variance calculation (default: FALSE)</p></dd>
+
+
+<dt>num.strat.size</dt>
+<dd><p>Size of stratified sampling (default: 2)</p></dd>
+
+
+<dt>num.duplicate.sample</dt>
+<dd><p>Duplicate number of independent components (default: 1)</p></dd>
 
 
 <dt>do.hyper</dt>
@@ -239,10 +243,6 @@
 
 <dt>do.stdize</dt>
 <dd><p>Standardize (default: TRUE)</p></dd>
-
-
-<dt>out.residual</dt>
-<dd><p>estimate residual z-scores (default: FALSE)</p></dd>
 
 
 <dt>min.se</dt>

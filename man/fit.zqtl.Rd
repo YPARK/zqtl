@@ -11,9 +11,9 @@ fit.zqtl(effect, effect.se, X)
 
 \item{effect.se}{Marginal effect size standard error matrix (SNP x trait)}
 
-\item{X}{Design matrix (reference Ind x SNP)}
-
 \item{n}{sample size of actual data (will ignore if n = 0)}
+
+\item{X}{Design matrix (reference Ind x SNP)}
 
 \item{A}{Annotation matrix (SNP x annotations; default: NULL)}
 
