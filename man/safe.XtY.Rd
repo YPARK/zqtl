@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{safe.XtY}
 \alias{safe.XtY}
-\title{Safe t(X) %*% Y calculation}
+\title{Safe X'Y calculation}
 \usage{
 safe.XtY(x, y)
 }
@@ -11,6 +11,9 @@ safe.XtY(x, y)
 
 \item{y}{matrix}
 }
+\value{
+x'y result
+}
 \description{
-Safe t(X) %*% Y calculation
+Safe X'Y calculation
 }

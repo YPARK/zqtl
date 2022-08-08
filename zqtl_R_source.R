@@ -1227,11 +1227,12 @@ fast.z.cov <- function(x, y) {
 }
 
 ################################################################
-#' Safe t(X) %*% Y calculation
+#' Safe X'Y calculation
 #' @name safe.XtY
 #' @usage safe.XtY(x, y)
 #' @param x matrix
 #' @param y matrix
+#' @return x'y result
 #'
 #' @export
 #' 

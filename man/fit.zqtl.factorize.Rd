@@ -70,9 +70,9 @@ fit.zqtl.factorize(effect, effect.se, X)
 
 \item{min.se}{Minimum level of SE (default: 1e-4)}
 
-\item{rseed}{Random seed}
-
 \item{factorization.model}{Factorization model; 0 = ind x factor, 1 = eigen x factor (default: 0)}
+
+\item{rseed}{Random seed}
 }
 \value{
 a list of variational inference results.
