@@ -296,8 +296,10 @@ void impl_resolve_hyperparam(Parameter& P, const tag_param_spike_gamma) {
 template <typename Parameter, typename scalar_t, typename RNG>
 void impl_perturb_param(Parameter& P, const scalar_t sd, RNG& rng,
                         const tag_param_spike_gamma) {
-  std::normal_distribution<scalar_t> Norm;
-  auto rnorm = [&rng, &Norm, &sd](const auto& x) { return sd * Norm(rng); };
+  dqrng::normal_distribution Norm(0, 1);
+  auto rnorm = [&rng, &Norm, &sd](const auto& x) -> scalar_t {
+    return sd * Norm(rng);
+  };
   P.beta = P.beta.unaryExpr(rnorm);
   resolve_param(P);
 }
@@ -305,7 +307,7 @@ void impl_perturb_param(Parameter& P, const scalar_t sd, RNG& rng,
 template <typename Parameter, typename scalar_t>
 void impl_perturb_param(Parameter& P, const scalar_t sd,
                         const tag_param_spike_gamma) {
-  std::mt19937 rng;
+  dqrng::xoshiro256plus rng;;
   impl_perturb_param(P, sd, rng, tag_param_spike_gamma());
 }
 

@@ -113,7 +113,7 @@ struct annotated_regression_t {
   Repr Eta;  // n x m
 
   template <typename RNG>
-  inline Eigen::Ref<const ReprMatrix> sample(const RNG &rng) {
+  inline Eigen::Ref<const ReprMatrix> sample(RNG &rng) {
     return sample_repr(Eta, rng);
   }
 

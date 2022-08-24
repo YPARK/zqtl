@@ -425,9 +425,11 @@ void impl_resolve_hyperparam(Parameter& P, const tag_param_row_spike_slab) {
 template <typename Parameter, typename Scalar>
 void impl_perturb_param(Parameter& P, const Scalar sd,
                         const tag_param_row_spike_slab) {
-  std::mt19937 rng;
+  dqrng::xoshiro256plus rng;;
   std::normal_distribution<Scalar> Norm;
-  auto rnorm = [&rng, &Norm, &sd](const auto& x) { return sd * Norm(rng); };
+  auto rnorm = [&rng, &Norm, &sd](const auto& x) -> Scalar {
+    return sd * Norm(rng);
+  };
 
   P.beta = P.beta.unaryExpr(rnorm);
 

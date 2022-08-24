@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+
 #include "eigen_util.hh"
 #include "param_check.hh"
 #include "rcpp_util.hh"

@@ -1,5 +1,6 @@
 #include <cmath>
 #include <memory>
+
 #include "eigen_util.hh"
 
 #ifndef ADAM_HH_

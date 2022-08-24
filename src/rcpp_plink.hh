@@ -2,13 +2,12 @@
 #include <Rcpp.h>
 
 // [[Rcpp::depends(RcppProgress)]]
-#include <progress.hpp>
-
 #include <algorithm>
 #include <bitset>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <progress.hpp>
 #include <string>
 #include <vector>
 

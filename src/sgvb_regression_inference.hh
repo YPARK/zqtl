@@ -4,8 +4,8 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
-
 #include <typeinfo>
+
 #include "convergence.hh"
 #include "dummy.hh"
 #include "sgvb_util.hh"

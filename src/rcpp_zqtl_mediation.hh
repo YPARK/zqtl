@@ -112,14 +112,7 @@ Rcpp::List impl_fit_med_zqtl(
 
   if (opt.verbose()) TLOG("Finished preprocessing\n\n");
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
-
+  dqrng::xoshiro256plus rng(opt.rseed());
   zqtl_model_t<Mat> model_y(Y, D2);
 
   // intercept    ~ R 1 theta
@@ -349,7 +342,8 @@ Rcpp::List impl_fit_med_zqtl(
     const Index K = Vt.rows();
     const Scalar sK = static_cast<Scalar>(Vt.rows());
     Mat temp = Dinv.asDiagonal() * Y;
-    Mat ret = (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
+    Mat ret =
+        (Mat::Ones(1, K) * temp.cwiseProduct(temp) / sK).unaryExpr(log10_op);
     return Rcpp::wrap(ret);
   };
 
@@ -452,10 +446,6 @@ Rcpp::List impl_fit_med_zqtl(
     if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
   }
 
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
   return Rcpp::List::create(
       Rcpp::_["Y"] = Y, Rcpp::_["U"] = U, Rcpp::_["Vt"] = Vt,
       Rcpp::_["D2"] = D2, Rcpp::_["M"] = M, Rcpp::_["M0"] = M0,
@@ -494,13 +484,7 @@ Rcpp::List impl_fit_fac_med_zqtl(
   std::tie(Y, M, U, Vt, D2, VtI, VtC, VtCd) = preprocess_mediation_input(
       yy, yy_se, mm, mm_se, geno_y, geno_m, mult_conf, univ_conf, opt);
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   zqtl_model_t<Mat> model_y(Y, D2);
 
@@ -568,10 +552,6 @@ Rcpp::List impl_fit_fac_med_zqtl(
         std::make_tuple(delta_med, delta_conf_univ_y));
     out_unmed_param = param_rcpp_list(theta_unmed);
   }
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
 
   if (opt.verbose()) TLOG("Finished joint model estimation\n\n");
 

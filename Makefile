@@ -9,7 +9,7 @@ MAN := $(wildcard man/*.Rd)
 all: R/RcppExports.R $(PKG)_$(VER).tar.gz
 
 clean:
-	rm -f src/*.o src/*.so
+	rm -f src/*.o src/*.so $(PKG)_$(VER).tar.gz
 
 $(PKG)_$(VER).tar.gz: zqtl_R_source.R $(SRC) $(HDR) $(MAN)
 	[ -f R/RcppExports.R ] || cp zqtl_R_source.R R/RcppExports.R

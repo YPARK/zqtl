@@ -85,14 +85,8 @@ Rcpp::List impl_zqtl_annot(const Mat &_effect,     // p x m
 
   TLOG("Constructed effects");
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
   // random seed initialization
-  std::mt19937 rng(opt.rseed());
-#endif
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   Mat xi(Vt.rows(), Y.cols());
   Mat Dinv = D.cwiseInverse();
@@ -335,7 +329,7 @@ Rcpp::List impl_zqtl_annot(const Mat &_effect,     // p x m
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());
     } else {
-      std::mt19937 _rng(opt.rseed());
+      dqrng::xoshiro256plus _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
@@ -364,7 +358,7 @@ Rcpp::List impl_zqtl_annot(const Mat &_effect,     // p x m
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());
     } else {
-      std::mt19937 _rng(opt.rseed());
+      dqrng::xoshiro256plus _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
@@ -416,10 +410,6 @@ Rcpp::List impl_zqtl_annot(const Mat &_effect,     // p x m
   if (opt.nboot() > 0) {
     remove_confounders();
   }
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
 
   TLOG("Successfully finished regression!");
 

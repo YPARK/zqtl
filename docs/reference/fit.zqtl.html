@@ -44,7 +44,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit.zqtl</span><span class="op">(</span><span class="va">effect</span>, <span class="va">effect.se</span>, <span class="va">X</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">fit.zqtl</span><span class="op">(</span><span class="va">effect</span>, <span class="va">effect.se</span>, <span class="va">X</span><span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -258,71 +258,71 @@ $$\boldsymbol{\theta}_{t} = \boldsymbol{\theta}^{\textsf{left}}
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">###########################</span></span></span>
-<span class="r-in"><span><span class="co">## A simple zQTL example ##</span></span></span>
-<span class="r-in"><span><span class="co">###########################</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">n</span> <span class="op">=</span> <span class="fl">500</span></span></span>
-<span class="r-in"><span><span class="va">p</span> <span class="op">=</span> <span class="fl">2000</span></span></span>
-<span class="r-in"><span><span class="va">m</span> <span class="op">=</span> <span class="fl">1</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">.rnorm</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">a</span> <span class="op">*</span> <span class="va">b</span><span class="op">)</span>, <span class="va">a</span>, <span class="va">b</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">X</span> <span class="op">=</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">Y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">n</span>, <span class="va">m</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">h2</span> <span class="op">=</span> <span class="fl">0.25</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">c.snps</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">theta</span> <span class="op">=</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="fl">3</span>, <span class="va">m</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">h2</span> <span class="op">/</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">Y</span> <span class="op">=</span> <span class="va">X</span><span class="op">[</span>, <span class="va">c.snps</span>, drop<span class="op">=</span><span class="cn">FALSE</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">theta</span> <span class="op">+</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="va">n</span>, <span class="va">m</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">h2</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">qtl.tab</span> <span class="op">=</span> <span class="fu"><a href="calc.qtl.stat.html">calc.qtl.stat</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">xy.beta</span> <span class="op">=</span> <span class="va">qtl.tab</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">x.col</span>, <span class="va">y.col</span>, <span class="va">beta</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/spread.html" class="external-link">spread</a></span><span class="op">(</span>key <span class="op">=</span> <span class="va">y.col</span>, value <span class="op">=</span> <span class="va">beta</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">m</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">xy.se</span> <span class="op">=</span> <span class="va">qtl.tab</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">x.col</span>, <span class="va">y.col</span>, <span class="va">se</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/spread.html" class="external-link">spread</a></span><span class="op">(</span>key <span class="op">=</span> <span class="va">y.col</span>, value <span class="op">=</span> <span class="va">se</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/magrittr/man/pipe.html" class="external-link">%&gt;%</a></span></span></span>
-<span class="r-in"><span>    <span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">m</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">out</span> <span class="op">=</span> <span class="fu">fit.zqtl</span><span class="op">(</span><span class="va">xy.beta</span>, <span class="va">xy.se</span>, <span class="va">X</span>,</span></span>
-<span class="r-in"><span>                     vbiter <span class="op">=</span> <span class="fl">3000</span>,</span></span>
-<span class="r-in"><span>                     gammax <span class="op">=</span> <span class="fl">1e3</span>,</span></span>
-<span class="r-in"><span>                     pi <span class="op">=</span> <span class="fl">0</span>,</span></span>
-<span class="r-in"><span>                     eigen.tol <span class="op">=</span> <span class="fl">1e-2</span>,</span></span>
-<span class="r-in"><span>                     do.var.calc <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>                     scale.var <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">lodds</span>, main <span class="op">=</span> <span class="st">'association'</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">.5</span>, col <span class="op">=</span> <span class="st">'gray'</span>, ylab <span class="op">=</span> <span class="st">'log-odds'</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">c.snps</span>, <span class="va">out</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">lodds</span><span class="op">[</span><span class="va">c.snps</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">'red'</span>, pch <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">'topright'</span>, legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'causal'</span>, <span class="st">'others'</span><span class="op">)</span>, pch <span class="op">=</span> <span class="fl">19</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'red'</span>,<span class="st">'gray'</span><span class="op">)</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
+<span class="r-in"><span class="co">###########################</span></span>
+<span class="r-in"><span class="co">## A simple zQTL example ##</span></span>
+<span class="r-in"><span class="co">###########################</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">n</span> <span class="op">=</span> <span class="fl">500</span></span>
+<span class="r-in"><span class="va">p</span> <span class="op">=</span> <span class="fl">2000</span></span>
+<span class="r-in"><span class="va">m</span> <span class="op">=</span> <span class="fl">1</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">.rnorm</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">a</span> <span class="op">*</span> <span class="va">b</span><span class="op">)</span>, <span class="va">a</span>, <span class="va">b</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">X</span> <span class="op">=</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="va">n</span>, <span class="va">p</span><span class="op">)</span></span>
+<span class="r-in"><span class="va">Y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">n</span>, <span class="va">m</span><span class="op">)</span></span>
+<span class="r-in"><span class="va">h2</span> <span class="op">=</span> <span class="fl">0.25</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">c.snps</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">theta</span> <span class="op">=</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="fl">3</span>, <span class="va">m</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">h2</span> <span class="op">/</span> <span class="fl">3</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">Y</span> <span class="op">=</span> <span class="va">X</span><span class="op">[</span>, <span class="va">c.snps</span>, drop<span class="op">=</span><span class="cn">FALSE</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">theta</span> <span class="op">+</span> <span class="fu">.rnorm</span><span class="op">(</span><span class="va">n</span>, <span class="va">m</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">h2</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyr.tidyverse.org" class="external-link">tidyr</a></span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">qtl.tab</span> <span class="op">=</span> <span class="fu"><a href="calc.qtl.stat.html">calc.qtl.stat</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">xy.beta</span> <span class="op">=</span> <span class="va">qtl.tab</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">x.col</span>, <span class="va">y.col</span>, <span class="va">beta</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/spread.html" class="external-link">spread</a></span><span class="op">(</span>key <span class="op">=</span> <span class="va">y.col</span>, value <span class="op">=</span> <span class="va">beta</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">m</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">xy.se</span> <span class="op">=</span> <span class="va">qtl.tab</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">x.col</span>, <span class="va">y.col</span>, <span class="va">se</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/spread.html" class="external-link">spread</a></span><span class="op">(</span>key <span class="op">=</span> <span class="va">y.col</span>, value <span class="op">=</span> <span class="va">se</span><span class="op">)</span> <span class="op"><a href="https://tidyr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span class="r-in">    <span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">m</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">out</span> <span class="op">=</span> <span class="fu">fit.zqtl</span><span class="op">(</span><span class="va">xy.beta</span>, <span class="va">xy.se</span>, <span class="va">X</span>,</span>
+<span class="r-in">                     vbiter <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span class="r-in">                     gammax <span class="op">=</span> <span class="fl">1e3</span>,</span>
+<span class="r-in">                     pi <span class="op">=</span> <span class="fl">0</span>,</span>
+<span class="r-in">                     eigen.tol <span class="op">=</span> <span class="fl">1e-2</span>,</span>
+<span class="r-in">                     do.var.calc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span class="r-in">                     scale.var <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">lodds</span>, main <span class="op">=</span> <span class="st">'association'</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">.5</span>, col <span class="op">=</span> <span class="st">'gray'</span>, ylab <span class="op">=</span> <span class="st">'log-odds'</span><span class="op">)</span></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/points.html" class="external-link">points</a></span><span class="op">(</span><span class="va">c.snps</span>, <span class="va">out</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">lodds</span><span class="op">[</span><span class="va">c.snps</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">'red'</span>, pch <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/legend.html" class="external-link">legend</a></span><span class="op">(</span><span class="st">'topright'</span>, legend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'causal'</span>, <span class="st">'others'</span><span class="op">)</span>, pch <span class="op">=</span> <span class="fl">19</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'red'</span>,<span class="st">'gray'</span><span class="op">)</span><span class="op">)</span></span>
 <span class="r-plt img"><img src="fit.zqtl-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">.var</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">mean</span>,</span></span>
-<span class="r-in"><span>         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">conf.mult</span><span class="op">$</span><span class="va">mean</span>,</span></span>
-<span class="r-in"><span>         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">conf.uni</span><span class="op">$</span><span class="va">mean</span>,</span></span>
-<span class="r-in"><span>         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">resid</span><span class="op">$</span><span class="va">mean</span>,</span></span>
-<span class="r-in"><span>         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">tot</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span>height <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="op">(</span><span class="va">.var</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>        col <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>,</span></span>
-<span class="r-in"><span>        names.arg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'gen'</span>, <span class="st">'c1'</span>, <span class="st">'c2'</span>, <span class="st">'resid'</span>, <span class="st">'tot'</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>        horiz <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>        ylab <span class="op">=</span> <span class="st">'category'</span>,</span></span>
-<span class="r-in"><span>        xlab <span class="op">=</span> <span class="st">'estimated variance'</span><span class="op">)</span></span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="va">.var</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">param</span><span class="op">$</span><span class="va">mean</span>,</span>
+<span class="r-in">         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">conf.mult</span><span class="op">$</span><span class="va">mean</span>,</span>
+<span class="r-in">         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">conf.uni</span><span class="op">$</span><span class="va">mean</span>,</span>
+<span class="r-in">         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">resid</span><span class="op">$</span><span class="va">mean</span>,</span>
+<span class="r-in">         <span class="va">out</span><span class="op">$</span><span class="va">var</span><span class="op">$</span><span class="va">tot</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot</a></span><span class="op">(</span>height <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="op">(</span><span class="va">.var</span><span class="op">)</span>,</span>
+<span class="r-in">        col <span class="op">=</span> <span class="fl">2</span><span class="op">:</span><span class="fl">6</span>,</span>
+<span class="r-in">        names.arg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'gen'</span>, <span class="st">'c1'</span>, <span class="st">'c2'</span>, <span class="st">'resid'</span>, <span class="st">'tot'</span><span class="op">)</span>,</span>
+<span class="r-in">        horiz <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span class="r-in">        ylab <span class="op">=</span> <span class="st">'category'</span>,</span>
+<span class="r-in">        xlab <span class="op">=</span> <span class="st">'estimated variance'</span><span class="op">)</span></span>
 <span class="r-plt img"><img src="fit.zqtl-2.png" alt="" width="700" height="433"></span>
-<span class="r-in"><span></span></span>
+<span class="r-in"></span>
 </code></pre></div>
     </div>
   </div>
@@ -337,7 +337,7 @@ $$\boldsymbol{\theta}_{t} = \boldsymbol{\theta}^{\textsf{left}}
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

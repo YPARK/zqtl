@@ -108,7 +108,7 @@ std::tuple<Mat, Mat, Mat> do_svd(const Eigen::MatrixBase<Derived>& X,
   for (num_comp = 0; num_comp < V_full.cols(); ++num_comp) {
     cum += d2vec(num_comp);
     // Include as long as (cum / tot) <= (1 - TOL)
-    if(cum  > cutoff) break;
+    if (cum > cutoff) break;
   }
 
   if (opt.verbose()) {

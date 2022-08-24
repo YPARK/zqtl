@@ -271,9 +271,11 @@ void impl_resolve_hyperparam(Parameter& P, const tag_param_col_slab) {
 template <typename Parameter, typename Scalar>
 void impl_perturb_param(Parameter& P, const Scalar sd,
                         const tag_param_col_slab) {
-  std::mt19937 rng;
-  std::normal_distribution<Scalar> Norm;
-  auto rnorm = [&rng, &Norm, &sd](const auto& x) { return sd * Norm(rng); };
+  dqrng::xoshiro256plus rng;;
+  dqrng::normal_distribution Norm(0, 1);
+  auto rnorm = [&rng, &Norm, &sd](const auto& x) -> Scalar {
+    return sd * Norm(rng);
+  };
 
   P.beta = P.beta.unaryExpr(rnorm);
 
@@ -288,8 +290,10 @@ void impl_perturb_param(Parameter& P, const Scalar sd,
 template <typename Parameter, typename Scalar, typename RNG>
 void impl_perturb_param(Parameter& P, const Scalar sd, RNG& rng,
                         const tag_param_col_slab) {
-  std::normal_distribution<Scalar> Norm;
-  auto rnorm = [&rng, &Norm, &sd](const auto& x) { return sd * Norm(rng); };
+  dqrng::normal_distribution Norm(0, 1);
+  auto rnorm = [&rng, &Norm, &sd](const auto& x) -> Scalar {
+    return sd * Norm(rng);
+  };
 
   P.beta = P.beta.unaryExpr(rnorm);
 

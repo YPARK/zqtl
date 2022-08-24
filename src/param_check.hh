@@ -1,4 +1,5 @@
 #include <cmath>
+
 #include "rcpp_util.hh"
 
 #ifndef param_check_hh_

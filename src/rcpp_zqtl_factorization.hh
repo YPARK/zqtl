@@ -75,13 +75,7 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
     TLOG("Centered z-scores");
   }
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
-  std::mt19937 rng(opt.rseed());
-#endif
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   Mat Y = Vt * effect_z;
 
@@ -141,10 +135,6 @@ Rcpp::List impl_fit_factorization(const Mat& _effect, const Mat& _effect_se,
                               std::make_tuple(Y, D2, Design, VtC));
     }
   }
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
 
   TLOG("Successfully finished factorization!");
 

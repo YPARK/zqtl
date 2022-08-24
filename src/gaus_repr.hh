@@ -1,11 +1,6 @@
 #include <cmath>
-#include <random>
 
 #include "eigen_util.hh"
-
-#ifdef EIGEN_USE_MKL_ALL
-#include "mkl_vsl.h"
-#endif
 
 #ifndef GAUS_REPR_HH_
 #define GAUS_REPR_HH_
@@ -60,25 +55,11 @@ void update_mean(gaus_repr_t<Matrix, RT>& repr, const T& M);
 template <typename Matrix, typename RT, typename T>
 void update_var(gaus_repr_t<Matrix, RT>& repr, const T& V);
 
-// random normal generation by intel MKL
-#ifdef EIGEN_USE_MKL_ALL
-template <typename Matrix, typename RT>
-const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr,
-                          VSLStreamStatePtr rstream);
-
-template <typename Matrix, typename RT>
-const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
-                                   VSLStreamStatePtr rstream);
-
-#else
-
 template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG&);
 
 template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG&);
-
-#endif
 
 template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr);
@@ -97,11 +78,6 @@ struct gaus_repr_t {
   using Tag = ReprType;
 
   explicit gaus_repr_t(const Index _n, const Index _m) : n(_n), m(_m) {
-#ifdef EIGEN_USE_MKL_ALL
-    static_assert(std::is_same<Scalar, float>::value,
-                  "Must use float when using Eigen with MKL");
-#endif
-
     summarized = false;
     n_add_sgd = 0;
   }
@@ -240,43 +216,13 @@ void clear_repr(gaus_repr_t<Matrix, sparse_repr_type>& repr) {
   setConstant(repr.eps1Var, 0.0);
 }
 
-#ifdef EIGEN_USE_MKL_ALL
-
-template <typename Matrix, typename RT>
-const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr,
-                          VSLStreamStatePtr rstream) {
-  static_assert(std::is_same<float, typename Matrix::Scalar>::value,
-                "Only assume float for intel RNG");
-
-  vsRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, rstream, repr.Eps.size(),
-                repr.Eps.data(), 0.0, 1.0);
-  repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
-  return repr.Eta;
-}
-
-template <typename Matrix, typename RT>
-const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr,
-                                   VSLStreamStatePtr rstream) {
-  static_assert(std::is_same<float, typename Matrix::Scalar>::value,
-                "Only assume float for intel RNG");
-
-  vsRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, rstream, repr.Eps.size(),
-                repr.Eps.data(), 0.0, 1.0);
-
-  repr.Eta = repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
-  return repr.Eta;
-}
-
-#else
-
 template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
   // std::normal_distribution<Scalar> rnorm(0., 1.);
-  // repr.Eps = repr.Eps.unaryExpr(
-  //     [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
+  dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
+      [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
@@ -285,21 +231,23 @@ template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
   // std::normal_distribution<Scalar> rnorm(0., 1.);
-  // repr.Eps = repr.Eps.unaryExpr(
-  //     [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
+  dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
+      [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
   repr.Eta = repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }
 
-#endif
-
 template <typename Matrix, typename RT>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr) {
   using Scalar = typename Matrix::Scalar;
+  dqrng::xoshiro256plus rng;
+  dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
-      [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0)); });
+      [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
+  // repr.Eps = repr.Eps.unaryExpr(
+  //     [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0));
+  //     });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }

@@ -1,4 +1,5 @@
 #include <memory>
+
 #include "adam.hh"
 #include "mathutil.hh"
 #include "param_check.hh"

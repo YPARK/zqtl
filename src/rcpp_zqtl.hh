@@ -4,6 +4,10 @@
 #include <RcppEigen.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
+// [[Rcpp::depends(dqrng, sitmo, BH)]]
+#include <dqrng.h>
+#include <dqrng_distribution.h>
+#include <xoshiro.h>
 
 using namespace Rcpp;
 
@@ -43,10 +47,10 @@ using Index = Mat::Index;
 #include "rcpp_zqtl_util.hh"
 
 // mediation and regression headers
+#include "rcpp_zqtl_annotated.hh"
 #include "rcpp_zqtl_factorization.hh"
 #include "rcpp_zqtl_mediation.hh"
 #include "rcpp_zqtl_regression.hh"
 #include "rcpp_zqtl_vanilla.hh"
-#include "rcpp_zqtl_annotated.hh"
 
 #endif

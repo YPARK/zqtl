@@ -76,14 +76,8 @@ Rcpp::List impl_fit_zqtl(const Mat &_effect, const Mat &_effect_se,
 
   TLOG("Constructed effects");
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
   // random seed initialization
-  std::mt19937 rng(opt.rseed());
-#endif
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   Mat xi(Vt.rows(), Y.cols());
   Mat Dinv = D.cwiseInverse();
@@ -296,10 +290,6 @@ Rcpp::List impl_fit_zqtl(const Mat &_effect, const Mat &_effect_se,
     remove_confounders();
   }
 
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
-
   TLOG("Successfully finished regression!");
 
   return Rcpp::List::create(
@@ -382,14 +372,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
 
   ////////////////////////////////////////////////////////////////
   // factored parameters
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
-  // random seed initialization
   std::mt19937 rng(opt.rseed());
-#endif
 
   Mat xi(Vt.rows(), Y.cols());
   Mat Dinv = D.cwiseInverse();
@@ -644,10 +627,6 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
   if (opt.nboot() > 0) {
     remove_confounders();
   }
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
 
   TLOG("Successfully finished factored regression!");
 
