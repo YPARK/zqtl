@@ -35,7 +35,8 @@ struct zqtl_model_t {
         var_mat(k, m),
         llik_mat(k, m),
         resid_mat(k, m),
-        evidence_mat(k, m) {
+        evidence_mat(k, m),
+        distrib(0, 1) {
     is_obs_op<T> obs_op;
     evidence_mat = yy.unaryExpr(obs_op);
     remove_missing(yy, Y);
@@ -166,8 +167,8 @@ struct zqtl_model_t {
     const Scalar large_value = 20.0;  // exp(20) is too big
   } upweight_var_op;
 
-  std::mt19937 rng;
-  std::normal_distribution<Scalar> distrib;
+  dqrng::xoshiro256plus rng;
+  dqrng::normal_distribution distrib;
 };
 
 #endif

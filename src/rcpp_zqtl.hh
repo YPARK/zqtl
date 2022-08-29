@@ -28,10 +28,11 @@ using namespace Rcpp;
 #include "regression_factored.hh"
 #include "regression_mediated.hh"
 #include "residual.hh"
-#include "sgvb_mediation_inference.hh"
 #include "sgvb_regression_inference.hh"
 #include "tuple_util.hh"
 #include "zqtl_model.hh"
+
+// #include "sgvb_mediation_inference.hh"
 
 #ifndef RCPP_ZQTL_HH_
 #define RCPP_ZQTL_HH_

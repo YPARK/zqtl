@@ -286,15 +286,15 @@ void set_options_from_list(Rcpp::List& _list, options_t& opt) {
   if (_list.containsElementNamed("do.med.two.step"))
     opt.DO_MED_TWO_STEP = Rcpp::as<bool>(_list["do.med.two.step"]);
 
-  if (_list.containsElementNamed("de.propensity")) {
-    opt.DO_DIRECT_EFFECT_PROPENSITY = Rcpp::as<bool>(_list["de.propensity"]);
-    opt.DO_DIRECT_EFFECT_FACTORIZATION = false;
-  }
+  // if (_list.containsElementNamed("de.propensity")) {
+  //   opt.DO_DIRECT_EFFECT_PROPENSITY = Rcpp::as<bool>(_list["de.propensity"]);
+  //   opt.DO_DIRECT_EFFECT_FACTORIZATION = false;
+  // }
 
   if (_list.containsElementNamed("de.factorization")) {
     opt.DO_DIRECT_EFFECT_FACTORIZATION =
         Rcpp::as<bool>(_list["de.factorization"]);
-    opt.DO_DIRECT_EFFECT_PROPENSITY = false;
+    // opt.DO_DIRECT_EFFECT_PROPENSITY = false;
   }
 
   if (_list.containsElementNamed("factorization.model")) {

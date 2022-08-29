@@ -75,14 +75,7 @@ Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
 
   TLOG("Constructed effects");
 
-#ifdef EIGEN_USE_MKL_ALL
-  VSLStreamStatePtr rng;
-  vslNewStream(&rng, VSL_BRNG_SFMT19937, opt.rseed());
-  // omp_set_num_threads(opt.nthread());
-#else
-  // random seed initialization
-  std::mt19937 rng(opt.rseed());
-#endif
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   Mat xi(Vt.rows(), Y.cols());
   Mat Dinv = D.cwiseInverse();
@@ -109,12 +102,14 @@ Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
     Mat onesSV = Mat::Ones(1, SV);
     running_stat_t<Mat> _stat(K, m);
 
+    dqrng::xoshiro256plus rng;
+    dqrng::normal_distribution rnorm(0, 1);
+
     for (Index b = 0; b < opt.nboot_var(); ++b) {
       // 1. sample theta
       theta_s = var_param(_theta);
-      theta_s = theta_s.unaryExpr([&](const auto &v) {
-        return std::sqrt(v) * static_cast<Scalar>(R::rnorm(0.0, 1.0));
-      });
+      theta_s = theta_s.unaryExpr(
+          [&](const auto &v) -> Scalar { return std::sqrt(v) * rnorm(rng); });
 
       theta_s += mean_param(_theta);
 
@@ -370,10 +365,6 @@ Rcpp::List impl_zqtl_vanilla(const Mat &_effect, const Mat &_effect_se,
   if (opt.nboot() > 0) {
     remove_confounders();
   }
-
-#ifdef EIGEN_USE_MKL_ALL
-  vslDeleteStream(&rng);
-#endif
 
   TLOG("Successfully finished regression!");
 

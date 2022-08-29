@@ -219,7 +219,6 @@ void clear_repr(gaus_repr_t<Matrix, sparse_repr_type>& repr) {
 template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
-  // std::normal_distribution<Scalar> rnorm(0., 1.);
   dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
       [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
@@ -230,7 +229,6 @@ const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
 template <typename Matrix, typename RT, typename RNG>
 const Matrix& sample_repr_zeromean(gaus_repr_t<Matrix, RT>& repr, RNG& rng) {
   using Scalar = typename Matrix::Scalar;
-  // std::normal_distribution<Scalar> rnorm(0., 1.);
   dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
       [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
@@ -245,9 +243,6 @@ const Matrix& sample_repr(gaus_repr_t<Matrix, RT>& repr) {
   dqrng::normal_distribution rnorm(0, 1);
   repr.Eps = repr.Eps.unaryExpr(
       [&](const auto& x) { return static_cast<Scalar>(rnorm(rng)); });
-  // repr.Eps = repr.Eps.unaryExpr(
-  //     [&](const auto& x) { return static_cast<Scalar>(R::rnorm(0.0, 1.0));
-  //     });
   repr.Eta = repr.Mean + repr.Eps.cwiseProduct(repr.Var.cwiseSqrt());
   return repr.Eta;
 }

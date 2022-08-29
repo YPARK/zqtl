@@ -55,7 +55,183 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-Implementation of zQTL methods
+
+<div class="section level1">
+<div class="page-header"><h1 id="summary-based-qtl-mapping">Summary-based QTL mapping<a class="anchor" aria-label="anchor" href="#summary-based-qtl-mapping"></a>
+</h1></div>
+<div class="section level2">
+<h2 id="notes-on-mac-os">Notes on Mac OS<a class="anchor" aria-label="anchor" href="#notes-on-mac-os"></a>
+</h2>
+<p>For some unknown reasons, compiled Eigen library does not work as expected with the <code>clang</code> compiler. The matrix operations keep producing lots of <code>nan</code> results. We recommend using <code>gcc</code> after version 5 that fully support <code>std=c++14</code> flag.</p>
+</div>
+<div class="section level2">
+<h2 id="installation-a-simple-version">Installation (a simple version)<a class="anchor" aria-label="anchor" href="#installation-a-simple-version"></a>
+</h2>
+<p>Just do this in <code>R</code></p>
+<pre><code>&gt; install.packages('zqtl_x.x.x.tar.gz')</code></pre>
+</div>
+<div class="section level2">
+<h2 id="installation-optional">Installation (optional)<a class="anchor" aria-label="anchor" href="#installation-optional"></a>
+</h2>
+<p>Make sure your R development environment support <code>C++14</code> by including <code>-std=c++14</code> to <code>CFLAGS</code> and <code>CXXFLAGS</code> in <code>~/.R/Makevars</code> file. For instance,</p>
+<pre><code><span class="va">CXX</span> <span class="op">=</span> <span class="va">g</span><span class="op">+</span><span class="op">+</span><span class="op">-</span><span class="fl">6</span>
+<span class="va">CXXFLAGS</span> <span class="op">=</span> <span class="op">-</span><span class="va">O3</span> <span class="op">-</span><span class="va">std</span><span class="op">=</span><span class="va">c</span><span class="op">+</span><span class="op">+</span><span class="fl">14</span>
+<span class="va">CFLAGS</span> <span class="op">=</span> <span class="op">-</span><span class="va">O3</span> <span class="op">-</span><span class="va">std</span><span class="op">=</span><span class="va">c</span><span class="op">+</span><span class="op">+</span><span class="fl">14</span></code></pre>
+<p>Build package locally.</p>
+<pre><code>$ R CMD build .</code></pre>
+<p>You will have <code>zqtl_x.x.x.tar.gz</code> gzipped file in current directory (<code>x.x.x</code> can be any version of the package). Install package within R:</p>
+<pre><code>&gt; install.packages('zqtl_x.x.x.tar.gz')</code></pre>
+<p>To speed up matrix-vector multiplication, one can compile codes with Intel MKL library. Currently <code>RcppEigen</code> does not support <code>BLAS</code> only options (this may not be true).</p>
+<p>Enjoy!</p>
+</div>
+</div>
+<div class="section level1">
+<h1 id="release-notes">Release notes<a class="anchor" aria-label="anchor" href="#release-notes"></a>
+</h1>
+<div class="section level3">
+<h3 id="v-142">v 1.4.2<a class="anchor" aria-label="anchor" href="#v-142"></a>
+</h3>
+<ul>
+<li>Add faster SVD routine for a large genotype matrix</li>
+<li>Bugfix in randomized SVD</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v-141">v 1.4.1<a class="anchor" aria-label="anchor" href="#v-141"></a>
+</h3>
+<ul><li>Regularization of eigen values (the <code>eigen.reg</code> parameter)</li></ul>
+</div>
+<div class="section level3">
+<h3 id="v-140">v 1.4.0<a class="anchor" aria-label="anchor" href="#v-140"></a>
+</h3>
+<ul><li>Add useful utilities</li></ul>
+</div>
+<div class="section level3">
+<h3 id="v136">v.1.3.6<a class="anchor" aria-label="anchor" href="#v136"></a>
+</h3>
+<ul>
+<li>Improve variance calculation</li>
+<li>Partitioned variance calculation with annotation information</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v135">v.1.3.5<a class="anchor" aria-label="anchor" href="#v135"></a>
+</h3>
+<ul>
+<li>Report both types of residual variance estimation</li>
+<li>Lower the precision limit in SGVB steps</li>
+<li>Add adjusting routines for convenience</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v134">v.1.3.4<a class="anchor" aria-label="anchor" href="#v134"></a>
+</h3>
+<ul>
+<li>Remove “backfire control” and “two step optimization”</li>
+<li>Revive variance calculation with residual estimation</li>
+<li>Make a room for univariate confounding factors</li>
+<li>Output “clean” version of GWAS effects</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v133">v.1.3.3<a class="anchor" aria-label="anchor" href="#v133"></a>
+</h3>
+<ul>
+<li>Minor fix on smoothness of the unmediated effect</li>
+<li>Add <code>do.control.backfire</code> to regress out <code>M0 -&gt; M</code>.</li>
+<li>Add experimental factorization model <code>factorization.model = 1</code>
+</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v132">v.1.3.2<a class="anchor" aria-label="anchor" href="#v132"></a>
+</h3>
+<ul>
+<li>Estimate unmediated factors by factorization</li>
+<li>Boost sample size by resampling eigen vectors</li>
+<li>Allow two step optimization</li>
+<li>Parametric bootstrap for sensitivity analysis</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v131">v.1.3.1<a class="anchor" aria-label="anchor" href="#v131"></a>
+</h3>
+<ul>
+<li>Make propensity sampling as second option</li>
+<li>Estimate the unmediated effect as before</li>
+<li>Drop weight features (not so useful)</li>
+<li>Allow multiple mediators in the conditional analysis</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v130">v.1.3.0<a class="anchor" aria-label="anchor" href="#v130"></a>
+</h3>
+<ul>
+<li>Counterfactual estimation of average unmediated effects via sampling</li>
+<li>Factored mediation model</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v123">v.1.2.3<a class="anchor" aria-label="anchor" href="#v123"></a>
+</h3>
+<ul>
+<li>Take multivariate effect sizes for mediator QTLs</li>
+<li>Initialization by dot product</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v122">v.1.2.2<a class="anchor" aria-label="anchor" href="#v122"></a>
+</h3>
+<ul><li>Restrict number of mediator variables during the estimation of unmediated effects</li></ul>
+</div>
+<div class="section level3">
+<h3 id="v121">v.1.2.1<a class="anchor" aria-label="anchor" href="#v121"></a>
+</h3>
+<ul>
+<li>Estimation of average unmediated effects</li>
+<li>Minor bugfix in regression (twice rescaling)</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v120">v.1.2.0<a class="anchor" aria-label="anchor" href="#v120"></a>
+</h3>
+<ul>
+<li>Matrix factorization for confounder correction</li>
+<li>Confirmed usefulness of non-negative parameters</li>
+<li>Simplified pleiotropy model in mediation analysis</li>
+<li>Adjust scales by standard deviation</li>
+<li>Variance model in mediation analysis</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v110">v.1.1.0<a class="anchor" aria-label="anchor" href="#v110"></a>
+</h3>
+<ul>
+<li>Spiked Gamma for the factored zQTL methods</li>
+<li>Additional covariate component for confounder correction</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v101">v.1.0.1<a class="anchor" aria-label="anchor" href="#v101"></a>
+</h3>
+<ul>
+<li>Variance calculation. See <code>note/variance.md</code> for details.</li>
+<li>Random effect component to account for uncertainty of individuals</li>
+<li>Removing LD-structure bias between mediation QTL and GWAS cohorts</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="v100">v.1.0.0<a class="anchor" aria-label="anchor" href="#v100"></a>
+</h3>
+<ul><li>Initial version migrated from MIT github</li></ul>
+</div>
+</div>
+<div class="section level1">
+<h1 id="bug-reports">Bug reports<a class="anchor" aria-label="anchor" href="#bug-reports"></a>
+</h1>
+<p>Yongjin Park <code>ypp@stat.ubc.ca</code></p>
+</div>
+
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

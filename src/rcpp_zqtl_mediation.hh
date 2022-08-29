@@ -48,10 +48,6 @@ Rcpp::List _fine_map(MODEL_Y& model_y, DIRECT& eta_direct, CONF& eta_conf_y,
                      std::tuple<DATA...>&& data_tup);
 
 template <typename RNG, typename... DATA>
-Mat _direct_effect_propensity(RNG& rng, options_t& opt,
-                              std::tuple<DATA...>&& data_tup);
-
-template <typename RNG, typename... DATA>
 Mat _direct_effect_conditional(RNG& rng, options_t& opt,
                                std::tuple<DATA...>&& data_up);
 
@@ -570,87 +566,6 @@ Rcpp::List impl_fit_fac_med_zqtl(
 }
 
 template <typename RNG, typename... DATA>
-Mat _direct_effect_propensity(RNG& rng, options_t& opt,
-                              std::tuple<DATA...>&& data_tup) {
-  Mat mm, yy, Vt, D2, VtC, U;
-  std::tie(mm, yy, Vt, D2, VtC, U) = data_tup;
-
-  const Index max_n_submodel = opt.n_submodel_model();
-  const Index n_submodel =
-      (max_n_submodel > 0) ? std::min(max_n_submodel, mm.cols()) : mm.cols();
-
-  const Index n_traits = yy.cols();
-
-  Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_submodel);
-
-  std::vector<Index> rand_med(mm.cols());
-
-  std::shuffle(rand_med.begin(), rand_med.end(),
-               std::mt19937{std::random_device{}()});
-
-  const Index n_strat = Y_resid.rows() * opt.n_strat_size();
-  Mat Y_strat(n_strat, n_traits);
-  Mat Vt_strat(n_strat, Vt.cols());
-  Mat D2_strat(n_strat, D2.cols());
-  Mat VtC_strat(n_strat, VtC.cols());
-
-  std::mt19937 rng_n(opt.rseed());
-  discrete_sampler_t<Vec> randN(yy.rows());
-  const Scalar half = static_cast<Scalar>(0.5);
-
-  for (Index k = 0; k < n_submodel; ++k) {
-    // sample eigen components inversely proportional to the
-    // divergence of this mediation effect
-
-    Index k_rand = rand_med.at(k);
-    Mat Mk = mm.col(k_rand);
-
-    Vec logScore = -(Mk.cwiseProduct(Mk)).cwiseQuotient(D2) * half;
-
-    for (Index ri = 0; ri < n_strat; ++ri) {
-      Index r = randN(logScore, rng_n);
-      Y_strat.row(ri) = yy.row(r);
-      Vt_strat.row(ri) = Vt.row(r);
-      D2_strat.row(ri) = D2.row(r);
-      VtC_strat.row(ri) = VtC.row(r);
-    }
-
-    zqtl_model_t<Mat> y_strat_model(Y_strat, D2_strat);
-
-    auto theta = make_dense_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(), opt);
-    auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
-    eta.init_by_dot(Y_strat, opt.jitter());
-
-    auto inter =
-        make_dense_spike_slab<Scalar>(VtC_strat.cols(), Y_strat.cols(), opt);
-    auto eta_intercept = make_regression_eta(VtC_strat, Y_strat, inter);
-    eta_intercept.init_by_dot(Y_strat, opt.jitter());
-
-    auto _llik = impl_fit_eta(y_strat_model, opt, rng,
-                              std::make_tuple(eta, eta_intercept));
-
-    eta.resolve();
-    Mat _y = Vt * mean_param(theta);
-    for (Index j = 0; j < _y.cols(); ++j) {
-      Index kj = n_traits * k + j;
-      Y_resid.col(kj) = _y.col(j);
-    }
-
-    if (opt.verbose())
-      TLOG("Propensity sampling model : " << (k + 1) << " / " << n_submodel);
-  }
-
-  Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
-  Mat resid_z = _resid_z;
-  resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
-
-  const Scalar denom = static_cast<Scalar>(resid_z.cols());
-  Mat resid_z_mean = resid_z * Mat::Ones(resid_z.cols(), 1) / denom;
-
-  return Vt * resid_z_mean;
-}
-
-template <typename RNG, typename... DATA>
 Mat _direct_effect_conditional(RNG& rng, options_t& opt,
                                std::tuple<DATA...>&& data_tup) {
   Mat mm, yy, Vt, D2, VtC, U;
@@ -890,16 +805,6 @@ Mat estimate_direct_effect(RNG& rng, options_t& opt,
       TLOG("Estimation of direct effect from factorization effects");
     M0 = _direct_effect_factorization(
         rng, opt, std::make_tuple(M, Y, Vt, D2, VtIC, VtCd, U));
-  } else if (opt.do_de_propensity()) {
-    if (opt.verbose())
-      TLOG("Estimation of direct effect by propensity sampling");
-    M0.resize(M.rows(), n_trait);
-    for (Index tt = 0; tt < n_trait; ++tt) {
-      M0.col(tt) = _direct_effect_propensity(
-          rng, opt, std::make_tuple(M, Y.col(tt), Vt, D2, VtIC, U));
-      if (opt.verbose())
-        TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
-    }
   } else {
     if (opt.verbose()) TLOG("Estimation of direct effect by invariance");
     M0.resize(M.rows(), n_trait);
@@ -1102,3 +1007,99 @@ std::tuple<Mat, Mat, Mat, Mat, Mat, Mat, Mat, Mat> preprocess_mediation_input(
 }
 
 #endif
+
+// template <typename RNG, typename... DATA>
+// Mat _direct_effect_propensity(RNG& rng, options_t& opt,
+//                               std::tuple<DATA...>&& data_tup);
+
+// } else if (opt.do_de_propensity()) {
+//   if (opt.verbose())
+//     TLOG("Estimation of direct effect by propensity sampling");
+//   M0.resize(M.rows(), n_trait);
+//   for (Index tt = 0; tt < n_trait; ++tt) {
+//     M0.col(tt) = _direct_effect_propensity(
+//         rng, opt, std::make_tuple(M, Y.col(tt), Vt, D2, VtIC, U));
+//     if (opt.verbose())
+//       TLOG("Finished on the trait : " << (tt + 1) << " / " << n_trait);
+//   }
+
+// template <typename RNG, typename... DATA>
+// Mat _direct_effect_propensity(RNG& rng, options_t& opt,
+//                               std::tuple<DATA...>&& data_tup) {
+//   Mat mm, yy, Vt, D2, VtC, U;
+//   std::tie(mm, yy, Vt, D2, VtC, U) = data_tup;
+
+//   const Index max_n_submodel = opt.n_submodel_model();
+//   const Index n_submodel =
+//       (max_n_submodel > 0) ? std::min(max_n_submodel, mm.cols()) : mm.cols();
+
+//   const Index n_traits = yy.cols();
+
+//   Mat Y_resid = Mat::Zero(yy.rows(), n_traits * n_submodel);
+
+//   std::vector<Index> rand_med(mm.cols());
+
+//   std::shuffle(rand_med.begin(), rand_med.end(),
+//                std::mt19937{std::random_device{}()});
+
+//   const Index n_strat = Y_resid.rows() * opt.n_strat_size();
+//   Mat Y_strat(n_strat, n_traits);
+//   Mat Vt_strat(n_strat, Vt.cols());
+//   Mat D2_strat(n_strat, D2.cols());
+//   Mat VtC_strat(n_strat, VtC.cols());
+
+//   std::mt19937 rng_n(opt.rseed());
+//   discrete_sampler_t<Vec> randN(yy.rows());
+//   const Scalar half = static_cast<Scalar>(0.5);
+
+//   for (Index k = 0; k < n_submodel; ++k) {
+//     // sample eigen components inversely proportional to the
+//     // divergence of this mediation effect
+
+//     Index k_rand = rand_med.at(k);
+//     Mat Mk = mm.col(k_rand);
+
+//     Vec logScore = -(Mk.cwiseProduct(Mk)).cwiseQuotient(D2) * half;
+
+//     for (Index ri = 0; ri < n_strat; ++ri) {
+//       Index r = randN(logScore, rng_n);
+//       Y_strat.row(ri) = yy.row(r);
+//       Vt_strat.row(ri) = Vt.row(r);
+//       D2_strat.row(ri) = D2.row(r);
+//       VtC_strat.row(ri) = VtC.row(r);
+//     }
+
+//     zqtl_model_t<Mat> y_strat_model(Y_strat, D2_strat);
+
+//     auto theta = make_dense_slab<Scalar>(Vt_strat.cols(), Y_strat.cols(),
+//     opt); auto eta = make_regression_eta(Vt_strat, Y_strat, theta);
+//     eta.init_by_dot(Y_strat, opt.jitter());
+
+//     auto inter =
+//         make_dense_spike_slab<Scalar>(VtC_strat.cols(), Y_strat.cols(), opt);
+//     auto eta_intercept = make_regression_eta(VtC_strat, Y_strat, inter);
+//     eta_intercept.init_by_dot(Y_strat, opt.jitter());
+
+//     auto _llik = impl_fit_eta(y_strat_model, opt, rng,
+//                               std::make_tuple(eta, eta_intercept));
+
+//     eta.resolve();
+//     Mat _y = Vt * mean_param(theta);
+//     for (Index j = 0; j < _y.cols(); ++j) {
+//       Index kj = n_traits * k + j;
+//       Y_resid.col(kj) = _y.col(j);
+//     }
+
+//     if (opt.verbose())
+//       TLOG("Propensity sampling model : " << (k + 1) << " / " << n_submodel);
+//   }
+
+//   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
+//   Mat resid_z = _resid_z;
+//   resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());
+
+//   const Scalar denom = static_cast<Scalar>(resid_z.cols());
+//   Mat resid_z_mean = resid_z * Mat::Ones(resid_z.cols(), 1) / denom;
+
+//   return Vt * resid_z_mean;
+// }

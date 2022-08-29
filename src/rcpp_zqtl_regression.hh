@@ -372,7 +372,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
 
   ////////////////////////////////////////////////////////////////
   // factored parameters
-  std::mt19937 rng(opt.rseed());
+  dqrng::xoshiro256plus rng(opt.rseed());
 
   Mat xi(Vt.rows(), Y.cols());
   Mat Dinv = D.cwiseInverse();
@@ -554,7 +554,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());
     } else {
-      std::mt19937 _rng(opt.rseed());
+      dqrng::xoshiro256plus _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 
@@ -581,7 +581,7 @@ Rcpp::List impl_fit_fac_zqtl(const Mat &_effect, const Mat &_effect_se,
     if (opt.mf_svd_init()) {
       eta_f.init_by_svd(Y, opt.jitter());
     } else {
-      std::mt19937 _rng(opt.rseed());
+      dqrng::xoshiro256plus _rng(opt.rseed());
       eta_f.jitter(opt.jitter(), _rng);
     }
 

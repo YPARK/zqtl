@@ -44,7 +44,7 @@ struct options_t {
 
     DO_DIRECT_EFFECT = true;
     DO_CONTROL_BACKFIRE = false;
-    DO_DIRECT_EFFECT_PROPENSITY = false;
+    // DO_DIRECT_EFFECT_PROPENSITY = false;
     DO_DIRECT_EFFECT_FACTORIZATION = false;
     DO_DIRECT_EFFECT_CONDITIONAL = false;
 
@@ -117,7 +117,7 @@ struct options_t {
   const bool do_direct_effect() const { return DO_DIRECT_EFFECT; }
   const bool do_control_backfire() const { return DO_CONTROL_BACKFIRE; }
 
-  const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
+  // const bool do_de_propensity() const { return DO_DIRECT_EFFECT_PROPENSITY; }
   const bool do_de_factorization() const {
     return DO_DIRECT_EFFECT_FACTORIZATION;
   }
@@ -189,7 +189,7 @@ struct options_t {
 
   bool DO_DIRECT_EFFECT;
   bool DO_CONTROL_BACKFIRE;
-  bool DO_DIRECT_EFFECT_PROPENSITY;
+  // bool DO_DIRECT_EFFECT_PROPENSITY;
   bool DO_DIRECT_EFFECT_FACTORIZATION;
   bool DO_DIRECT_EFFECT_CONDITIONAL;
   int DE_FACTORIZATION_MODEL;

@@ -21,7 +21,7 @@ auto _impl_factorization(Left& epsilon_left, Right& epsilon_right,
     Mat Dinv = D2.cwiseSqrt().cwiseInverse();
     delta_random.init_by_svd(Target, opt.jitter());
   } else {
-    std::mt19937 _rng(opt.rseed());
+    dqrng::xoshiro256plus _rng(opt.rseed());
     delta_random.jitter(opt.jitter(), _rng);
   }
 
