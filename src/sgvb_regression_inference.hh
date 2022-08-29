@@ -2,8 +2,7 @@
 #include <Rcpp.h>
 // [[Rcpp::depends(RcppEigen)]]
 #include <RcppEigen.h>
-// [[Rcpp::depends(RcppProgress)]]
-#include <progress.hpp>
+
 #include <typeinfo>
 
 #include "convergence.hh"
@@ -70,8 +69,8 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
   using Index = typename Model::Index;
   using Mat = typename Model::Data;
 
-  Eigen::setNbThreads(opt.nthread());
-  if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
+  // Eigen::setNbThreads(opt.nthread());
+  // if (opt.verbose()) TLOG("Number of threads = " << opt.nthread());
 
   using conv_t = convergence_t<Scalar>;
   Mat onesN = Mat::Ones(model.nobs(), 1) / static_cast<Scalar>(model.nobs());
@@ -84,10 +83,6 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
 
   Mat eta_sampled(model.nobs(), model.ntraits());
   Mat delta_sampled(model.nobs(), model.ntraits());
-
-  // Must keep this progress obj; otherwise segfault will occur
-  const Index prog_iter = opt.do_hyper() ? (2 * opt.vbiter()) : opt.vbiter();
-  Progress prog(prog_iter, !opt.verbose());
 
   // model fitting
   Scalar rate = opt.rate0();
@@ -129,10 +124,9 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
 
   do_hyper = false;
   for (t = 0; t < niter; ++t) {
-    if (Progress::check_abort()) {
-      break;
-    }
-    prog.increment();
+    // this may not be thread-safe
+    // Rcpp::checkUserInterrupt();
+
     rate = opt.rate0() * std::pow(static_cast<Scalar>(t + 1), opt.decay());
     func_apply(update_sgd, std::move(eta_tup));
     func_apply(update_sgd, std::move(delta_tup));
@@ -150,10 +144,9 @@ auto impl_fit_eta_delta(Model &model, const Opt &opt, RNG &rng,
   if (opt.do_hyper()) {
     do_hyper = true;
     for (; t < 2 * niter; ++t) {
-      if (Progress::check_abort()) {
-        break;
-      }
-      prog.increment();
+      // this may not be thread-safe
+      // Rcpp::checkUserInterrupt();
+
       rate = opt.rate0() * std::pow(static_cast<Scalar>(t + 1), opt.decay());
       func_apply(update_sgd, std::move(eta_tup));
       func_apply(update_sgd, std::move(delta_tup));

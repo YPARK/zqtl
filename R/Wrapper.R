@@ -837,7 +837,8 @@ fit.zqtl.factorize <- function(effect,              # marginal effect : y ~ x
 #'               tol = 1e-8,
 #'               verbose = TRUE,
 #'               print.interv = 200,
-#'               multivar.mediator = FALSE)
+#'               multivar.mediator = FALSE,
+#'               nthread = 8)
 #'
 #' med.out = fit.med.zqtl(effect = xy.beta,
 #'                              effect.se = xy.se,
@@ -863,7 +864,7 @@ fit.med.zqtl <- function(effect,              # marginal effect : y ~ x
                          factored = FALSE,    # Factored model
                          options = list(),
                          multivar.mediator = FALSE,
-                         de.factorization = TRUE,
+                         de.factorization = FALSE,
                          factorization.model = 0,
                          num.strat.size = 2,
                          do.direct.estimation = TRUE,

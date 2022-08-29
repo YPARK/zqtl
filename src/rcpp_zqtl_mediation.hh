@@ -1,3 +1,5 @@
+// [[Rcpp::plugins(openmp)]]
+
 #ifndef RCPP_ZQTL_MEDIATION_HH_
 #define RCPP_ZQTL_MEDIATION_HH_
 
@@ -167,26 +169,45 @@ Rcpp::List impl_fit_med_zqtl(
     TLOG("Switch off the hyperparameter tuning for bootstrapping");
 
     // Perform parametric bootstrap to estimate CIs.
-    for (Index b = 0; b < opt.nboot(); ++b) {
-      delta_med.perturb(opt.jitter());
-      eta_intercept.perturb(opt.jitter());
-      eta_conf_mult_y.perturb(opt.jitter());
-      delta_conf_univ_y.perturb(opt.jitter());
+    Eigen::initParallel();
+#if defined(_OPENMP)
+#pragma omp parallel num_threads(opt.nthread())
+    {
+      dqrng::xoshiro256plus lrng(rng);  // make thread local copy of rng
+      lrng.long_jump(omp_get_thread_num() + 1);
+#pragma omp for
+#endif
+      for (Index b = 0; b < opt.nboot(); ++b) {
+        delta_med.perturb(opt.jitter());
+        eta_intercept.perturb(opt.jitter());
+        eta_conf_mult_y.perturb(opt.jitter());
+        delta_conf_univ_y.perturb(opt.jitter());
 
-      delta_unmed.resolve();
+        delta_unmed.resolve();
 
+#if defined(_OPENMP)
+        impl_fit_eta_delta(
+            model_y, opt, lrng,
+            std::make_tuple(eta_intercept, eta_conf_mult_y),  // estimate
+            std::make_tuple(delta_med, delta_conf_univ_y),    // estimate
+            std::make_tuple(dummy),                           // clamped
+            std::make_tuple(delta_unmed));
+#else
       impl_fit_eta_delta(
-          model_y, opt, rng,                                // default stuff
+          model_y, opt, rng,
           std::make_tuple(eta_intercept, eta_conf_mult_y),  // estimate
           std::make_tuple(delta_med, delta_conf_univ_y),    // estimate
           std::make_tuple(dummy),                           // clamped
           std::make_tuple(delta_unmed));
-
-      bootstrap[b] = param_rcpp_list(theta_med);
-      if (opt.verbose())
-        TLOG("Bootstrap [" << std::setw(10) << (b + 1) << " / "      //
-                           << std::setw(10) << opt.nboot() << "]");  //
+#endif
+        bootstrap[b] = param_rcpp_list(theta_med);
+        if (opt.verbose())
+          TLOG("Bootstrap [" << std::setw(10) << (b + 1) << " / "      //
+                             << std::setw(10) << opt.nboot() << "]");  //
+      }
+#if defined(_OPENMP)
     }
+#endif
     if (_do_hyper) opt.on_hyper();
   };
 
@@ -261,20 +282,34 @@ Rcpp::List impl_fit_med_zqtl(
     }
     obs = obs.unaryExpr(log10_op);
 
-    for (Index b = 0; b < opt.nboot_var(); ++b) {
+    Eigen::initParallel();
+#if defined(_OPENMP)
+#pragma omp parallel num_threads(opt.nthread())
+    {
+      dqrng::xoshiro256plus lrng(rng);  // make thread local copy of rng
+      lrng.long_jump(omp_get_thread_num() + 1);
+#pragma omp for
+#endif
+      for (Index b = 0; b < opt.nboot_var(); ++b) {
+#if defined(_OPENMP)
+        temp_Km = _eta.sample(lrng);
+#else
       temp_Km = _eta.sample(rng);
-      z = Vt.transpose() * D2.asDiagonal() * temp_Km;
-      if (opt.scale_var_calc()) {
-        z = z.cwiseProduct(gwas_se);
-        xi = Dinv.asDiagonal() * Vt * z;
-        temp = onesK * (xi.cwiseProduct(xi));
-      } else {
-        xi = Dinv.asDiagonal() * Vt * z;
-        temp = onesK * (xi.cwiseProduct(xi)) / denom;
+#endif
+        z = Vt.transpose() * D2.asDiagonal() * temp_Km;
+        if (opt.scale_var_calc()) {
+          z = z.cwiseProduct(gwas_se);
+          xi = Dinv.asDiagonal() * Vt * z;
+          temp = onesK * (xi.cwiseProduct(xi));
+        } else {
+          xi = Dinv.asDiagonal() * Vt * z;
+          temp = onesK * (xi.cwiseProduct(xi)) / denom;
+        }
+        _stat(temp.unaryExpr(log10_op));
       }
-      _stat(temp.unaryExpr(log10_op));
+#if defined(_OPENMP)
     }
-
+#endif
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
                               Rcpp::_["obs"] = obs);
@@ -315,19 +350,34 @@ Rcpp::List impl_fit_med_zqtl(
     }
     obs = obs.unaryExpr(log10_op);
 
-    for (Index b = 0; b < opt.nboot_var(); ++b) {
+    Eigen::initParallel();
+#if defined(_OPENMP)
+#pragma omp parallel num_threads(opt.nthread())
+    {
+      dqrng::xoshiro256plus lrng(rng);  // make thread local copy of rng
+      lrng.long_jump(omp_get_thread_num() + 1);
+#pragma omp for
+#endif
+      for (Index b = 0; b < opt.nboot_var(); ++b) {
+#if defined(_OPENMP)
+        temp_Km = _delta.sample(lrng);
+#else
       temp_Km = _delta.sample(rng);
-      z = Vt.transpose() * temp_Km;
-      if (opt.scale_var_calc()) {
-        z = z.cwiseProduct(gwas_se);
-        xi = Dinv.asDiagonal() * Vt * z;
-        temp = onesK * (xi.cwiseProduct(xi));
-      } else {
-        xi = Dinv.asDiagonal() * Vt * z;
-        temp = onesK * (xi.cwiseProduct(xi)) / denom;
+#endif
+        z = Vt.transpose() * temp_Km;
+        if (opt.scale_var_calc()) {
+          z = z.cwiseProduct(gwas_se);
+          xi = Dinv.asDiagonal() * Vt * z;
+          temp = onesK * (xi.cwiseProduct(xi));
+        } else {
+          xi = Dinv.asDiagonal() * Vt * z;
+          temp = onesK * (xi.cwiseProduct(xi)) / denom;
+        }
+        _stat(temp.unaryExpr(log10_op));
       }
-      _stat(temp.unaryExpr(log10_op));
+#if defined(_OPENMP)
     }
+#endif
 
     return Rcpp::List::create(Rcpp::_["mean"] = _stat.mean(),
                               Rcpp::_["var"] = _stat.var(),
@@ -582,53 +632,64 @@ Mat _direct_effect_conditional(RNG& rng, options_t& opt,
       std::min(n_submodel - 1, static_cast<Index>(opt.n_submodel_size()));
 
   const Index n_med = mm.cols();
-  std::vector<Index> rand_med(n_med);
 
-  for (Index k = 0; k < max_n_submodel; ++k) {
-    zqtl_model_t<Mat> y_model(yy, D2);
+  Eigen::initParallel();
+#if defined(_OPENMP)
+#pragma omp parallel num_threads(opt.nthread())
+  {
+    dqrng::xoshiro256plus lrng(rng);  // make thread local copy of rng
+    lrng.long_jump(omp_get_thread_num() + 1);
+#pragma omp for
+#endif
+    for (Index k = 0; k < max_n_submodel; ++k) {
+      zqtl_model_t<Mat> y_model(yy, D2);
 
-    if (k % n_med == 0) {
-      std::shuffle(rand_med.begin(), rand_med.end(),
-                   std::mt19937{std::random_device{}()});
-    }
+      Eigen::setNbThreads(1);
+      // construct mediators not to regress out
+      Mat Mk;
+      if (submodel_size < 1) {
+        Mk.resize(mm.rows(), 1);
+        Mk = Mat::Zero(mm.rows(), 1);
+      } else {
+        std::vector<Index> rand_med(n_med * max_n_submodel);
+        std::iota(rand_med.begin(), rand_med.end(), 0);
+        std::shuffle(rand_med.begin(), rand_med.end(), lrng);
+        // std::mt19937{std::random_device{}()});
 
-    // construct mediators not to regress out
-    Mat Mk;
-    if (submodel_size < 1) {
-      Mk.resize(mm.rows(), 1);
-      Mk = Mat::Zero(mm.rows(), 1);
-    } else {
-      Mk.resize(mm.rows(), submodel_size);
-      for (Index j = 0; j < submodel_size; ++j) {
-        Index k_rand = rand_med.at((k + j) % n_med);
-        Mk.col(j) = mm.col(k_rand);
+        Mk.resize(mm.rows(), submodel_size);
+        for (Index j = 0; j < submodel_size; ++j) {
+          Index k_rand = rand_med.at((k + j) % n_med);
+          Mk.col(j) = mm.col(k_rand);
+        }
       }
+
+      auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
+      auto delta = make_regression_eta(Mk, yy, med);
+
+      auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), yy.cols(), opt);
+      auto eta = make_regression_eta(Vt, yy, theta);
+
+      auto inter = make_dense_spike_slab<Scalar>(VtC.cols(), yy.cols(), opt);
+      auto eta_inter = make_regression_eta(VtC, yy, inter);
+
+      auto _llik = impl_fit_eta_delta(y_model, opt, lrng,  //
+                                      std::make_tuple(eta, eta_inter),
+                                      std::make_tuple(delta));
+
+      eta.resolve();
+      Mat _y = Vt * mean_param(theta);
+      for (Index j = 0; j < _y.cols(); ++j) {
+        Index kj = n_traits * k + j;
+        Y_resid.col(kj) = _y.col(j);
+      }
+
+      if (opt.verbose())
+        TLOG("Submodel mediator model : " << (k + 1) << " / "
+                                          << max_n_submodel);
     }
-
-    auto med = make_dense_slab<Scalar>(Mk.cols(), yy.cols(), opt);
-    auto delta = make_regression_eta(Mk, yy, med);
-
-    auto theta = make_dense_spike_slab<Scalar>(Vt.cols(), yy.cols(), opt);
-    auto eta = make_regression_eta(Vt, yy, theta);
-
-    auto inter = make_dense_spike_slab<Scalar>(VtC.cols(), yy.cols(), opt);
-    auto eta_inter = make_regression_eta(VtC, yy, inter);
-
-    auto _llik =
-        impl_fit_eta_delta(y_model, opt, rng, std::make_tuple(eta, eta_inter),
-                           std::make_tuple(delta));
-
-    eta.resolve();
-    Mat _y = Vt * mean_param(theta);
-    for (Index j = 0; j < _y.cols(); ++j) {
-      Index kj = n_traits * k + j;
-      Y_resid.col(kj) = _y.col(j);
-    }
-
-    if (opt.verbose())
-      TLOG("Submodel mediator model : " << (k + 1) << " / " << max_n_submodel);
+#if defined(_OPENMP)
   }
-
+#endif
   Mat _resid_z = Vt.transpose() * D2.asDiagonal() * Y_resid;
   Mat resid_z = _resid_z;
   resid_z = standardize_zscore(_resid_z, Vt, D2.cwiseSqrt());

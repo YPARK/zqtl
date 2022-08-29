@@ -197,7 +197,8 @@ vb.opt = list(nsample = 10,
               tol = 1e-8,
               verbose = TRUE,
               print.interv = 200,
-              multivar.mediator = FALSE)
+              multivar.mediator = FALSE,
+              nthread = 8)
 
 med.out = fit.med.zqtl(effect = xy.beta,
                              effect.se = xy.se,

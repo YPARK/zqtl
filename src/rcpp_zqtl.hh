@@ -2,8 +2,6 @@
 #include <Rcpp.h>
 // [[Rcpp::depends(RcppEigen)]]
 #include <RcppEigen.h>
-// [[Rcpp::depends(RcppProgress)]]
-#include <progress.hpp>
 // [[Rcpp::depends(dqrng, sitmo, BH)]]
 #include <dqrng.h>
 #include <dqrng_distribution.h>
