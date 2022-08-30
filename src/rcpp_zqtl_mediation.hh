@@ -654,11 +654,11 @@ Mat _direct_effect_conditional(RNG& rng, options_t& opt,
         std::vector<Index> rand_med(n_med * max_n_submodel);
         std::iota(rand_med.begin(), rand_med.end(), 0);
         std::shuffle(rand_med.begin(), rand_med.end(), lrng);
-        // std::mt19937{std::random_device{}()});
 
         Mk.resize(mm.rows(), submodel_size);
         for (Index j = 0; j < submodel_size; ++j) {
-          Index k_rand = rand_med.at((k + j) % n_med);
+          Index k_rand = rand_med.at(j) % n_med;
+	  TLOG("random index: " << k_rand);
           Mk.col(j) = mm.col(k_rand);
         }
       }
